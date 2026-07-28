@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../series/presentation/series_list_page.dart';
 import '../data/dashboard_repository.dart';
 import '../domain/dashboard_counts.dart';
 
@@ -18,6 +19,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   static const _sidebarBreakpoint = 900.0;
 
   final DashboardRepository _repository = DashboardRepository();
+  final GlobalKey<SeriesListPageState> _seriesListKey =
+      GlobalKey<SeriesListPageState>();
 
   late Future<DashboardCounts> _countsFuture;
 
@@ -29,10 +32,15 @@ class _AdminHomePageState extends State<AdminHomePage> {
     _countsFuture = _repository.fetchCounts();
   }
 
-  void _refreshCounts() {
-    setState(() {
-      _countsFuture = _repository.fetchCounts();
-    });
+  void _refreshActivePage() {
+    switch (_selectedNavIndex) {
+      case 0:
+        _refreshCounts();
+      case 1:
+        _seriesListKey.currentState?.refresh();
+      default:
+        break;
+    }
   }
 
   Future<void> _signOut() async {
@@ -88,7 +96,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
         ),
         IconButton(
           tooltip: 'Yenile',
-          onPressed: _refreshCounts,
+          onPressed: _refreshActivePage,
           icon: const Icon(Icons.refresh),
         ),
         IconButton(
@@ -162,15 +170,25 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   Widget _buildContent() {
-    if (_selectedNavIndex != 0) {
-      return const Center(
+    return switch (_selectedNavIndex) {
+      0 => _buildOverviewContent(),
+      1 => SeriesListPage(key: _seriesListKey),
+      _ => const Center(
         child: Text(
           'Bu bölüm yakında eklenecek.',
           style: TextStyle(color: Color(0xFFB3B3B3)),
         ),
-      );
-    }
+      ),
+    };
+  }
 
+  void _refreshCounts() {
+    setState(() {
+      _countsFuture = _repository.fetchCounts();
+    });
+  }
+
+  Widget _buildOverviewContent() {
     return FutureBuilder<DashboardCounts>(
       future: _countsFuture,
       builder: (context, snapshot) {
@@ -288,7 +306,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       icon: Icons.dashboard_outlined,
       enabled: true,
     ),
-    _NavItem(label: 'Diziler', icon: Icons.movie_outlined, enabled: false),
+    _NavItem(label: 'Diziler', icon: Icons.movie_outlined, enabled: true),
     _NavItem(
       label: 'Bölümler',
       icon: Icons.playlist_play_outlined,
