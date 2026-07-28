@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vidxon_admin/features/dashboard/presentation/admin_home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -413,7 +414,7 @@ class _AdminAuthorizationGateState extends State<AdminAuthorizationGate> {
           return const AccessDeniedPage();
         }
 
-        return AdminDashboardPage(email: widget.email);
+        return AdminHomePage(email: widget.email);
       },
     );
   }
@@ -481,66 +482,6 @@ class AccessMessagePage extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class AdminDashboardPage extends StatelessWidget {
-  const AdminDashboardPage({required this.email, super.key});
-
-  final String email;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF111111),
-        title: const Text(
-          'VIDXON ADMIN',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Center(
-              child: Text(
-                email,
-                style: const TextStyle(color: Color(0xFFB3B3B3)),
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Çıkış Yap',
-            onPressed: () async {
-              await Supabase.instance.client.auth.signOut();
-            },
-            icon: const Icon(Icons.logout),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 72,
-              color: Color(0xFF35C46A),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Admin girişi başarılı',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'İçerik yönetim paneli kurulmaya hazır.',
-              style: TextStyle(color: Color(0xFFB3B3B3), fontSize: 16),
-            ),
-          ],
         ),
       ),
     );
