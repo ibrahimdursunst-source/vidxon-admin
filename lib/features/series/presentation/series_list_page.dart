@@ -7,7 +7,9 @@ import '../domain/admin_series.dart';
 enum _PublishFilter { all, published, draft }
 
 class SeriesListPage extends StatefulWidget {
-  const SeriesListPage({super.key});
+  const SeriesListPage({this.onCreateTap, super.key});
+
+  final VoidCallback? onCreateTap;
 
   @override
   SeriesListPageState createState() => SeriesListPageState();
@@ -93,7 +95,7 @@ class SeriesListPageState extends State<SeriesListPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _PageHeader(onRefresh: refresh),
+              _PageHeader(onRefresh: refresh, onCreateTap: widget.onCreateTap),
               const SizedBox(height: 24),
               _FilterBar(
                 searchController: _searchController,
@@ -137,9 +139,10 @@ class SeriesListPageState extends State<SeriesListPage> {
 }
 
 class _PageHeader extends StatelessWidget {
-  const _PageHeader({required this.onRefresh});
+  const _PageHeader({required this.onRefresh, this.onCreateTap});
 
   final VoidCallback onRefresh;
+  final VoidCallback? onCreateTap;
 
   @override
   Widget build(BuildContext context) {
@@ -164,15 +167,31 @@ class _PageHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 16),
-        OutlinedButton.icon(
-          onPressed: onRefresh,
-          icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('Yenile'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFF333333)),
-          ),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (onCreateTap != null)
+              FilledButton.icon(
+                onPressed: onCreateTap,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Yeni Dizi'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFE50914),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Yenile'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF333333)),
+              ),
+            ),
+          ],
         ),
       ],
     );

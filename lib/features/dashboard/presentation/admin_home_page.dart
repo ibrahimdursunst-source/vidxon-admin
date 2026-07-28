@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../series/presentation/series_create_page.dart';
 import '../../series/presentation/series_list_page.dart';
 import '../data/dashboard_repository.dart';
 import '../domain/dashboard_counts.dart';
@@ -25,6 +26,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   late Future<DashboardCounts> _countsFuture;
 
   int _selectedNavIndex = 0;
+  bool _showSeriesCreate = false;
 
   @override
   void initState() {
@@ -165,6 +167,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
     if (_navItems[index].enabled) {
       setState(() {
         _selectedNavIndex = index;
+        if (index != 1) {
+          _showSeriesCreate = false;
+        }
       });
     }
   }
@@ -172,7 +177,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   Widget _buildContent() {
     return switch (_selectedNavIndex) {
       0 => _buildOverviewContent(),
-      1 => SeriesListPage(key: _seriesListKey),
+      1 => _buildSeriesContent(),
       _ => const Center(
         child: Text(
           'Bu bölüm yakında eklenecek.',
@@ -180,6 +185,33 @@ class _AdminHomePageState extends State<AdminHomePage> {
         ),
       ),
     };
+  }
+
+  Widget _buildSeriesContent() {
+    if (_showSeriesCreate) {
+      return SeriesCreatePage(
+        onCancel: () {
+          setState(() {
+            _showSeriesCreate = false;
+          });
+        },
+        onSuccess: () {
+          setState(() {
+            _showSeriesCreate = false;
+          });
+          _seriesListKey.currentState?.refresh();
+        },
+      );
+    }
+
+    return SeriesListPage(
+      key: _seriesListKey,
+      onCreateTap: () {
+        setState(() {
+          _showSeriesCreate = true;
+        });
+      },
+    );
   }
 
   void _refreshCounts() {
