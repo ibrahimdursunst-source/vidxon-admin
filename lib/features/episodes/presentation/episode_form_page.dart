@@ -1,0 +1,482 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../data/episode_repository.dart';
+import '../domain/admin_episode.dart';
+import '../domain/create_episode_input.dart';
+import '../domain/episode_release_at.dart';
+import '../domain/update_episode_input.dart';
+
+class EpisodeFormPage extends StatefulWidget {
+  const EpisodeFormPage({required this.seriesId, this.episode, super.key});
+
+  final String seriesId;
+  final AdminEpisode? episode;
+
+  bool get isEditing => episode != null;
+
+  @override
+  State<EpisodeFormPage> createState() => _EpisodeFormPageState();
+}
+
+class _EpisodeFormPageState extends State<EpisodeFormPage> {
+  static const _primaryColor = Color(0xFFE50914);
+
+  final _formKey = GlobalKey<FormState>();
+  final _episodeNumberController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _synopsisController = TextEditingController();
+  final _coinPriceController = TextEditingController(text: '0');
+
+  final EpisodeRepository _repository = EpisodeRepository();
+
+  bool _isFree = false;
+  bool _isPublished = false;
+  DateTime? _releaseAtLocal;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFromEpisode();
+  }
+
+  void _initializeFromEpisode() {
+    final episode = widget.episode;
+    if (episode == null) {
+      return;
+    }
+
+    _episodeNumberController.text = episode.episodeNumber.toString();
+    _titleController.text = episode.title;
+    _synopsisController.text = episode.synopsis;
+    _coinPriceController.text = episode.coinPrice.toString();
+    _isFree = episode.isFree;
+    _isPublished = episode.isPublished;
+    _releaseAtLocal = releaseAtUtcToLocal(episode.releaseAt);
+  }
+
+  @override
+  void dispose() {
+    _episodeNumberController.dispose();
+    _titleController.dispose();
+    _synopsisController.dispose();
+    _coinPriceController.dispose();
+    super.dispose();
+  }
+
+  int? _parseEpisodeNumber() {
+    return int.tryParse(_episodeNumberController.text.trim());
+  }
+
+  int? _parseCoinPrice() {
+    return int.tryParse(_coinPriceController.text.trim());
+  }
+
+  void _onIsFreeChanged(bool value) {
+    setState(() {
+      _isFree = value;
+      if (value) {
+        _coinPriceController.text = '0';
+      }
+    });
+  }
+
+  Future<void> _pickReleaseDateTime() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final initialDate = _releaseAtLocal ?? now;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 5),
+    );
+
+    if (!mounted || pickedDate == null) {
+      return;
+    }
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_releaseAtLocal ?? now),
+    );
+
+    if (!mounted || pickedTime == null) {
+      return;
+    }
+
+    setState(() {
+      _releaseAtLocal = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+      _isSubmitting = true;
+    });
+
+    if (!_formKey.currentState!.validate()) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    final episodeNumber = _parseEpisodeNumber();
+    final coinPrice = _parseCoinPrice();
+
+    if (episodeNumber == null) {
+      setState(() {
+        _errorMessage = 'Geçerli bir bölüm numarası girin.';
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    if (coinPrice == null) {
+      setState(() {
+        _errorMessage = 'Geçerli bir coin fiyatı girin.';
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    try {
+      final AdminEpisode result;
+
+      if (widget.isEditing) {
+        result = await _repository.updateEpisode(
+          UpdateEpisodeInput(
+            episodeId: widget.episode!.id,
+            episodeNumber: episodeNumber,
+            title: _titleController.text.trim(),
+            synopsis: _synopsisController.text.trim(),
+            isFree: _isFree,
+            coinPrice: coinPrice,
+            isPublished: _isPublished,
+            releaseAtLocal: _releaseAtLocal,
+          ),
+        );
+      } else {
+        result = await _repository.createEpisode(
+          CreateEpisodeInput(
+            seriesId: widget.seriesId,
+            episodeNumber: episodeNumber,
+            title: _titleController.text.trim(),
+            synopsis: _synopsisController.text.trim(),
+            isFree: _isFree,
+            coinPrice: coinPrice,
+            isPublished: _isPublished,
+            releaseAtLocal: _releaseAtLocal,
+          ),
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.isEditing
+                ? 'Bölüm başarıyla güncellendi.'
+                : 'Bölüm başarıyla oluşturuldu.',
+          ),
+          backgroundColor: const Color(0xFF35C46A),
+        ),
+      );
+
+      Navigator.of(context).pop(result);
+    } on EpisodeValidationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = error.message;
+        _isSubmitting = false;
+      });
+    } on EpisodeMutationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = error.message;
+        _isSubmitting = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF090909),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF111111),
+        title: Text(widget.isEditing ? 'Bölümü Düzenle' : 'Yeni Bölüm'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_errorMessage != null) ...[
+                    _ErrorBanner(message: _errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
+                  TextFormField(
+                    controller: _episodeNumberController,
+                    enabled: !_isSubmitting,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Bölüm Numarası *',
+                    ),
+                    validator: (value) {
+                      final number = int.tryParse(value?.trim() ?? '');
+                      if (number == null || number <= 0) {
+                        return 'Bölüm numarası 0\'dan büyük olmalıdır.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _titleController,
+                    enabled: !_isSubmitting,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(labelText: 'Başlık *'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Başlık zorunludur.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _synopsisController,
+                    enabled: !_isSubmitting,
+                    minLines: 3,
+                    maxLines: 6,
+                    decoration: const InputDecoration(
+                      labelText: 'Açıklama',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Ücretsiz Bölüm'),
+                    value: _isFree,
+                    onChanged: _isSubmitting ? null : _onIsFreeChanged,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _coinPriceController,
+                    enabled: !_isSubmitting && !_isFree,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(labelText: 'Coin Fiyatı'),
+                    validator: (value) {
+                      final price = int.tryParse(value?.trim() ?? '');
+                      if (price == null || price < 0) {
+                        return 'Coin fiyatı negatif olamaz.';
+                      }
+
+                      if (_isFree && price != 0) {
+                        return 'Ücretsiz bölümlerde coin fiyatı 0 olmalıdır.';
+                      }
+
+                      if (_isPublished && !_isFree && price <= 0) {
+                        return 'Yayında kilitli bölümlerde coin fiyatı 0\'dan büyük olmalıdır.';
+                      }
+
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Yayında'),
+                    value: _isPublished,
+                    onChanged: _isSubmitting
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _isPublished = value;
+                            });
+                          },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Yayın Tarihi',
+                          ),
+                          child: Text(
+                            _releaseAtLocal == null
+                                ? 'Seçilmedi'
+                                : formatEpisodeDateTime(
+                                    _releaseAtLocal!.toUtc(),
+                                  ),
+                            style: TextStyle(
+                              color: _releaseAtLocal == null
+                                  ? const Color(0xFF777777)
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: _isSubmitting ? null : _pickReleaseDateTime,
+                        child: const Text('Yayın Tarihi'),
+                      ),
+                      if (_releaseAtLocal != null) ...[
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Tarihi Temizle',
+                          onPressed: _isSubmitting
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _releaseAtLocal = null;
+                                  });
+                                },
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (widget.isEditing) ...[
+                    const SizedBox(height: 24),
+                    _ReadOnlyInfo(
+                      label: 'Video',
+                      value: widget.episode!.hasVideo
+                          ? 'Video Hazır'
+                          : 'Video Yok',
+                    ),
+                    const SizedBox(height: 8),
+                    _ReadOnlyInfo(
+                      label: 'Toplam İzlenme',
+                      value: widget.episode!.totalViews.toString(),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: const Text('Vazgeç'),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton(
+                        onPressed: _isSubmitting ? null : _submit,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _primaryColor,
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(widget.isEditing ? 'Güncelle' : 'Kaydet'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE50914).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFE50914).withValues(alpha: 0.4),
+        ),
+      ),
+      child: SelectableText(
+        message,
+        style: const TextStyle(color: Color(0xFFFFB4B4)),
+      ),
+    );
+  }
+}
+
+class _ReadOnlyInfo extends StatelessWidget {
+  const _ReadOnlyInfo({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text('$label: ', style: const TextStyle(color: Color(0xFFB3B3B3))),
+        Text(value),
+      ],
+    );
+  }
+}

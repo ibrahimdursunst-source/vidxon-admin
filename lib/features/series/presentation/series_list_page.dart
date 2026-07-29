@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../episodes/presentation/series_episodes_page.dart';
 import '../../../core/config/media_config.dart';
 import '../data/series_repository.dart';
 import '../domain/admin_series.dart';
@@ -71,6 +72,15 @@ class SeriesListPageState extends State<SeriesListPage> {
     }).toList();
   }
 
+  void _openEpisodes(BuildContext context, AdminSeries series) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            SeriesEpisodesPage(seriesId: series.id, seriesTitle: series.title),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<AdminSeries>>(
@@ -124,10 +134,17 @@ class SeriesListPageState extends State<SeriesListPage> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     if (constraints.maxWidth >= _desktopBreakpoint) {
-                      return _SeriesDataTable(series: filteredSeries);
+                      return _SeriesDataTable(
+                        series: filteredSeries,
+                        onEpisodesTap: (series) =>
+                            _openEpisodes(context, series),
+                      );
                     }
 
-                    return _SeriesCardList(series: filteredSeries);
+                    return _SeriesCardList(
+                      series: filteredSeries,
+                      onEpisodesTap: (series) => _openEpisodes(context, series),
+                    );
                   },
                 ),
             ],
@@ -269,9 +286,10 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _SeriesDataTable extends StatelessWidget {
-  const _SeriesDataTable({required this.series});
+  const _SeriesDataTable({required this.series, required this.onEpisodesTap});
 
   final List<AdminSeries> series;
+  final ValueChanged<AdminSeries> onEpisodesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -298,14 +316,14 @@ class _SeriesDataTable extends StatelessWidget {
               DataColumn(label: Text('Son Güncelleme')),
               DataColumn(label: Text('İşlemler')),
             ],
-            rows: [for (final item in series) _buildRow(item)],
+            rows: [for (final item in series) _buildRow(context, item)],
           ),
         ),
       ),
     );
   }
 
-  DataRow _buildRow(AdminSeries item) {
+  DataRow _buildRow(BuildContext context, AdminSeries item) {
     return DataRow(
       cells: [
         DataCell(_SeriesPoster(posterPath: item.posterPath, size: 48)),
@@ -334,13 +352,23 @@ class _SeriesDataTable extends StatelessWidget {
         DataCell(_PublishStatusBadge(isPublished: item.isPublished)),
         DataCell(Text(_formatDateTime(item.updatedAt))),
         DataCell(
-          IconButton(
-            tooltip: 'Yakında',
-            onPressed: null,
-            icon: Icon(
-              Icons.edit_outlined,
-              color: Colors.white.withValues(alpha: 0.35),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Bölümler',
+                onPressed: () => onEpisodesTap(item),
+                icon: const Icon(Icons.playlist_play_outlined),
+              ),
+              IconButton(
+                tooltip: 'Yakında',
+                onPressed: null,
+                icon: Icon(
+                  Icons.edit_outlined,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -349,16 +377,17 @@ class _SeriesDataTable extends StatelessWidget {
 }
 
 class _SeriesCardList extends StatelessWidget {
-  const _SeriesCardList({required this.series});
+  const _SeriesCardList({required this.series, required this.onEpisodesTap});
 
   final List<AdminSeries> series;
+  final ValueChanged<AdminSeries> onEpisodesTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (final item in series) ...[
-          _SeriesCard(item: item),
+          _SeriesCard(item: item, onEpisodesTap: () => onEpisodesTap(item)),
           const SizedBox(height: 12),
         ],
       ],
@@ -367,9 +396,10 @@ class _SeriesCardList extends StatelessWidget {
 }
 
 class _SeriesCard extends StatelessWidget {
-  const _SeriesCard({required this.item});
+  const _SeriesCard({required this.item, required this.onEpisodesTap});
 
   final AdminSeries item;
+  final VoidCallback onEpisodesTap;
 
   @override
   Widget build(BuildContext context) {
@@ -401,6 +431,16 @@ class _SeriesCard extends StatelessWidget {
                   Text(
                     _formatCategories(item.categories),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: onEpisodesTap,
+                    icon: const Icon(Icons.playlist_play_outlined, size: 18),
+                    label: const Text('Bölümler'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF333333)),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
