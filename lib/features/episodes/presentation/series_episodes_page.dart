@@ -4,6 +4,7 @@ import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import '../domain/episode_release_at.dart';
 import 'episode_form_page.dart';
+import 'episode_video_upload_page.dart';
 
 class SeriesEpisodesPage extends StatefulWidget {
   const SeriesEpisodesPage({
@@ -68,6 +69,40 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
     refresh();
   }
 
+  Future<void> _openVideoUpload(AdminEpisode episode) async {
+    if (!episode.allowsVideoUpload) {
+      return;
+    }
+
+    final result = await Navigator.of(context).push<AdminEpisode>(
+      MaterialPageRoute(
+        builder: (context) => EpisodeVideoUploadPage(
+          episode: episode,
+          seriesTitle: widget.seriesTitle,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    refresh();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Video yüklendi ve bölüme bağlandı. Cloudflare Stream videoyu '
+          'işlemeye devam ediyor; durum kısa süre içinde güncellenecektir.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,12 +146,14 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
                           return _EpisodesDataTable(
                             episodes: episodes,
                             onEdit: _openEditForm,
+                            onUploadVideo: _openVideoUpload,
                           );
                         }
 
                         return _EpisodesCardList(
                           episodes: episodes,
                           onEdit: _openEditForm,
+                          onUploadVideo: _openVideoUpload,
                         );
                       },
                     ),
@@ -189,10 +226,15 @@ class _PageHeader extends StatelessWidget {
 }
 
 class _EpisodesDataTable extends StatelessWidget {
-  const _EpisodesDataTable({required this.episodes, required this.onEdit});
+  const _EpisodesDataTable({
+    required this.episodes,
+    required this.onEdit,
+    required this.onUploadVideo,
+  });
 
   final List<AdminEpisode> episodes;
   final ValueChanged<AdminEpisode> onEdit;
+  final ValueChanged<AdminEpisode> onUploadVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -229,15 +271,23 @@ class _EpisodesDataTable extends StatelessWidget {
                     DataCell(Text(episode.coinPrice.toString())),
                     DataCell(Text(episode.isPublished ? 'Yayında' : 'Taslak')),
                     DataCell(Text(formatEpisodeDateTime(episode.releaseAt))),
-                    DataCell(
-                      Text(episode.hasVideo ? 'Video Hazır' : 'Video Yok'),
-                    ),
+                    DataCell(_EpisodeVideoStatusCell(episode: episode)),
                     DataCell(Text(episode.totalViews.toString())),
                     DataCell(
-                      IconButton(
-                        tooltip: 'Bölümü Düzenle',
-                        onPressed: () => onEdit(episode),
-                        icon: const Icon(Icons.edit_outlined),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (episode.allowsVideoUpload)
+                            TextButton(
+                              onPressed: () => onUploadVideo(episode),
+                              child: const Text('Video Yükle'),
+                            ),
+                          IconButton(
+                            tooltip: 'Bölümü Düzenle',
+                            onPressed: () => onEdit(episode),
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -251,10 +301,15 @@ class _EpisodesDataTable extends StatelessWidget {
 }
 
 class _EpisodesCardList extends StatelessWidget {
-  const _EpisodesCardList({required this.episodes, required this.onEdit});
+  const _EpisodesCardList({
+    required this.episodes,
+    required this.onEdit,
+    required this.onUploadVideo,
+  });
 
   final List<AdminEpisode> episodes;
   final ValueChanged<AdminEpisode> onEdit;
+  final ValueChanged<AdminEpisode> onUploadVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -300,12 +355,19 @@ class _EpisodesCardList extends StatelessWidget {
                       _InfoChip(
                         label: episode.isPublished ? 'Yayında' : 'Taslak',
                       ),
-                      _InfoChip(
-                        label: episode.hasVideo ? 'Video Hazır' : 'Video Yok',
-                      ),
+                      _InfoChip(label: episode.videoStatusLabel),
                     ],
                   ),
                   const SizedBox(height: 8),
+                  if (episode.allowsVideoUpload)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => onUploadVideo(episode),
+                        icon: const Icon(Icons.upload_file_outlined, size: 18),
+                        label: const Text('Video Yükle'),
+                      ),
+                    ),
                   Text(
                     'Yayın: ${formatEpisodeDateTime(episode.releaseAt)}',
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
@@ -322,6 +384,17 @@ class _EpisodesCardList extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _EpisodeVideoStatusCell extends StatelessWidget {
+  const _EpisodeVideoStatusCell({required this.episode});
+
+  final AdminEpisode episode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(episode.videoStatusLabel);
   }
 }
 

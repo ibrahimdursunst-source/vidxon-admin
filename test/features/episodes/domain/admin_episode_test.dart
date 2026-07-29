@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vidxon_admin/features/episodes/domain/admin_episode.dart';
+import 'package:vidxon_admin/features/episodes/domain/cloudflare_stream_status.dart';
 
 void main() {
   group('AdminEpisode.fromMap', () {
@@ -12,6 +13,8 @@ void main() {
         'synopsis': 'Açıklama',
         'thumbnail_path': 'thumbs/a.jpg',
         'cloudflare_stream_uid': 'stream-123',
+        'cloudflare_stream_status': 'ready',
+        'cloudflare_stream_last_checked_at': '2026-07-29T12:00:00.000Z',
         'duration_seconds': 120,
         'is_free': false,
         'coin_price': 5,
@@ -27,6 +30,8 @@ void main() {
       expect(episode.episodeNumber, 3);
       expect(episode.title, 'Pilot');
       expect(episode.hasVideo, isTrue);
+      expect(episode.cloudflareStreamStatus, CloudflareStreamStatus.ready);
+      expect(episode.cloudflareStreamLastCheckedAt?.isUtc, isTrue);
       expect(episode.coinPrice, 5);
       expect(episode.releaseAt?.isUtc, isTrue);
     });
@@ -52,6 +57,25 @@ void main() {
 
       expect(episode.releaseAt, isNull);
       expect(episode.hasVideo, isFalse);
+      expect(episode.cloudflareStreamStatus, CloudflareStreamStatus.none);
+    });
+
+    test('throws on unknown cloudflare stream status', () {
+      expect(
+        () => AdminEpisode.fromMap({
+          'id': '11111111-1111-1111-1111-111111111111',
+          'series_id': '22222222-2222-2222-2222-222222222222',
+          'episode_number': 1,
+          'title': 'Bölüm 1',
+          'synopsis': '',
+          'cloudflare_stream_status': 'unexpected',
+          'is_free': true,
+          'coin_price': 0,
+          'is_published': false,
+          'total_views': 0,
+        }),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('throws when required fields are missing', () {

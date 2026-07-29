@@ -1,3 +1,5 @@
+import 'cloudflare_stream_status.dart';
+
 class AdminEpisode {
   const AdminEpisode({
     required this.id,
@@ -9,9 +11,11 @@ class AdminEpisode {
     required this.coinPrice,
     required this.isPublished,
     required this.totalViews,
+    required this.cloudflareStreamStatus,
     this.thumbnailPath,
     this.cloudflareStreamUid,
     this.durationSeconds,
+    this.cloudflareStreamLastCheckedAt,
     this.releaseAt,
     this.createdAt,
     this.updatedAt,
@@ -29,12 +33,24 @@ class AdminEpisode {
   final int coinPrice;
   final bool isPublished;
   final int totalViews;
+  final CloudflareStreamStatus cloudflareStreamStatus;
+  final DateTime? cloudflareStreamLastCheckedAt;
   final DateTime? releaseAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   bool get hasVideo =>
       cloudflareStreamUid != null && cloudflareStreamUid!.trim().isNotEmpty;
+
+  bool get allowsVideoUpload =>
+      !hasVideo && cloudflareStreamStatus == CloudflareStreamStatus.none;
+
+  String get videoStatusLabel => switch (cloudflareStreamStatus) {
+    CloudflareStreamStatus.none => 'Video Yok',
+    CloudflareStreamStatus.processing => 'İşleniyor',
+    CloudflareStreamStatus.ready => 'Video Hazır',
+    CloudflareStreamStatus.error => 'Video Hatası',
+  };
 
   factory AdminEpisode.fromMap(Map<String, dynamic> map) {
     final id = map['id']?.toString().trim() ?? '';
@@ -71,6 +87,12 @@ class AdminEpisode {
       coinPrice: _parseInt(map['coin_price']),
       isPublished: map['is_published'] == true,
       totalViews: _parseInt(map['total_views']),
+      cloudflareStreamStatus: CloudflareStreamStatus.parse(
+        map['cloudflare_stream_status'],
+      ),
+      cloudflareStreamLastCheckedAt: _parseUtcDateTime(
+        map['cloudflare_stream_last_checked_at'],
+      ),
       releaseAt: _parseUtcDateTime(map['release_at']),
       createdAt: _parseUtcDateTime(map['created_at']),
       updatedAt: _parseUtcDateTime(map['updated_at']),

@@ -27,6 +27,8 @@ class EpisodeRepository {
     synopsis,
     thumbnail_path,
     cloudflare_stream_uid,
+    cloudflare_stream_status,
+    cloudflare_stream_last_checked_at,
     duration_seconds,
     is_free,
     coin_price,
