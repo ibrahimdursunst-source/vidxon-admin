@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../series/presentation/series_create_page.dart';
 import '../../series/presentation/series_list_page.dart';
+import '../../users/presentation/admin_users_page.dart';
 import '../data/dashboard_repository.dart';
 import '../domain/dashboard_counts.dart';
 
@@ -22,6 +23,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   final DashboardRepository _repository = DashboardRepository();
   final GlobalKey<SeriesListPageState> _seriesListKey =
       GlobalKey<SeriesListPageState>();
+  final GlobalKey<AdminUsersPageState> _usersPageKey =
+      GlobalKey<AdminUsersPageState>();
 
   late Future<DashboardCounts> _countsFuture;
 
@@ -40,6 +43,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
         _refreshCounts();
       case 1:
         _seriesListKey.currentState?.refresh();
+      case 2:
+        _usersPageKey.currentState?.refresh();
       default:
         break;
     }
@@ -178,6 +183,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     return switch (_selectedNavIndex) {
       0 => _buildOverviewContent(),
       1 => _buildSeriesContent(),
+      2 => AdminUsersPage(key: _usersPageKey),
       _ => const Center(
         child: Text(
           'Bu bölüm yakında eklenecek.',
@@ -339,6 +345,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       enabled: true,
     ),
     _NavItem(label: 'Diziler', icon: Icons.movie_outlined, enabled: true),
+    _NavItem(label: 'Kullanıcılar', icon: Icons.people_outlined, enabled: true),
     _NavItem(
       label: 'Bölümler',
       icon: Icons.playlist_play_outlined,
