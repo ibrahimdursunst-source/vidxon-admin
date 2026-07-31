@@ -3,12 +3,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum AdminUserWalletFailureKind {
   sessionExpired,
   adminRequired,
+  superAdminRequired,
   userNotFound,
   invalidAmount,
   invalidDescription,
   invalidReason,
   transactionLimitExceeded,
   idempotencyConflict,
+  protectedAdminWallet,
+  insufficientBalance,
+  invalidRole,
+  selfDemotion,
+  selfRevoke,
+  lastSuperAdmin,
   networkError,
   serverError,
   unknown,
@@ -33,16 +40,67 @@ abstract final class AdminUserWalletErrorMapper {
         message.contains('jwt expired') ||
         message.contains('invalid jwt')) {
       return AdminUserWalletException(
-        message: 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.',
+        message: 'Oturumunuz doğrulanamadı. Yeniden giriş yapın.',
         kind: AdminUserWalletFailureKind.sessionExpired,
+      );
+    }
+
+    if (message.contains('super admin access required')) {
+      return AdminUserWalletException(
+        message: 'Bu işlem için Super Admin yetkisi gerekiyor.',
+        kind: AdminUserWalletFailureKind.superAdminRequired,
       );
     }
 
     if (message.contains('admin access required') ||
         message.contains('forbidden')) {
       return AdminUserWalletException(
-        message: 'Bu işlem için admin yetkisi gerekli.',
+        message: 'Bu işlem için admin yetkisi gerekiyor.',
         kind: AdminUserWalletFailureKind.adminRequired,
+      );
+    }
+
+    if (message.contains('admin accounts are protected')) {
+      return AdminUserWalletException(
+        message: 'Admin hesaplarında manuel jeton işlemleri yapılamaz.',
+        kind: AdminUserWalletFailureKind.protectedAdminWallet,
+      );
+    }
+
+    if (message.contains('insufficient wallet balance') ||
+        message.contains('insufficient balance')) {
+      return AdminUserWalletException(
+        message: 'Kullanıcının bakiyesi bu işlem için yetersiz.',
+        kind: AdminUserWalletFailureKind.insufficientBalance,
+      );
+    }
+
+    if (message.contains('cannot remove the last super admin')) {
+      return AdminUserWalletException(
+        message: 'Son Super Admin kaldırılamaz.',
+        kind: AdminUserWalletFailureKind.lastSuperAdmin,
+      );
+    }
+
+    if (message.contains('cannot demote their own role') ||
+        message.contains('cannot revoke their own access')) {
+      if (message.contains('revoke')) {
+        return AdminUserWalletException(
+          message: 'Kendi admin erişiminizi kaldıramazsınız.',
+          kind: AdminUserWalletFailureKind.selfRevoke,
+        );
+      }
+
+      return AdminUserWalletException(
+        message: 'Kendi rolünüzü düşüremezsiniz.',
+        kind: AdminUserWalletFailureKind.selfDemotion,
+      );
+    }
+
+    if (message.contains('invalid admin role')) {
+      return AdminUserWalletException(
+        message: 'Geçersiz admin rolü.',
+        kind: AdminUserWalletFailureKind.invalidRole,
       );
     }
 
@@ -86,8 +144,7 @@ abstract final class AdminUserWalletErrorMapper {
 
     if (message.contains('idempotency') && message.contains('conflict')) {
       return AdminUserWalletException(
-        message:
-            'Bu işlem daha önce farklı bilgilerle başlatılmış. Lütfen formu kontrol edip yeniden onaylayın.',
+        message: 'İşlem isteği çakıştı. Formu kontrol edip yeniden deneyin.',
         kind: AdminUserWalletFailureKind.idempotencyConflict,
       );
     }
@@ -103,6 +160,21 @@ abstract final class AdminUserWalletErrorMapper {
       message: 'Beklenmeyen bir sunucu hatası oluştu. Lütfen tekrar deneyin.',
       kind: AdminUserWalletFailureKind.serverError,
     );
+  }
+
+  static AdminUserWalletException fromPostgrestForWalletMutation(
+    PostgrestException error,
+  ) {
+    final mapped = fromPostgrest(error);
+
+    if (mapped.kind == AdminUserWalletFailureKind.superAdminRequired) {
+      return AdminUserWalletException(
+        message: 'Jeton işlemleri yalnızca Super Admin tarafından yapılabilir.',
+        kind: mapped.kind,
+      );
+    }
+
+    return mapped;
   }
 }
 
@@ -161,4 +233,14 @@ Map<String, dynamic> parseRpcMapResult(
     message: 'Sunucu yanıtı geçersiz.',
     kind: AdminUserWalletFailureKind.serverError,
   );
+}
+
+void parseRpcVoidResult(dynamic result) {
+  if (result == null) {
+    return;
+  }
+
+  if (result is List && result.isEmpty) {
+    return;
+  }
 }

@@ -17,6 +17,8 @@ void main() {
     String accountStatus = 'active',
     int coinBalance = 120,
     Object? lastSignInAt = '2026-07-29T10:00:00.000Z',
+    Object? adminRole,
+    bool walletActionsAllowed = true,
   }) {
     return {
       'user_id': id,
@@ -26,6 +28,8 @@ void main() {
       'coin_balance': coinBalance,
       'account_created_at': accountCreatedAt,
       'last_sign_in_at': lastSignInAt,
+      'admin_role': adminRole,
+      'wallet_actions_allowed': walletActionsAllowed,
     };
   }
 
@@ -138,6 +142,31 @@ void main() {
       );
     });
 
+    test('parses admin user with wallet protection', () {
+      final user = AdminUserSummary.fromMap(
+        summaryMap(adminRole: 'admin', walletActionsAllowed: false),
+      );
+
+      expect(user.adminRoleLabel, 'Admin');
+      expect(user.walletActionsAllowed, isFalse);
+    });
+
+    test('parses super admin user fields', () {
+      final user = AdminUserSummary.fromMap(
+        summaryMap(adminRole: 'super_admin', walletActionsAllowed: false),
+      );
+
+      expect(user.adminRoleLabel, 'Super Admin');
+      expect(user.walletActionsAllowed, isFalse);
+    });
+
+    test('rejects unknown admin role', () {
+      expect(
+        () => AdminUserSummary.fromMap(summaryMap(adminRole: 'owner')),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('parses mixed empty-query response without failing entire list', () {
       final users = [
         AdminUserSummary.fromMap(summaryMap()),
@@ -177,6 +206,8 @@ void main() {
       Object? displayName,
       Object? lastSignInAt,
       Object? walletUpdatedAt = '2026-07-29T12:00:00.000Z',
+      Object? adminRole,
+      bool walletActionsAllowed = true,
     }) {
       return {
         'user_id': userId,
@@ -189,6 +220,8 @@ void main() {
         'account_created_at': accountCreatedAt,
         'last_sign_in_at': lastSignInAt,
         'wallet_updated_at': walletUpdatedAt,
+        'admin_role': adminRole,
+        'wallet_actions_allowed': walletActionsAllowed,
       };
     }
 

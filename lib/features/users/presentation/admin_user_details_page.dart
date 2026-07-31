@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../admin_context/presentation/admin_context_scope.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_user_details.dart';
 import '../domain/admin_user_summary.dart';
 import '../domain/admin_wallet_ledger_entry.dart';
 import '../domain/user_parse_helpers.dart';
 import 'admin_coin_credit_dialog.dart';
+import 'admin_coin_debit_dialog.dart';
+import 'admin_role_badge.dart';
+import 'admin_wallet_mutation_permission.dart';
 
 class AdminUserDetailsPage extends StatefulWidget {
   const AdminUserDetailsPage({
@@ -43,6 +47,28 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
   void initState() {
     super.initState();
     _loadAll(resetLedger: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.dependOnInheritedWidgetOfExactType<AdminContextScope>();
+  }
+
+  bool _canMutateWallet(AdminUserDetails details) {
+    final contextResult = AdminContextScope.maybeOf(context);
+    return canMutateAdminWallet(
+      contextResult: contextResult,
+      walletActionsAllowed: details.walletActionsAllowed,
+    );
+  }
+
+  String? _walletRestrictionMessage(AdminUserDetails details) {
+    final contextResult = AdminContextScope.maybeOf(context);
+    return adminWalletMutationRestrictionMessage(
+      contextResult: contextResult,
+      walletActionsAllowed: details.walletActionsAllowed,
+    );
   }
 
   Future<void> _loadAll({required bool resetLedger}) async {
@@ -92,9 +118,38 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
     await _loadAll(resetLedger: false);
   }
 
+  Future<void> _openCoinDebit() async {
+    final details = _details;
+    if (details == null || !_canMutateWallet(details)) {
+      return;
+    }
+
+    final successMessage = await showAdminCoinDebitDialog(
+      context: context,
+      user: details,
+      repository: _repository,
+    );
+
+    if (successMessage != null) {
+      if (!mounted) {
+        return;
+      }
+
+      await _loadAll(resetLedger: true);
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
+    }
+  }
+
   Future<void> _openCoinCredit() async {
     final details = _details;
-    if (details == null) {
+    if (details == null || !_canMutateWallet(details)) {
       return;
     }
 
@@ -166,6 +221,9 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
       return const SizedBox.shrink();
     }
 
+    final canMutateWallet = _canMutateWallet(details);
+    final restrictionMessage = _walletRestrictionMessage(details);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Center(
@@ -176,21 +234,45 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
             children: [
               _ProfileCard(details: details, onCopyUserId: _copyUserId),
               const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.icon(
-                  onPressed: _openCoinCredit,
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Jeton Yükle'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
+              if (restrictionMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    restrictionMessage,
+                    style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                 ),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.icon(
+                    onPressed: canMutateWallet ? _openCoinCredit : null,
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Jeton Yükle'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: canMutateWallet ? _openCoinDebit : null,
+                    icon: const Icon(Icons.remove_circle_outline),
+                    label: const Text('Jeton Eksilt'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF444444)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               Text(
@@ -258,6 +340,10 @@ class _ProfileCard extends StatelessWidget {
               details.resolvedDisplayName,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+            if (details.adminRoleLabel != null) ...[
+              const SizedBox(height: 8),
+              AdminRoleBadge(label: details.adminRoleLabel!),
+            ],
             const SizedBox(height: 8),
             Text(
               details.resolvedEmailLabel,

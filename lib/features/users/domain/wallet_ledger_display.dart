@@ -1,4 +1,5 @@
-import 'admin_coin_credit_reason.dart';
+import '../domain/admin_coin_credit_reason.dart';
+import '../domain/admin_coin_debit_reason.dart';
 
 abstract final class WalletLedgerDisplay {
   static String transactionTypeLabel(String transactionType) {
@@ -6,6 +7,7 @@ abstract final class WalletLedgerDisplay {
       'episode_unlock' => 'Bölüm Açma',
       'rewarded_ad' => 'Reklam Ödülü',
       'admin_coin_credit' => 'Admin Jeton Yükleme',
+      'admin_coin_debit' => 'Admin Jeton Eksiltme',
       'admin_test_credit' => 'Eski Test Kredisi',
       _ => transactionType.trim(),
     };
@@ -14,6 +16,11 @@ abstract final class WalletLedgerDisplay {
   static String reasonLabel(String? reasonCode) {
     if (reasonCode == null || reasonCode.trim().isEmpty) {
       return '—';
+    }
+
+    final debitLabel = AdminCoinDebitReason.labelFor(reasonCode);
+    if (debitLabel != reasonCode.trim()) {
+      return debitLabel;
     }
 
     return AdminCoinCreditReason.labelFor(reasonCode);

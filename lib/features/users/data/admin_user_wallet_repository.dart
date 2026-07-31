@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_coin_credit_input.dart';
 import '../domain/admin_coin_credit_result.dart';
+import '../domain/admin_coin_debit_input.dart';
+import '../domain/admin_coin_debit_result.dart';
 import '../domain/admin_user_details.dart';
 import '../domain/admin_user_summary.dart';
 import '../domain/admin_wallet_ledger_entry.dart';
@@ -130,10 +132,41 @@ class AdminUserWalletRepository {
     } on AdminUserWalletException {
       rethrow;
     } on PostgrestException catch (error) {
-      throw AdminUserWalletErrorMapper.fromPostgrest(error);
+      throw AdminUserWalletErrorMapper.fromPostgrestForWalletMutation(error);
     } on FormatException {
       throw AdminUserWalletException(
         message: 'Jeton yükleme yanıtı geçersiz.',
+        kind: AdminUserWalletFailureKind.serverError,
+      );
+    } catch (_) {
+      throw AdminUserWalletException(
+        message: 'Ağ bağlantısı kesildi. Lütfen tekrar deneyin.',
+        kind: AdminUserWalletFailureKind.networkError,
+      );
+    }
+  }
+
+  Future<AdminCoinDebitResult> debitUserCoins({
+    required AdminCoinDebitInput input,
+    required String idempotencyKey,
+  }) async {
+    try {
+      final result = await _supabaseClient.rpc(
+        'admin_debit_user_coins',
+        params: buildDebitUserCoinsRpcParams(
+          input: input,
+          idempotencyKey: idempotencyKey,
+        ),
+      );
+
+      return AdminCoinDebitResult.fromMap(parseRpcMapResult(result));
+    } on AdminUserWalletException {
+      rethrow;
+    } on PostgrestException catch (error) {
+      throw AdminUserWalletErrorMapper.fromPostgrestForWalletMutation(error);
+    } on FormatException {
+      throw AdminUserWalletException(
+        message: 'Jeton eksiltme yanıtı geçersiz.',
         kind: AdminUserWalletFailureKind.serverError,
       );
     } catch (_) {

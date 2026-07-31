@@ -16,6 +16,8 @@ void main() {
       'last_sign_in_at': '2026-07-27T17:15:27.458491+00:00',
       'account_status': 'active',
       'coin_balance': 0,
+      'admin_role': null,
+      'wallet_actions_allowed': true,
     };
   }
 
@@ -78,6 +80,9 @@ void main() {
           'coin_balance': 120,
           'ledger_entry_count': 1,
           'total_admin_coin_credited': 100,
+          'account_created_at': '2026-07-27T17:14:20.106837+00:00',
+          'wallet_actions_allowed': true,
+          'admin_role': null,
         },
       ]);
 
@@ -99,6 +104,16 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('parseRpcVoidResult', () {
+    test('accepts null response', () {
+      expect(() => parseRpcVoidResult(null), returnsNormally);
+    });
+
+    test('accepts empty list response', () {
+      expect(() => parseRpcVoidResult([]), returnsNormally);
     });
   });
 

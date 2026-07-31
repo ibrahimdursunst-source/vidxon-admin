@@ -1,3 +1,4 @@
+import '../../admin_context/domain/admin_role.dart';
 import 'user_parse_helpers.dart';
 
 class AdminUserSummary {
@@ -6,9 +7,11 @@ class AdminUserSummary {
     required this.accountStatus,
     required this.coinBalance,
     required this.accountCreatedAt,
+    required this.walletActionsAllowed,
     this.email,
     this.displayName,
     this.lastSignInAt,
+    this.adminRole,
   });
 
   final String userId;
@@ -18,6 +21,8 @@ class AdminUserSummary {
   final int coinBalance;
   final DateTime accountCreatedAt;
   final DateTime? lastSignInAt;
+  final AdminRole? adminRole;
+  final bool walletActionsAllowed;
 
   String get resolvedDisplayName =>
       formatUserDisplayName(displayName: displayName, email: email);
@@ -25,6 +30,9 @@ class AdminUserSummary {
   String get resolvedEmailLabel => formatUserEmailLabel(email);
 
   String get accountStatusLabel => formatAccountStatusLabel(accountStatus);
+
+  String? get adminRoleLabel =>
+      adminRole == null ? null : formatAdminRoleLabel(adminRole);
 
   factory AdminUserSummary.fromMap(Map<String, dynamic> map) {
     return AdminUserSummary(
@@ -46,6 +54,11 @@ class AdminUserSummary {
         fieldName: 'account_created_at',
       ),
       lastSignInAt: UserParseHelpers.parseUtcDateTime(map['last_sign_in_at']),
+      adminRole: AdminRole.parseNullable(map['admin_role']),
+      walletActionsAllowed: UserParseHelpers.requireBool(
+        map['wallet_actions_allowed'],
+        fieldName: 'wallet_actions_allowed',
+      ),
     );
   }
 }
