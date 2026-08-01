@@ -503,7 +503,6 @@ void configureContentWidgetTests() {
   FlutterError.onError = (details) {
     final message = details.exceptionAsString();
     if (details.library == 'image resource service' ||
-        message.contains('ListTile background color') ||
         message.contains('NetworkImageLoadException') ||
         message.contains('HTTP request failed')) {
       return;

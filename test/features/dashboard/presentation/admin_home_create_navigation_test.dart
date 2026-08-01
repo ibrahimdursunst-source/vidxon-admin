@@ -130,15 +130,15 @@ void main() {
           repos.listRepository.fetchAllCalls,
           greaterThan(initialFetchAllCalls),
         );
-      expect(find.text('Server Detail Title'), findsWidgets);
-      expect(repos.detailRepository.fetchByIdCalls, greaterThanOrEqualTo(1));
-      expect(find.text('Yayın ve Arşiv'), findsOneWidget);
-      expect(
-        AdminContextScope.maybeOf(
-          tester.element(find.text('Yayın ve Arşiv')),
-        ),
-        isNotNull,
-      );
+        expect(find.text('Server Detail Title'), findsWidgets);
+        expect(repos.detailRepository.fetchByIdCalls, greaterThanOrEqualTo(1));
+        expect(find.text('Yayın ve Arşiv'), findsOneWidget);
+        expect(
+          AdminContextScope.maybeOf(
+            tester.element(find.text('Yayın ve Arşiv')),
+          ),
+          isNotNull,
+        );
         expect(find.text('Dizi başarıyla oluşturuldu.'), findsOneWidget);
       },
     );

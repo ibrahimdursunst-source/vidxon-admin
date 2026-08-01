@@ -190,19 +190,24 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
                 onReorder: _onReorder,
                 itemBuilder: (context, index) {
                   final episode = _ordered[index];
-                  return ListTile(
+                  return Material(
                     key: ValueKey(episode.id),
-                    tileColor: const Color(0xFF111111),
+                    color: const Color(0xFF111111),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: const BorderSide(color: Color(0xFF2A2A2A)),
                     ),
-                    leading: ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_handle),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      leading: ReorderableDragStartListener(
+                        index: index,
+                        child: const Icon(Icons.drag_handle),
+                      ),
+                      title: Text(
+                        '#${episode.episodeNumber} · ${episode.title}',
+                      ),
+                      subtitle: Text(episode.publishLabel),
                     ),
-                    title: Text('#${episode.episodeNumber} · ${episode.title}'),
-                    subtitle: Text(episode.publishLabel),
                   );
                 },
               ),

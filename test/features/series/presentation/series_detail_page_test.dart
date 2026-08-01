@@ -454,9 +454,15 @@ void main() {
 
       expect(mutationRepository.unpublishCalls, 1);
 
-      final unpublishButton = find.widgetWithText(OutlinedButton, 'Yayından Kaldır');
+      final unpublishButton = find.widgetWithText(
+        OutlinedButton,
+        'Yayından Kaldır',
+      );
       if (unpublishButton.evaluate().isNotEmpty) {
-        expect(tester.widget<OutlinedButton>(unpublishButton).onPressed, isNull);
+        expect(
+          tester.widget<OutlinedButton>(unpublishButton).onPressed,
+          isNull,
+        );
       }
 
       mutationRepository.unpublishDelay!.complete();
