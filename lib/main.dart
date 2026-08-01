@@ -360,11 +360,13 @@ class AdminAuthorizationGate extends StatefulWidget {
   const AdminAuthorizationGate({
     required this.userId,
     required this.email,
+    this.adminCheckOverride,
     super.key,
   });
 
   final String userId;
   final String email;
+  final Future<bool> Function()? adminCheckOverride;
 
   @override
   State<AdminAuthorizationGate> createState() => _AdminAuthorizationGateState();
@@ -380,6 +382,11 @@ class _AdminAuthorizationGateState extends State<AdminAuthorizationGate> {
   }
 
   Future<bool> _checkAdminAccess() async {
+    final override = widget.adminCheckOverride;
+    if (override != null) {
+      return override();
+    }
+
     final result = await Supabase.instance.client.rpc('is_admin');
     return result == true;
   }

@@ -4,7 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../admin_context/presentation/admin_context_scope.dart';
 import '../../admins/presentation/admin_management_page.dart';
 import '../../audit/presentation/admin_audit_page.dart';
+import '../../categories/data/category_repository.dart';
+import '../../media/data/image_upload_repository.dart';
+import '../../media/domain/poster_file.dart';
+import '../../series/data/series_mutation_repository.dart';
+import '../../series/data/series_repository.dart';
 import '../../series/presentation/series_create_page.dart';
+import '../../series/presentation/series_detail_page.dart';
 import '../../series/presentation/series_list_page.dart';
 import '../../users/presentation/admin_role_badge.dart';
 import '../../users/presentation/admin_users_page.dart';
@@ -12,9 +18,28 @@ import '../data/dashboard_repository.dart';
 import '../domain/dashboard_counts.dart';
 
 class AdminHomePage extends StatefulWidget {
-  const AdminHomePage({required this.email, super.key});
+  const AdminHomePage({
+    required this.email,
+    this.initialSelectedNavIndex = 0,
+    this.seriesListRepository,
+    this.seriesCreateMutationRepository,
+    this.seriesDetailRepository,
+    this.imageUploadRepository,
+    this.categoryRepository,
+    this.dashboardRepository,
+    this.initialPosterForTesting,
+    super.key,
+  });
 
   final String email;
+  final int initialSelectedNavIndex;
+  final SeriesRepository? seriesListRepository;
+  final SeriesMutationRepository? seriesCreateMutationRepository;
+  final SeriesRepository? seriesDetailRepository;
+  final ImageUploadRepository? imageUploadRepository;
+  final CategoryRepository? categoryRepository;
+  final DashboardRepository? dashboardRepository;
+  final PosterFile? initialPosterForTesting;
 
   @override
   State<AdminHomePage> createState() => _AdminHomePageState();
@@ -24,7 +49,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   static const _primaryColor = Color(0xFFE50914);
   static const _sidebarBreakpoint = 900.0;
 
-  final DashboardRepository _repository = DashboardRepository();
+  late final DashboardRepository _repository =
+      widget.dashboardRepository ?? DashboardRepository();
   final GlobalKey<SeriesListPageState> _seriesListKey =
       GlobalKey<SeriesListPageState>();
   final GlobalKey<AdminUsersPageState> _usersPageKey =
@@ -42,6 +68,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   @override
   void initState() {
     super.initState();
+    _selectedNavIndex = widget.initialSelectedNavIndex;
     _countsFuture = _repository.fetchCounts();
   }
 
@@ -306,17 +333,36 @@ class _AdminHomePageState extends State<AdminHomePage> {
             _showSeriesCreate = false;
           });
         },
-        onSuccess: () {
+        onSuccess: (created) {
           setState(() {
             _showSeriesCreate = false;
           });
           _seriesListKey.currentState?.refresh();
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => SeriesDetailPage(
+                seriesId: created.id,
+                initialSeries: created,
+                seriesRepository:
+                    widget.seriesDetailRepository ??
+                    widget.seriesListRepository,
+                mutationRepository: widget.seriesCreateMutationRepository,
+                categoryRepository: widget.categoryRepository,
+                imageUploadRepository: widget.imageUploadRepository,
+              ),
+            ),
+          );
         },
+        seriesMutationRepository: widget.seriesCreateMutationRepository,
+        imageUploadRepository: widget.imageUploadRepository,
+        categoryRepository: widget.categoryRepository,
+        initialPosterForTesting: widget.initialPosterForTesting,
       );
     }
 
     return SeriesListPage(
       key: _seriesListKey,
+      repository: widget.seriesListRepository,
       onCreateTap: () {
         setState(() {
           _showSeriesCreate = true;

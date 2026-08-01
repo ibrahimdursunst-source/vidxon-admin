@@ -15,24 +15,34 @@ class ImageUploadException implements Exception {
 }
 
 class ImageUploadRepository {
-  ImageUploadRepository({SupabaseClient? client, http.Client? httpClient})
-    : _client = client ?? Supabase.instance.client,
-      _httpClient = httpClient ?? http.Client();
+  ImageUploadRepository({this._client, http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
   final http.Client _httpClient;
+
+  SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
 
   Future<ImageUploadResponse> requestPosterUploadUrl({
     required String contentType,
     required int fileSize,
+    String purpose = 'series_create',
+    String? seriesId,
   }) async {
-    final response = await _client.functions.invoke(
+    final body = <String, dynamic>{
+      'kind': 'poster',
+      'contentType': contentType,
+      'fileSize': fileSize,
+      'purpose': purpose,
+    };
+
+    if (seriesId != null && seriesId.trim().isNotEmpty) {
+      body['seriesId'] = seriesId.trim();
+    }
+
+    final response = await _resolvedClient.functions.invoke(
       'admin-create-image-upload-url',
-      body: {
-        'kind': 'poster',
-        'contentType': contentType,
-        'fileSize': fileSize,
-      },
+      body: body,
     );
 
     if (response.status != 200) {

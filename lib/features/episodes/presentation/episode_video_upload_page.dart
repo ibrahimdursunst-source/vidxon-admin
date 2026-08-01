@@ -35,12 +35,14 @@ class EpisodeVideoUploadPage extends StatefulWidget {
   const EpisodeVideoUploadPage({
     required this.episode,
     required this.seriesTitle,
+    this.isReplacement = false,
     this.repository,
     super.key,
   });
 
   final AdminEpisode episode;
   final String seriesTitle;
+  final bool isReplacement;
   final EpisodeVideoUploadRepository? repository;
 
   @override
@@ -53,6 +55,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
   late final EpisodeVideoUploadRepository _repository =
       widget.repository ?? EpisodeVideoUploadRepository();
 
+  late AdminEpisode _episode;
   EpisodeVideoFile? _selectedFile;
   bool _isUploading = false;
   bool _canRetryAttach = false;
@@ -62,6 +65,12 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
   _UploadStage _stage = _UploadStage.noFileSelected;
 
   bool get _uploadInProgress => _isUploading;
+
+  @override
+  void initState() {
+    super.initState();
+    _episode = widget.episode;
+  }
 
   Future<void> _pickVideo() async {
     if (_isUploading) {
@@ -122,39 +131,43 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
     });
 
     try {
-      final ticket = await _repository.createUploadTicket(
-        episodeId: widget.episode.id,
-        file: file,
-      );
+      setState(() => _stage = _UploadStage.preparingTicket);
 
-      if (!mounted) {
-        return;
-      }
+      final updatedEpisode = widget.isReplacement
+          ? await _repository.replaceEpisodeVideo(
+              episodeId: _episode.id,
+              file: file,
+              expectedContentVersion: _episode.contentVersion,
+              onUploadProgress: (progress) {
+                if (!mounted) {
+                  return;
+                }
 
-      setState(() => _stage = _UploadStage.uploadingVideo);
+                setState(() {
+                  _progress = progress;
+                  _stage = progress < 1
+                      ? _UploadStage.uploadingVideo
+                      : _UploadStage.attachingVideo;
+                });
+              },
+            )
+          : await _repository.uploadEpisodeVideo(
+              episodeId: _episode.id,
+              file: file,
+              expectedContentVersion: _episode.contentVersion,
+              onUploadProgress: (progress) {
+                if (!mounted) {
+                  return;
+                }
 
-      await _repository.uploadVideo(
-        ticket: ticket,
-        file: file,
-        onProgress: (progress) {
-          if (!mounted) {
-            return;
-          }
-
-          setState(() => _progress = progress);
-        },
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() => _stage = _UploadStage.attachingVideo);
-
-      final updatedEpisode = await _repository.attachVideo(
-        episodeId: widget.episode.id,
-        streamUid: ticket.uid,
-      );
+                setState(() {
+                  _progress = progress;
+                  _stage = progress < 1
+                      ? _UploadStage.uploadingVideo
+                      : _UploadStage.attachingVideo;
+                });
+              },
+            );
 
       if (!mounted) {
         return;
@@ -163,6 +176,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
       setState(() {
         _stage = _UploadStage.completed;
         _progress = 1;
+        _episode = updatedEpisode;
       });
 
       Navigator.of(context).pop(updatedEpisode);
@@ -206,10 +220,17 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
     });
 
     try {
-      final updatedEpisode = await _repository.attachVideo(
-        episodeId: widget.episode.id,
-        streamUid: streamUid,
-      );
+      final updatedEpisode = widget.isReplacement
+          ? await _repository.requestStreamReplacement(
+              episodeId: _episode.id,
+              streamUid: streamUid,
+              expectedContentVersion: _episode.contentVersion,
+            )
+          : await _repository.attachVideo(
+              episodeId: _episode.id,
+              streamUid: streamUid,
+              expectedContentVersion: _episode.contentVersion,
+            );
 
       if (!mounted) {
         return;
@@ -279,7 +300,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
 
   @override
   Widget build(BuildContext context) {
-    final episode = widget.episode;
+    final episode = _episode;
     final selectedFile = _selectedFile;
     final canUpload = selectedFile != null && !_isUploading && !_canRetryAttach;
 
@@ -299,7 +320,9 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
         backgroundColor: const Color(0xFF090909),
         appBar: AppBar(
           backgroundColor: const Color(0xFF111111),
-          title: const Text('Video Yükle'),
+          title: Text(
+            widget.isReplacement ? 'Videoyu Değiştir' : 'Video Yükle',
+          ),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -309,6 +332,14 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.isReplacement)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Yeni video hazır olana kadar mevcut video yayında kalmaya devam eder.',
+                        style: TextStyle(color: Color(0xFFB3B3B3)),
+                      ),
+                    ),
                   _InfoCard(
                     seriesTitle: widget.seriesTitle,
                     episodeNumber: episode.episodeNumber,

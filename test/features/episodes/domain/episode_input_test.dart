@@ -12,7 +12,6 @@ void main() {
           title: 'Bölüm',
           isFree: true,
           coinPrice: 0,
-          isPublished: false,
         ),
         isNotNull,
       );
@@ -25,7 +24,6 @@ void main() {
           title: '   ',
           isFree: true,
           coinPrice: 0,
-          isPublished: false,
         ),
         isNotNull,
       );
@@ -38,7 +36,6 @@ void main() {
           title: 'Bölüm',
           isFree: false,
           coinPrice: -1,
-          isPublished: false,
         ),
         isNotNull,
       );
@@ -51,20 +48,18 @@ void main() {
           title: 'Bölüm',
           isFree: true,
           coinPrice: 5,
-          isPublished: false,
         ),
         isNotNull,
       );
     });
 
-    test('rejects published locked episode with zero coin price', () {
+    test('rejects coin price above max', () {
       expect(
         validateEpisodeFields(
           episodeNumber: 1,
           title: 'Bölüm',
           isFree: false,
-          coinPrice: 0,
-          isPublished: true,
+          coinPrice: 10001,
         ),
         isNotNull,
       );
@@ -77,7 +72,6 @@ void main() {
           title: 'Bölüm',
           isFree: false,
           coinPrice: 0,
-          isPublished: false,
         ),
         isNull,
       );
@@ -91,7 +85,7 @@ void main() {
   });
 
   group('buildCreateEpisodeRpcParams', () {
-    test('uses backend signature keys', () {
+    test('uses backend signature keys and always unpublished', () {
       final localRelease = DateTime(2026, 7, 29, 13, 45);
 
       final params = buildCreateEpisodeRpcParams(
@@ -102,7 +96,6 @@ void main() {
           synopsis: 'Açıklama',
           isFree: false,
           coinPrice: 10,
-          isPublished: true,
           releaseAtLocal: localRelease,
         ),
       );
@@ -121,6 +114,7 @@ void main() {
         ]),
       );
       expect(params['p_coin_price'], 10);
+      expect(params['p_is_published'], isFalse);
       expect(params['p_release_at'], localRelease.toUtc().toIso8601String());
     });
 
@@ -132,24 +126,24 @@ void main() {
           title: 'Pilot',
           isFree: true,
           coinPrice: 25,
-          isPublished: false,
         ),
       );
 
       expect(params['p_coin_price'], 0);
+      expect(params['p_is_published'], isFalse);
     });
   });
 
   group('buildUpdateEpisodeRpcParams', () {
-    test('uses backend signature keys and null release_at', () {
+    test('uses V2 backend signature keys', () {
       final params = buildUpdateEpisodeRpcParams(
         const UpdateEpisodeInput(
           episodeId: '11111111-1111-1111-1111-111111111111',
-          episodeNumber: 2,
           title: 'Güncel',
+          synopsis: 'Açıklama',
           isFree: false,
           coinPrice: 5,
-          isPublished: false,
+          expectedContentVersion: 3,
         ),
       );
 
@@ -157,16 +151,38 @@ void main() {
         params.keys,
         containsAll([
           'p_episode_id',
-          'p_episode_number',
           'p_title',
           'p_synopsis',
           'p_is_free',
           'p_coin_price',
-          'p_is_published',
           'p_release_at',
+          'p_expected_content_version',
         ]),
       );
+      expect(params.containsKey('p_episode_number'), isFalse);
+      expect(params.containsKey('p_is_published'), isFalse);
+      expect(params['p_expected_content_version'], 3);
       expect(params['p_release_at'], isNull);
+    });
+  });
+
+  group('buildRequestStreamReplacementRpcParams', () {
+    test('uses expected RPC payload keys', () {
+      final params = buildRequestStreamReplacementRpcParams(
+        episodeId: '11111111-1111-1111-1111-111111111111',
+        streamUid: 'stream-uid-123',
+        expectedContentVersion: 4,
+      );
+
+      expect(
+        params.keys,
+        containsAll([
+          'p_episode_id',
+          'p_stream_uid',
+          'p_expected_content_version',
+        ]),
+      );
+      expect(params['p_expected_content_version'], 4);
     });
   });
 

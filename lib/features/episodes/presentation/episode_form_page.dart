@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../content/data/content_errors.dart';
+import '../../content/presentation/content_conflict_helper.dart';
 import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import '../domain/create_episode_input.dart';
@@ -30,8 +32,8 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
 
   final EpisodeRepository _repository = EpisodeRepository();
 
+  AdminEpisode? _episode;
   bool _isFree = false;
-  bool _isPublished = false;
   DateTime? _releaseAtLocal;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -39,11 +41,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
   @override
   void initState() {
     super.initState();
+    _episode = widget.episode;
     _initializeFromEpisode();
   }
 
   void _initializeFromEpisode() {
-    final episode = widget.episode;
+    final episode = _episode;
     if (episode == null) {
       return;
     }
@@ -53,7 +56,6 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
     _synopsisController.text = episode.synopsis;
     _coinPriceController.text = episode.coinPrice.toString();
     _isFree = episode.isFree;
-    _isPublished = episode.isPublished;
     _releaseAtLocal = releaseAtUtcToLocal(episode.releaseAt);
   }
 
@@ -137,23 +139,11 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
         return;
       }
 
-      setState(() {
-        _isSubmitting = false;
-      });
+      setState(() => _isSubmitting = false);
       return;
     }
 
-    final episodeNumber = _parseEpisodeNumber();
     final coinPrice = _parseCoinPrice();
-
-    if (episodeNumber == null) {
-      setState(() {
-        _errorMessage = 'Geçerli bir bölüm numarası girin.';
-        _isSubmitting = false;
-      });
-      return;
-    }
-
     if (coinPrice == null) {
       setState(() {
         _errorMessage = 'Geçerli bir coin fiyatı girin.';
@@ -166,19 +156,28 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
       final AdminEpisode result;
 
       if (widget.isEditing) {
+        final episode = _episode!;
         result = await _repository.updateEpisode(
           UpdateEpisodeInput(
-            episodeId: widget.episode!.id,
-            episodeNumber: episodeNumber,
+            episodeId: episode.id,
             title: _titleController.text.trim(),
             synopsis: _synopsisController.text.trim(),
             isFree: _isFree,
             coinPrice: coinPrice,
-            isPublished: _isPublished,
+            expectedContentVersion: episode.contentVersion,
             releaseAtLocal: _releaseAtLocal,
           ),
         );
       } else {
+        final episodeNumber = _parseEpisodeNumber();
+        if (episodeNumber == null) {
+          setState(() {
+            _errorMessage = 'Geçerli bir bölüm numarası girin.';
+            _isSubmitting = false;
+          });
+          return;
+        }
+
         result = await _repository.createEpisode(
           CreateEpisodeInput(
             seriesId: widget.seriesId,
@@ -187,7 +186,6 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
             synopsis: _synopsisController.text.trim(),
             isFree: _isFree,
             coinPrice: coinPrice,
-            isPublished: _isPublished,
             releaseAtLocal: _releaseAtLocal,
           ),
         );
@@ -197,15 +195,11 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isEditing
-                ? 'Bölüm başarıyla güncellendi.'
-                : 'Bölüm başarıyla oluşturuldu.',
-          ),
-          backgroundColor: const Color(0xFF35C46A),
-        ),
+      showContentSuccessSnackBar(
+        context,
+        widget.isEditing
+            ? 'Bölüm başarıyla güncellendi.'
+            : 'Bölüm başarıyla oluşturuldu.',
       );
 
       Navigator.of(context).pop(result);
@@ -218,8 +212,24 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
         _errorMessage = error.message;
         _isSubmitting = false;
       });
-    } on EpisodeMutationException catch (error) {
+    } on ContentException catch (error) {
       if (!mounted) {
+        return;
+      }
+
+      if (error.isConflict && widget.isEditing) {
+        await handleContentConflict<AdminEpisode>(
+          context: context,
+          error: error,
+          reloadFresh: () => _repository.fetchById(_episode!.id),
+          onFreshLoaded: (fresh) {
+            setState(() {
+              _episode = fresh;
+              _initializeFromEpisode();
+              _isSubmitting = false;
+            });
+          },
+        );
         return;
       }
 
@@ -241,6 +251,8 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final episode = _episode;
+
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
       appBar: AppBar(
@@ -263,11 +275,14 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                   ],
                   TextFormField(
                     controller: _episodeNumberController,
-                    enabled: !_isSubmitting,
+                    enabled: !_isSubmitting && !widget.isEditing,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Bölüm Numarası *',
+                      helperText: widget.isEditing
+                          ? 'Bölüm numarası sıralama ekranından değiştirilir.'
+                          : null,
                     ),
                     validator: (value) {
                       final number = int.tryParse(value?.trim() ?? '');
@@ -314,36 +329,26 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     enabled: !_isSubmitting && !_isFree,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'Coin Fiyatı'),
+                    decoration: InputDecoration(
+                      labelText: 'Coin Fiyatı',
+                      helperText: 'En fazla $episodeMaxCoinPrice jeton',
+                    ),
                     validator: (value) {
                       final price = int.tryParse(value?.trim() ?? '');
                       if (price == null || price < 0) {
                         return 'Coin fiyatı negatif olamaz.';
                       }
 
+                      if (price > episodeMaxCoinPrice) {
+                        return 'Coin fiyatı en fazla $episodeMaxCoinPrice olabilir.';
+                      }
+
                       if (_isFree && price != 0) {
                         return 'Ücretsiz bölümlerde coin fiyatı 0 olmalıdır.';
                       }
 
-                      if (_isPublished && !_isFree && price <= 0) {
-                        return 'Yayında kilitli bölümlerde coin fiyatı 0\'dan büyük olmalıdır.';
-                      }
-
                       return null;
                     },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Yayında'),
-                    value: _isPublished,
-                    onChanged: _isSubmitting
-                        ? null
-                        : (value) {
-                            setState(() {
-                              _isPublished = value;
-                            });
-                          },
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -388,18 +393,28 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                       ],
                     ],
                   ),
-                  if (widget.isEditing) ...[
+                  if (widget.isEditing && episode != null) ...[
                     const SizedBox(height: 24),
                     _ReadOnlyInfo(
-                      label: 'Video',
-                      value: widget.episode!.hasVideo
-                          ? 'Video Hazır'
-                          : 'Video Yok',
+                      label: 'Yayın Durumu',
+                      value: episode.publishLabel,
                     ),
                     const SizedBox(height: 8),
                     _ReadOnlyInfo(
+                      label: 'Video',
+                      value: episode.videoStatusLabel,
+                    ),
+                    if (episode.hasPendingReplacement) ...[
+                      const SizedBox(height: 8),
+                      _ReadOnlyInfo(
+                        label: 'Bekleyen Video',
+                        value: episode.pendingVideoStatusLabel,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    _ReadOnlyInfo(
                       label: 'Toplam İzlenme',
-                      value: widget.episode!.totalViews.toString(),
+                      value: episode.totalViews.toString(),
                     ),
                   ],
                   const SizedBox(height: 32),

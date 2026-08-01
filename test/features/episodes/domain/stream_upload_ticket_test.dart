@@ -147,11 +147,20 @@ void main() {
       final params = buildAttachStreamVideoRpcParams(
         episodeId: episodeId,
         streamUid: 'stream-uid-123',
+        expectedContentVersion: 2,
       );
 
-      expect(params.keys, containsAll(['p_episode_id', 'p_stream_uid']));
+      expect(
+        params.keys,
+        containsAll([
+          'p_episode_id',
+          'p_stream_uid',
+          'p_expected_content_version',
+        ]),
+      );
       expect(params['p_episode_id'], episodeId);
       expect(params['p_stream_uid'], 'stream-uid-123');
+      expect(params['p_expected_content_version'], 2);
     });
   });
 }

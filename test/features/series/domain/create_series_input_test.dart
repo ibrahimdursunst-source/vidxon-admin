@@ -14,7 +14,6 @@ void main() {
           slug: 'test-dizi',
           posterPath: objectPath,
           status: 'ongoing',
-          isPublished: false,
           isFeatured: false,
           isPremium: false,
           categoryIds: ['11111111-1111-1111-1111-111111111111'],
@@ -25,6 +24,7 @@ void main() {
       expect(params['p_poster_path'], isNot(publicUrl));
       expect(params['p_backdrop_path'], isNull);
       expect(params['p_status'], 'ongoing');
+      expect(params['p_is_published'], isFalse);
       expect(params['p_category_ids'], [
         '11111111-1111-1111-1111-111111111111',
       ]);
@@ -38,7 +38,6 @@ void main() {
           posterPath: 'posters/a.jpg',
           synopsis: '   ',
           status: 'ongoing',
-          isPublished: true,
           isFeatured: false,
           isPremium: false,
           releaseDate: '',
@@ -48,7 +47,7 @@ void main() {
 
       expect(params['p_synopsis'], isNull);
       expect(params['p_release_date'], isNull);
-      expect(params['p_is_published'], isTrue);
+      expect(params['p_is_published'], isFalse);
     });
   });
 }

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../../episodes/presentation/series_episodes_page.dart';
 import '../../../core/config/media_config.dart';
+import '../../content/presentation/content_mutation_guard.dart';
+import '../../episodes/presentation/series_episodes_page.dart';
 import '../data/series_repository.dart';
 import '../domain/admin_series.dart';
+import 'series_detail_page.dart';
 
-enum _PublishFilter { all, published, draft }
+enum _PublishFilter { all, published, draft, archived }
+
+enum _StatusFilter { all, ongoing, completed, comingSoon }
 
 class SeriesListPage extends StatefulWidget {
-  const SeriesListPage({this.onCreateTap, super.key});
+  const SeriesListPage({this.onCreateTap, this.repository, super.key});
 
   final VoidCallback? onCreateTap;
+  final SeriesRepository? repository;
 
   @override
   SeriesListPageState createState() => SeriesListPageState();
@@ -19,12 +24,14 @@ class SeriesListPage extends StatefulWidget {
 class SeriesListPageState extends State<SeriesListPage> {
   static const _desktopBreakpoint = 900.0;
 
-  final SeriesRepository _repository = SeriesRepository();
+  late final SeriesRepository _repository =
+      widget.repository ?? SeriesRepository();
   final TextEditingController _searchController = TextEditingController();
 
   late Future<List<AdminSeries>> _seriesFuture;
 
   _PublishFilter _publishFilter = _PublishFilter.all;
+  _StatusFilter _statusFilter = _StatusFilter.all;
   String _searchQuery = '';
 
   @override
@@ -60,25 +67,49 @@ class SeriesListPageState extends State<SeriesListPage> {
     return series.where((item) {
       final matchesSearch =
           normalizedQuery.isEmpty ||
-          item.title.toLowerCase().contains(normalizedQuery);
+          item.title.toLowerCase().contains(normalizedQuery) ||
+          item.slug.toLowerCase().contains(normalizedQuery);
 
-      final matchesFilter = switch (_publishFilter) {
+      final matchesPublish = switch (_publishFilter) {
         _PublishFilter.all => true,
-        _PublishFilter.published => item.isPublished,
-        _PublishFilter.draft => !item.isPublished,
+        _PublishFilter.published => item.isPublished && !item.isArchived,
+        _PublishFilter.draft => !item.isPublished && !item.isArchived,
+        _PublishFilter.archived => item.isArchived,
       };
 
-      return matchesSearch && matchesFilter;
+      final matchesStatus = switch (_statusFilter) {
+        _StatusFilter.all => true,
+        _StatusFilter.ongoing => item.status == 'ongoing',
+        _StatusFilter.completed => item.status == 'completed',
+        _StatusFilter.comingSoon => item.status == 'coming_soon',
+      };
+
+      return matchesSearch && matchesPublish && matchesStatus;
     }).toList();
   }
 
   void _openEpisodes(BuildContext context, AdminSeries series) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) =>
-            SeriesEpisodesPage(seriesId: series.id, seriesTitle: series.title),
+        builder: (context) => SeriesEpisodesPage(
+          seriesId: series.id,
+          seriesTitle: series.title,
+          initialSeries: series,
+          isSeriesArchived: series.isArchived,
+        ),
       ),
     );
+  }
+
+  void _openDetail(BuildContext context, AdminSeries series) {
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            builder: (context) =>
+                SeriesDetailPage(seriesId: series.id, initialSeries: series),
+          ),
+        )
+        .then((_) => refresh());
   }
 
   @override
@@ -110,10 +141,12 @@ class SeriesListPageState extends State<SeriesListPage> {
               _FilterBar(
                 searchController: _searchController,
                 publishFilter: _publishFilter,
+                statusFilter: _statusFilter,
                 onPublishFilterChanged: (value) {
-                  setState(() {
-                    _publishFilter = value;
-                  });
+                  setState(() => _publishFilter = value);
+                },
+                onStatusFilterChanged: (value) {
+                  setState(() => _statusFilter = value);
                 },
               ),
               const SizedBox(height: 24),
@@ -138,12 +171,14 @@ class SeriesListPageState extends State<SeriesListPage> {
                         series: filteredSeries,
                         onEpisodesTap: (series) =>
                             _openEpisodes(context, series),
+                        onDetailTap: (series) => _openDetail(context, series),
                       );
                     }
 
                     return _SeriesCardList(
                       series: filteredSeries,
                       onEpisodesTap: (series) => _openEpisodes(context, series),
+                      onDetailTap: (series) => _openDetail(context, series),
                     );
                   },
                 ),
@@ -191,7 +226,9 @@ class _PageHeader extends StatelessWidget {
           children: [
             if (onCreateTap != null)
               FilledButton.icon(
-                onPressed: onCreateTap,
+                onPressed: contentMutationsEnabled(context)
+                    ? onCreateTap
+                    : null,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Yeni Dizi'),
                 style: FilledButton.styleFrom(
@@ -219,12 +256,16 @@ class _FilterBar extends StatelessWidget {
   const _FilterBar({
     required this.searchController,
     required this.publishFilter,
+    required this.statusFilter,
     required this.onPublishFilterChanged,
+    required this.onStatusFilterChanged,
   });
 
   final TextEditingController searchController;
   final _PublishFilter publishFilter;
+  final _StatusFilter statusFilter;
   final ValueChanged<_PublishFilter> onPublishFilterChanged;
+  final ValueChanged<_StatusFilter> onStatusFilterChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -238,15 +279,13 @@ class _FilterBar extends StatelessWidget {
           child: TextField(
             controller: searchController,
             decoration: InputDecoration(
-              hintText: 'Dizi adına göre ara...',
+              hintText: 'Dizi adı veya slug ara...',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: searchController.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Temizle',
-                      onPressed: () {
-                        searchController.clear();
-                      },
+                      onPressed: searchController.clear,
                       icon: const Icon(Icons.close),
                     ),
             ),
@@ -260,25 +299,39 @@ class _FilterBar extends StatelessWidget {
               label: Text('Yayında'),
             ),
             ButtonSegment(value: _PublishFilter.draft, label: Text('Taslak')),
+            ButtonSegment(value: _PublishFilter.archived, label: Text('Arşiv')),
           ],
           selected: {publishFilter},
           onSelectionChanged: (selection) {
             onPublishFilterChanged(selection.first);
           },
-          style: ButtonStyle(
-            foregroundColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return Colors.white;
-              }
-              return const Color(0xFFB3B3B3);
-            }),
-            backgroundColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return const Color(0xFFE50914).withValues(alpha: 0.25);
-              }
-              return const Color(0xFF181818);
-            }),
-          ),
+        ),
+        DropdownButton<_StatusFilter>(
+          value: statusFilter,
+          dropdownColor: const Color(0xFF181818),
+          items: const [
+            DropdownMenuItem(
+              value: _StatusFilter.all,
+              child: Text('Tüm Durumlar'),
+            ),
+            DropdownMenuItem(
+              value: _StatusFilter.ongoing,
+              child: Text('Devam Ediyor'),
+            ),
+            DropdownMenuItem(
+              value: _StatusFilter.completed,
+              child: Text('Tamamlandı'),
+            ),
+            DropdownMenuItem(
+              value: _StatusFilter.comingSoon,
+              child: Text('Yakında'),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onStatusFilterChanged(value);
+            }
+          },
         ),
       ],
     );
@@ -286,10 +339,15 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _SeriesDataTable extends StatelessWidget {
-  const _SeriesDataTable({required this.series, required this.onEpisodesTap});
+  const _SeriesDataTable({
+    required this.series,
+    required this.onEpisodesTap,
+    required this.onDetailTap,
+  });
 
   final List<AdminSeries> series;
   final ValueChanged<AdminSeries> onEpisodesTap;
+  final ValueChanged<AdminSeries> onDetailTap;
 
   @override
   Widget build(BuildContext context) {
@@ -310,9 +368,10 @@ class _SeriesDataTable extends StatelessWidget {
             columns: const [
               DataColumn(label: Text('Poster')),
               DataColumn(label: Text('Dizi Adı')),
+              DataColumn(label: Text('Durum')),
               DataColumn(label: Text('Kategori')),
               DataColumn(label: Text('Bölüm')),
-              DataColumn(label: Text('Yayın Durumu')),
+              DataColumn(label: Text('Yayın')),
               DataColumn(label: Text('Son Güncelleme')),
               DataColumn(label: Text('İşlemler')),
             ],
@@ -347,28 +406,41 @@ class _SeriesDataTable extends StatelessWidget {
             ],
           ),
         ),
+        DataCell(Text(item.statusLabel)),
         DataCell(Text(_formatCategories(item.categories))),
         DataCell(Text(item.episodeCount.toString())),
-        DataCell(_PublishStatusBadge(isPublished: item.isPublished)),
+        DataCell(
+          Wrap(
+            spacing: 6,
+            children: [
+              _PublishStatusBadge(isPublished: item.isPublished),
+              if (item.isArchived) const _ArchiveBadge(),
+            ],
+          ),
+        ),
         DataCell(Text(_formatDateTime(item.updatedAt))),
         DataCell(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'Bölümler',
-                onPressed: () => onEpisodesTap(item),
-                icon: const Icon(Icons.playlist_play_outlined),
+          PopupMenuButton<_SeriesRowAction>(
+            tooltip: 'İşlemler',
+            onSelected: (action) {
+              switch (action) {
+                case _SeriesRowAction.detail:
+                  onDetailTap(item);
+                case _SeriesRowAction.episodes:
+                  onEpisodesTap(item);
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _SeriesRowAction.detail,
+                child: Text('Düzenle / Detay'),
               ),
-              IconButton(
-                tooltip: 'Yakında',
-                onPressed: null,
-                icon: Icon(
-                  Icons.edit_outlined,
-                  color: Colors.white.withValues(alpha: 0.35),
-                ),
+              PopupMenuItem(
+                value: _SeriesRowAction.episodes,
+                child: Text('Bölümler'),
               ),
             ],
+            child: const Icon(Icons.more_vert),
           ),
         ),
       ],
@@ -376,18 +448,29 @@ class _SeriesDataTable extends StatelessWidget {
   }
 }
 
+enum _SeriesRowAction { detail, episodes }
+
 class _SeriesCardList extends StatelessWidget {
-  const _SeriesCardList({required this.series, required this.onEpisodesTap});
+  const _SeriesCardList({
+    required this.series,
+    required this.onEpisodesTap,
+    required this.onDetailTap,
+  });
 
   final List<AdminSeries> series;
   final ValueChanged<AdminSeries> onEpisodesTap;
+  final ValueChanged<AdminSeries> onDetailTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (final item in series) ...[
-          _SeriesCard(item: item, onEpisodesTap: () => onEpisodesTap(item)),
+          _SeriesCard(
+            item: item,
+            onEpisodesTap: () => onEpisodesTap(item),
+            onDetailTap: () => onDetailTap(item),
+          ),
           const SizedBox(height: 12),
         ],
       ],
@@ -396,10 +479,15 @@ class _SeriesCardList extends StatelessWidget {
 }
 
 class _SeriesCard extends StatelessWidget {
-  const _SeriesCard({required this.item, required this.onEpisodesTap});
+  const _SeriesCard({
+    required this.item,
+    required this.onEpisodesTap,
+    required this.onDetailTap,
+  });
 
   final AdminSeries item;
   final VoidCallback onEpisodesTap;
+  final VoidCallback onDetailTap;
 
   @override
   Widget build(BuildContext context) {
@@ -429,18 +517,28 @@ class _SeriesCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _formatCategories(item.categories),
+                    '${item.statusLabel} · ${_formatCategories(item.categories)}',
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: onEpisodesTap,
-                    icon: const Icon(Icons.playlist_play_outlined, size: 18),
-                    label: const Text('Bölümler'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Color(0xFF333333)),
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: onEpisodesTap,
+                        icon: const Icon(
+                          Icons.playlist_play_outlined,
+                          size: 18,
+                        ),
+                        label: const Text('Bölümler'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: onDetailTap,
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Detay'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -449,6 +547,7 @@ class _SeriesCard extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _PublishStatusBadge(isPublished: item.isPublished),
+                      if (item.isArchived) const _ArchiveBadge(),
                       Text(
                         '${item.episodeCount} bölüm',
                         style: const TextStyle(color: Color(0xFFB3B3B3)),
@@ -463,14 +562,6 @@ class _SeriesCard extends StatelessWidget {
                     ],
                   ),
                 ],
-              ),
-            ),
-            IconButton(
-              tooltip: 'Yakında',
-              onPressed: null,
-              icon: Icon(
-                Icons.edit_outlined,
-                color: Colors.white.withValues(alpha: 0.35),
               ),
             ),
           ],
@@ -552,6 +643,32 @@ class _PublishStatusBadge extends StatelessWidget {
         isPublished ? 'Yayında' : 'Taslak',
         style: TextStyle(
           color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _ArchiveBadge extends StatelessWidget {
+  const _ArchiveBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5A000).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFFE5A000).withValues(alpha: 0.45),
+        ),
+      ),
+      child: const Text(
+        'Arşiv',
+        style: TextStyle(
+          color: Color(0xFFE5A000),
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
