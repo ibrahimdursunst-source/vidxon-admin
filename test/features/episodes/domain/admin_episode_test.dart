@@ -29,7 +29,7 @@ void main() {
       expect(episode.seriesId, '22222222-2222-2222-2222-222222222222');
       expect(episode.episodeNumber, 3);
       expect(episode.title, 'Pilot');
-      expect(episode.hasVideo, isTrue);
+      expect(episode.hasActiveVideo, isTrue);
       expect(episode.cloudflareStreamStatus, CloudflareStreamStatus.ready);
       expect(episode.cloudflareStreamLastCheckedAt?.isUtc, isTrue);
       expect(episode.coinPrice, 5);
@@ -56,7 +56,7 @@ void main() {
       });
 
       expect(episode.releaseAt, isNull);
-      expect(episode.hasVideo, isFalse);
+      expect(episode.hasActiveVideo, isFalse);
       expect(episode.cloudflareStreamStatus, CloudflareStreamStatus.none);
     });
 

@@ -6,7 +6,46 @@ abstract final class AdminAuditActionType {
   static const roleSet = 'admin.role_set';
   static const accessRevoke = 'admin.access_revoke';
 
+  static const seriesUpdated = 'content.series_updated';
+  static const seriesPosterReplaced = 'content.series_poster_replaced';
+  static const seriesPublished = 'content.series_published';
+  static const seriesUnpublished = 'content.series_unpublished';
+  static const seriesArchived = 'content.series_archived';
+  static const seriesRestored = 'content.series_restored';
+  static const episodesReordered = 'content.episodes_reordered';
+  static const episodeUpdated = 'content.episode_updated';
+  static const episodePublished = 'content.episode_published';
+  static const episodeUnpublished = 'content.episode_unpublished';
+  static const episodeArchived = 'content.episode_archived';
+  static const episodeRestored = 'content.episode_restored';
+  static const episodeStreamAttached = 'content.episode_stream_attached';
+  static const episodeStreamReplacementRequested =
+      'content.episode_stream_replacement_requested';
+  static const episodeStreamPromoted = 'content.episode_stream_promoted';
+  static const seriesCreated = 'content.series_created';
+  static const episodeCreated = 'content.episode_created';
+
   static const walletActions = {walletCredit, walletDebit};
+
+  static const contentActions = {
+    seriesCreated,
+    seriesUpdated,
+    seriesPosterReplaced,
+    seriesPublished,
+    seriesUnpublished,
+    seriesArchived,
+    seriesRestored,
+    episodesReordered,
+    episodeUpdated,
+    episodePublished,
+    episodeUnpublished,
+    episodeArchived,
+    episodeRestored,
+    episodeStreamAttached,
+    episodeStreamReplacementRequested,
+    episodeStreamPromoted,
+    episodeCreated,
+  };
 
   static String labelFor(String? actionType) {
     if (actionType == null || actionType.trim().isEmpty) {
@@ -18,8 +57,50 @@ abstract final class AdminAuditActionType {
       walletDebit => 'Jeton Eksiltme',
       roleSet => 'Admin Rolü Değişikliği',
       accessRevoke => 'Admin Erişimi Kaldırma',
+      seriesCreated => 'Dizi Oluşturuldu',
+      seriesUpdated => 'Dizi Güncellendi',
+      seriesPosterReplaced => 'Poster Değiştirildi',
+      seriesPublished => 'Dizi Yayınlandı',
+      seriesUnpublished => 'Dizi Yayından Kaldırıldı',
+      seriesArchived => 'Dizi Arşivlendi',
+      seriesRestored => 'Dizi Geri Yüklendi',
+      episodesReordered => 'Bölüm Sıralaması Değiştirildi',
+      episodeCreated => 'Bölüm Oluşturuldu',
+      episodeUpdated => 'Bölüm Güncellendi',
+      episodePublished => 'Bölüm Yayınlandı',
+      episodeUnpublished => 'Bölüm Yayından Kaldırıldı',
+      episodeArchived => 'Bölüm Arşivlendi',
+      episodeRestored => 'Bölüm Geri Yüklendi',
+      episodeStreamAttached => 'Video Bağlandı',
+      episodeStreamReplacementRequested => 'Video Değişimi İstendi',
+      episodeStreamPromoted => 'Video Aktif Edildi',
       _ => actionType.trim(),
     };
+  }
+
+  static String summaryFor(AdminAuditEntry entry) {
+    final metadata = entry.metadata;
+    if (metadata == null || metadata.isEmpty) {
+      return labelFor(entry.actionType);
+    }
+
+    final title = metadataTitle(metadata);
+    if (title != null) {
+      return '${labelFor(entry.actionType)} · $title';
+    }
+
+    return labelFor(entry.actionType);
+  }
+
+  static String? metadataTitle(Map<String, dynamic> metadata) {
+    for (final key in ['new_title', 'title', 'slug']) {
+      final value = metadata[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return null;
   }
 }
 
@@ -60,6 +141,11 @@ class AdminAuditEntry {
 
   String get actionTypeLabel => AdminAuditActionType.labelFor(actionType);
 
+  String get summaryLabel => AdminAuditActionType.summaryFor(this);
+
+  bool get isContentAction =>
+      AdminAuditActionType.contentActions.contains(actionType);
+
   String get actorLabel {
     final email = actorEmail?.trim();
     if (email != null && email.isNotEmpty) {
@@ -81,6 +167,10 @@ class AdminAuditEntry {
 
     if (targetUserId != null && targetUserId!.isNotEmpty) {
       return shortenUserId(targetUserId!);
+    }
+
+    if (isContentAction) {
+      return _contentTargetFromMetadata(metadata) ?? '—';
     }
 
     return '—';
@@ -129,6 +219,14 @@ class AdminAuditEntry {
       ),
     );
   }
+}
+
+String? _contentTargetFromMetadata(Map<String, dynamic>? metadata) {
+  if (metadata == null || metadata.isEmpty) {
+    return null;
+  }
+
+  return AdminAuditActionType.metadataTitle(metadata);
 }
 
 Map<String, dynamic>? _parseMetadata(dynamic value) {

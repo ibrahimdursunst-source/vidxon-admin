@@ -3,13 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/admin_category.dart';
 
 class CategoryRepository {
-  CategoryRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  CategoryRepository({this._client});
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
+
+  SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
 
   Future<List<AdminCategory>> fetchAll() async {
-    final response = await _client
+    final response = await _resolvedClient
         .from('categories')
         .select('id, name')
         .order('name', ascending: true);

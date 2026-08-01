@@ -4,7 +4,6 @@ class CreateSeriesInput {
     required this.slug,
     required this.posterPath,
     required this.status,
-    required this.isPublished,
     required this.isFeatured,
     required this.isPremium,
     required this.categoryIds,
@@ -17,7 +16,6 @@ class CreateSeriesInput {
   final String posterPath;
   final String? synopsis;
   final String status;
-  final bool isPublished;
   final bool isFeatured;
   final bool isPremium;
   final String? releaseDate;
@@ -35,7 +33,7 @@ Map<String, dynamic> buildCreateSeriesRpcParams(CreateSeriesInput input) {
     'p_synopsis': synopsis == null || synopsis.isEmpty ? null : synopsis,
     'p_backdrop_path': null,
     'p_status': input.status,
-    'p_is_published': input.isPublished,
+    'p_is_published': false,
     'p_is_featured': input.isFeatured,
     'p_is_premium': input.isPremium,
     'p_release_date': releaseDate == null || releaseDate.isEmpty

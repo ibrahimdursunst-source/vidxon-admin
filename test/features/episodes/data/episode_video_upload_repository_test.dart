@@ -193,7 +193,7 @@ void main() {
         'total_views': 0,
       });
 
-      expect(episode.allowsVideoUpload, isFalse);
+      expect(episode.allowsInitialVideoUpload, isFalse);
     });
 
     test('allows upload only for none status without uid', () {
@@ -211,7 +211,7 @@ void main() {
         'total_views': 0,
       });
 
-      expect(episode.allowsVideoUpload, isTrue);
+      expect(episode.allowsInitialVideoUpload, isTrue);
     });
 
     test('blocks upload for ready and error statuses even without uid', () {
@@ -230,7 +230,7 @@ void main() {
           'total_views': 0,
         });
 
-        expect(episode.allowsVideoUpload, isFalse);
+        expect(episode.allowsInitialVideoUpload, isFalse);
       }
     });
   });

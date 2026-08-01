@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/admin_episode.dart';
 import '../domain/episode_video_file.dart';
 import '../domain/stream_upload_ticket.dart';
+import '../domain/update_episode_input.dart';
+import 'episode_repository.dart';
 import 'episode_video_upload_errors.dart';
 import 'upload_progress.dart';
 
@@ -146,17 +148,19 @@ class EpisodeVideoUploadRepository {
   Future<AdminEpisode> attachVideo({
     required String episodeId,
     required String streamUid,
+    required int expectedContentVersion,
   }) async {
     try {
-      final result = await _supabaseClient.rpc(
+      await _supabaseClient.rpc(
         'admin_attach_episode_stream_video',
         params: buildAttachStreamVideoRpcParams(
           episodeId: episodeId,
           streamUid: streamUid,
+          expectedContentVersion: expectedContentVersion,
         ),
       );
 
-      return parseAttachEpisodeResult(result);
+      return _fetchEpisode(episodeId);
     } on PostgrestException catch (error) {
       final mapped = EpisodeVideoUploadErrorMapper.fromPostgrest(error);
       throw EpisodeVideoUploadException(
@@ -178,17 +182,81 @@ class EpisodeVideoUploadRepository {
     }
   }
 
+  Future<AdminEpisode> requestStreamReplacement({
+    required String episodeId,
+    required String streamUid,
+    required int expectedContentVersion,
+  }) async {
+    try {
+      await _supabaseClient.rpc(
+        'admin_request_episode_stream_replacement',
+        params: buildRequestStreamReplacementRpcParams(
+          episodeId: episodeId,
+          streamUid: streamUid,
+          expectedContentVersion: expectedContentVersion,
+        ),
+      );
+
+      return _fetchEpisode(episodeId);
+    } on PostgrestException catch (error) {
+      final mapped = EpisodeVideoUploadErrorMapper.fromPostgrest(error);
+      throw EpisodeVideoUploadException(
+        message: mapped.message,
+        kind: mapped.kind,
+        canRetryAttach: mapped.canRetryAttach,
+        pendingStreamUid: streamUid,
+      );
+    } on EpisodeVideoUploadException {
+      rethrow;
+    } catch (_) {
+      throw EpisodeVideoUploadException(
+        message:
+            'Video değişim isteği kaydedilemedi. Bağlama işlemini tekrar deneyin.',
+        kind: EpisodeVideoUploadFailureKind.attachFailed,
+        canRetryAttach: true,
+        pendingStreamUid: streamUid,
+      );
+    }
+  }
+
+  Future<AdminEpisode> _fetchEpisode(String episodeId) async {
+    final repository = EpisodeRepository(client: _supabaseClient);
+    return repository.fetchById(episodeId);
+  }
+
   Future<AdminEpisode> uploadEpisodeVideo({
     required String episodeId,
     required EpisodeVideoFile file,
+    required int expectedContentVersion,
     void Function(double progress)? onUploadProgress,
   }) {
     return runEpisodeVideoUploadSteps(
       createTicket: () => createUploadTicket(episodeId: episodeId, file: file),
       uploadVideoStep: (ticket) =>
           uploadVideo(ticket: ticket, file: file, onProgress: onUploadProgress),
-      attachVideoStep: (streamUid) =>
-          attachVideo(episodeId: episodeId, streamUid: streamUid),
+      attachVideoStep: (streamUid) => attachVideo(
+        episodeId: episodeId,
+        streamUid: streamUid,
+        expectedContentVersion: expectedContentVersion,
+      ),
+    );
+  }
+
+  Future<AdminEpisode> replaceEpisodeVideo({
+    required String episodeId,
+    required EpisodeVideoFile file,
+    required int expectedContentVersion,
+    void Function(double progress)? onUploadProgress,
+  }) {
+    return runEpisodeVideoUploadSteps(
+      createTicket: () => createUploadTicket(episodeId: episodeId, file: file),
+      uploadVideoStep: (ticket) =>
+          uploadVideo(ticket: ticket, file: file, onProgress: onUploadProgress),
+      attachVideoStep: (streamUid) => requestStreamReplacement(
+        episodeId: episodeId,
+        streamUid: streamUid,
+        expectedContentVersion: expectedContentVersion,
+      ),
     );
   }
 }

@@ -62,6 +62,34 @@ class AdminAuditPageState extends State<AdminAuditPage> {
         label: 'Jeton Eksiltme',
         value: AdminAuditActionType.walletDebit,
       ),
+      const _AuditFilterOption(
+        label: 'Dizi Güncellendi',
+        value: AdminAuditActionType.seriesUpdated,
+      ),
+      const _AuditFilterOption(
+        label: 'Poster Değiştirildi',
+        value: AdminAuditActionType.seriesPosterReplaced,
+      ),
+      const _AuditFilterOption(
+        label: 'Dizi Yayınlandı',
+        value: AdminAuditActionType.seriesPublished,
+      ),
+      const _AuditFilterOption(
+        label: 'Dizi Arşivlendi',
+        value: AdminAuditActionType.seriesArchived,
+      ),
+      const _AuditFilterOption(
+        label: 'Bölüm Güncellendi',
+        value: AdminAuditActionType.episodeUpdated,
+      ),
+      const _AuditFilterOption(
+        label: 'Bölüm Sıralaması',
+        value: AdminAuditActionType.episodesReordered,
+      ),
+      const _AuditFilterOption(
+        label: 'Video Değişimi',
+        value: AdminAuditActionType.episodeStreamReplacementRequested,
+      ),
       if (isSuperAdmin) ...[
         const _AuditFilterOption(
           label: 'Admin Rolü Değişikliği',
@@ -343,7 +371,7 @@ class _AuditDataTable extends StatelessWidget {
               for (final entry in entries)
                 DataRow(
                   cells: [
-                    DataCell(Text(entry.actionTypeLabel)),
+                    DataCell(Text(entry.summaryLabel)),
                     DataCell(Text(entry.actorLabel)),
                     DataCell(Text(entry.targetLabel)),
                     DataCell(Text(_amountLabel(entry))),

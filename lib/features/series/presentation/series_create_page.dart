@@ -2,11 +2,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/slug_helper.dart';
+import '../../content/presentation/content_mutation_guard.dart';
 import '../../categories/data/category_repository.dart';
 import '../../categories/domain/admin_category.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
 import '../data/series_mutation_repository.dart';
+import '../domain/admin_series.dart';
 import '../domain/create_series_input.dart';
 
 enum SeriesStatusValue {
@@ -35,11 +37,19 @@ class SeriesCreatePage extends StatefulWidget {
   const SeriesCreatePage({
     required this.onCancel,
     required this.onSuccess,
+    this.seriesMutationRepository,
+    this.imageUploadRepository,
+    this.categoryRepository,
+    this.initialPosterForTesting,
     super.key,
   });
 
   final VoidCallback onCancel;
-  final VoidCallback onSuccess;
+  final void Function(AdminSeries created) onSuccess;
+  final SeriesMutationRepository? seriesMutationRepository;
+  final ImageUploadRepository? imageUploadRepository;
+  final CategoryRepository? categoryRepository;
+  final PosterFile? initialPosterForTesting;
 
   @override
   State<SeriesCreatePage> createState() => _SeriesCreatePageState();
@@ -53,10 +63,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   final _slugController = TextEditingController();
   final _synopsisController = TextEditingController();
 
-  final CategoryRepository _categoryRepository = CategoryRepository();
-  final ImageUploadRepository _imageUploadRepository = ImageUploadRepository();
-  final SeriesMutationRepository _seriesMutationRepository =
-      SeriesMutationRepository();
+  late final CategoryRepository _categoryRepository =
+      widget.categoryRepository ?? CategoryRepository();
+  late final ImageUploadRepository _imageUploadRepository =
+      widget.imageUploadRepository ?? ImageUploadRepository();
+  late final SeriesMutationRepository _seriesMutationRepository =
+      widget.seriesMutationRepository ?? SeriesMutationRepository();
 
   late Future<List<AdminCategory>> _categoriesFuture;
 
@@ -65,7 +77,6 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   _SubmitStage? _submitStage;
 
   SeriesStatusValue _status = SeriesStatusValue.ongoing;
-  bool _isPublished = false;
   bool _isFeatured = false;
   bool _isPremium = false;
   DateTime? _releaseDate;
@@ -81,6 +92,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   @override
   void initState() {
     super.initState();
+    _posterFile = widget.initialPosterForTesting;
     _categoriesFuture = _categoryRepository.fetchAll();
     _titleController.addListener(_onTitleChanged);
     _slugController.addListener(_onSlugChanged);
@@ -177,7 +189,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   }
 
   Future<void> _submit() async {
-    if (_isSubmitting) {
+    if (_isSubmitting || !contentMutationsEnabled(context)) {
       return;
     }
 
@@ -267,14 +279,13 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           ? null
           : _formatReleaseDate(_releaseDate!);
 
-      await _seriesMutationRepository.createSeries(
+      final created = await _seriesMutationRepository.createSeries(
         CreateSeriesInput(
           title: _titleController.text.trim(),
           slug: _slugController.text.trim(),
           posterPath: posterPath,
           synopsis: _synopsisController.text.trim(),
           status: _status.value,
-          isPublished: _isPublished,
           isFeatured: _isFeatured,
           isPremium: _isPremium,
           releaseDate: releaseDate,
@@ -293,7 +304,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
         ),
       );
 
-      widget.onSuccess();
+      widget.onSuccess(created);
     } on ImageUploadException catch (error) {
       if (!mounted) {
         return;
@@ -649,18 +660,6 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             ),
           ),
           const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Yayında'),
-            value: _isPublished,
-            onChanged: _isSubmitting
-                ? null
-                : (value) {
-                    setState(() {
-                      _isPublished = value;
-                    });
-                  },
-          ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Öne Çıkan'),

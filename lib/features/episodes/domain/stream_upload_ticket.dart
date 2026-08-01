@@ -172,6 +172,11 @@ Map<String, dynamic> buildCreateUploadTicketPayload({
 Map<String, dynamic> buildAttachStreamVideoRpcParams({
   required String episodeId,
   required String streamUid,
+  required int expectedContentVersion,
 }) {
-  return {'p_episode_id': episodeId.trim(), 'p_stream_uid': streamUid.trim()};
+  return {
+    'p_episode_id': episodeId.trim(),
+    'p_stream_uid': streamUid.trim(),
+    'p_expected_content_version': expectedContentVersion,
+  };
 }
