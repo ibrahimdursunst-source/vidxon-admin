@@ -162,6 +162,14 @@ abstract final class UserParseHelpers {
 
     return parsed;
   }
+
+  static bool requireBool(dynamic value, {required String fieldName}) {
+    if (value is! bool) {
+      throw FormatException('$fieldName is invalid.');
+    }
+
+    return value;
+  }
 }
 
 String formatUserDisplayName({String? displayName, String? email}) {

@@ -75,6 +75,8 @@ AdminUserSummary _sampleUser({String email = 'user@example.com'}) {
     'account_status': 'active',
     'coin_balance': 0,
     'account_created_at': '2026-07-27T17:14:20.106837+00:00',
+    'admin_role': null,
+    'wallet_actions_allowed': true,
   });
 }
 
@@ -87,6 +89,8 @@ AdminUserSummary _anonymousUser() {
     'coin_balance': 0,
     'account_created_at': '2026-07-27T17:35:44.396159+00:00',
     'last_sign_in_at': '2026-07-27T17:35:44.430462+00:00',
+    'admin_role': null,
+    'wallet_actions_allowed': true,
   });
 }
 
@@ -102,6 +106,8 @@ AdminUserDetails _anonymousDetails() {
     'account_created_at': '2026-07-27T17:35:44.396159+00:00',
     'last_sign_in_at': null,
     'wallet_updated_at': null,
+    'admin_role': null,
+    'wallet_actions_allowed': true,
   });
 }
 

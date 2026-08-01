@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:vidxon_admin/features/dashboard/presentation/admin_home_page.dart';
+import 'package:vidxon_admin/features/admin_context/presentation/admin_context_scope.dart';
+import 'package:vidxon_admin/features/admin_context/presentation/admin_root_navigator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -414,7 +415,10 @@ class _AdminAuthorizationGateState extends State<AdminAuthorizationGate> {
           return const AccessDeniedPage();
         }
 
-        return AdminHomePage(email: widget.email);
+        return AdminContextLoader(
+          key: ValueKey(widget.userId),
+          child: AdminRootNavigator(email: widget.email),
+        );
       },
     );
   }

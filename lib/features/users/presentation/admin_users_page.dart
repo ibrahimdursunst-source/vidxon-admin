@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_user_summary.dart';
 import '../domain/user_parse_helpers.dart';
+import 'admin_role_badge.dart';
 import 'admin_user_details_page.dart';
 import 'user_search_request_guard.dart';
 import 'user_list_search_logic.dart';
@@ -212,8 +213,11 @@ class AdminUsersPageState extends State<AdminUsersPage> {
   Future<void> _openUserDetails(AdminUserSummary user) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (context) =>
-            AdminUserDetailsPage(userId: user.userId, initialSummary: user),
+        builder: (context) => AdminUserDetailsPage(
+          userId: user.userId,
+          initialSummary: user,
+          repository: _repository,
+        ),
       ),
     );
 
@@ -459,7 +463,18 @@ class _UsersDataTable extends StatelessWidget {
               for (final user in users)
                 DataRow(
                   cells: [
-                    DataCell(Text(user.resolvedDisplayName)),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(user.resolvedDisplayName),
+                          if (user.adminRoleLabel != null) ...[
+                            const SizedBox(width: 8),
+                            AdminRoleBadge(label: user.adminRoleLabel!),
+                          ],
+                        ],
+                      ),
+                    ),
                     DataCell(Text(user.resolvedEmailLabel)),
                     DataCell(
                       Row(
@@ -520,12 +535,20 @@ class _UsersCardList extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    user.resolvedDisplayName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          user.resolvedDisplayName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (user.adminRoleLabel != null)
+                        AdminRoleBadge(label: user.adminRoleLabel!),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(

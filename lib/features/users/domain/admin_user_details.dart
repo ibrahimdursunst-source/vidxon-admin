@@ -1,3 +1,4 @@
+import '../../admin_context/domain/admin_role.dart';
 import 'user_parse_helpers.dart';
 
 class AdminUserDetails {
@@ -8,10 +9,12 @@ class AdminUserDetails {
     required this.ledgerEntryCount,
     required this.totalAdminCoinCredited,
     required this.accountCreatedAt,
+    required this.walletActionsAllowed,
     this.email,
     this.displayName,
     this.lastSignInAt,
     this.walletUpdatedAt,
+    this.adminRole,
   });
 
   final String userId;
@@ -24,6 +27,8 @@ class AdminUserDetails {
   final DateTime accountCreatedAt;
   final DateTime? lastSignInAt;
   final DateTime? walletUpdatedAt;
+  final AdminRole? adminRole;
+  final bool walletActionsAllowed;
 
   String get resolvedDisplayName =>
       formatUserDisplayName(displayName: displayName, email: email);
@@ -31,6 +36,9 @@ class AdminUserDetails {
   String get resolvedEmailLabel => formatUserEmailLabel(email);
 
   String get accountStatusLabel => formatAccountStatusLabel(accountStatus);
+
+  String? get adminRoleLabel =>
+      adminRole == null ? null : formatAdminRoleLabel(adminRole);
 
   factory AdminUserDetails.fromMap(Map<String, dynamic> map) {
     return AdminUserDetails(
@@ -62,6 +70,11 @@ class AdminUserDetails {
       lastSignInAt: UserParseHelpers.parseUtcDateTime(map['last_sign_in_at']),
       walletUpdatedAt: UserParseHelpers.parseUtcDateTime(
         map['wallet_updated_at'],
+      ),
+      adminRole: AdminRole.parseNullable(map['admin_role']),
+      walletActionsAllowed: UserParseHelpers.requireBool(
+        map['wallet_actions_allowed'],
+        fieldName: 'wallet_actions_allowed',
       ),
     );
   }

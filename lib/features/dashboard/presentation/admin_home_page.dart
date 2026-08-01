@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../admin_context/presentation/admin_context_scope.dart';
+import '../../admins/presentation/admin_management_page.dart';
+import '../../audit/presentation/admin_audit_page.dart';
 import '../../series/presentation/series_create_page.dart';
 import '../../series/presentation/series_list_page.dart';
+import '../../users/presentation/admin_role_badge.dart';
 import '../../users/presentation/admin_users_page.dart';
 import '../data/dashboard_repository.dart';
 import '../domain/dashboard_counts.dart';
@@ -25,6 +29,10 @@ class _AdminHomePageState extends State<AdminHomePage> {
       GlobalKey<SeriesListPageState>();
   final GlobalKey<AdminUsersPageState> _usersPageKey =
       GlobalKey<AdminUsersPageState>();
+  final GlobalKey<AdminAuditPageState> _auditPageKey =
+      GlobalKey<AdminAuditPageState>();
+  final GlobalKey<AdminManagementPageState> _managementPageKey =
+      GlobalKey<AdminManagementPageState>();
 
   late Future<DashboardCounts> _countsFuture;
 
@@ -37,14 +45,80 @@ class _AdminHomePageState extends State<AdminHomePage> {
     _countsFuture = _repository.fetchCounts();
   }
 
+  List<_NavItem> _navItems(BuildContext context) {
+    final contextResult = AdminContextScope.maybeOf(context);
+    final showSuperAdminNav =
+        contextResult != null &&
+        !contextResult.isLoading &&
+        contextResult.isSuperAdmin;
+
+    return [
+      const _NavItem(
+        label: 'Genel Bakış',
+        icon: Icons.dashboard_outlined,
+        enabled: true,
+      ),
+      const _NavItem(
+        label: 'Diziler',
+        icon: Icons.movie_outlined,
+        enabled: true,
+      ),
+      const _NavItem(
+        label: 'Kullanıcılar',
+        icon: Icons.people_outlined,
+        enabled: true,
+      ),
+      const _NavItem(
+        label: 'İşlem Kayıtları',
+        icon: Icons.receipt_long_outlined,
+        enabled: true,
+      ),
+      if (showSuperAdminNav)
+        const _NavItem(
+          label: 'Yöneticiler',
+          icon: Icons.admin_panel_settings_outlined,
+          enabled: true,
+        ),
+      const _NavItem(
+        label: 'Bölümler',
+        icon: Icons.playlist_play_outlined,
+        enabled: false,
+      ),
+      const _NavItem(
+        label: 'Kategoriler',
+        icon: Icons.category_outlined,
+        enabled: false,
+      ),
+      const _NavItem(
+        label: 'Medya',
+        icon: Icons.perm_media_outlined,
+        enabled: false,
+      ),
+    ];
+  }
+
+  String _navLabel(BuildContext context, int index) {
+    final items = _navItems(context);
+    if (index < 0 || index >= items.length) {
+      return '';
+    }
+
+    return items[index].label;
+  }
+
   void _refreshActivePage() {
-    switch (_selectedNavIndex) {
-      case 0:
+    final label = _navLabel(context, _selectedNavIndex);
+    switch (label) {
+      case 'Genel Bakış':
         _refreshCounts();
-      case 1:
+      case 'Diziler':
         _seriesListKey.currentState?.refresh();
-      case 2:
+      case 'Kullanıcılar':
         _usersPageKey.currentState?.refresh();
+      case 'İşlem Kayıtları':
+        _auditPageKey.currentState?.refresh();
+      case 'Yöneticiler':
+        _managementPageKey.currentState?.refresh();
       default:
         break;
     }
@@ -56,23 +130,33 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final navItems = _navItems(context);
+
+    if (_selectedNavIndex >= navItems.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _selectedNavIndex = 0);
+        }
+      });
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final useSidebar = constraints.maxWidth >= _sidebarBreakpoint;
 
         return Scaffold(
           backgroundColor: const Color(0xFF090909),
-          appBar: _buildAppBar(),
+          appBar: _buildAppBar(context),
           body: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (useSidebar) _buildSidebar(),
+              if (useSidebar) _buildSidebar(navItems),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (!useSidebar) _buildCompactNav(),
-                    Expanded(child: _buildContent()),
+                    if (!useSidebar) _buildCompactNav(navItems),
+                    Expanded(child: _buildContent(context, navItems)),
                   ],
                 ),
               ),
@@ -83,7 +167,10 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final contextResult = AdminContextScope.maybeOf(context);
+    final roleLabel = contextResult?.context?.role.labelTurkish;
+
     return AppBar(
       backgroundColor: const Color(0xFF111111),
       elevation: 0,
@@ -92,6 +179,18 @@ class _AdminHomePageState extends State<AdminHomePage> {
         style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
       ),
       actions: [
+        if (roleLabel != null) ...[
+          AdminRoleBadge(label: roleLabel),
+          const SizedBox(width: 8),
+        ] else if (contextResult?.isLoading == true)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Center(
@@ -116,7 +215,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  Widget _buildSidebar() {
+  Widget _buildSidebar(List<_NavItem> navItems) {
     return Container(
       width: 240,
       decoration: const BoxDecoration(
@@ -129,11 +228,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < _navItems.length; i++)
+              for (var i = 0; i < navItems.length; i++)
                 _NavItemTile(
-                  item: _navItems[i],
+                  item: navItems[i],
                   selected: _selectedNavIndex == i,
-                  onTap: () => _onNavTap(i),
+                  onTap: () => _onNavTap(i, navItems),
                 ),
             ],
           ),
@@ -142,7 +241,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  Widget _buildCompactNav() {
+  Widget _buildCompactNav(List<_NavItem> navItems) {
     return Container(
       decoration: const BoxDecoration(
         color: Color(0xFF111111),
@@ -153,13 +252,13 @@ class _AdminHomePageState extends State<AdminHomePage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            for (var i = 0; i < _navItems.length; i++)
+            for (var i = 0; i < navItems.length; i++)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: _CompactNavChip(
-                  item: _navItems[i],
+                  item: navItems[i],
                   selected: _selectedNavIndex == i,
-                  onTap: () => _onNavTap(i),
+                  onTap: () => _onNavTap(i, navItems),
                 ),
               ),
           ],
@@ -168,22 +267,28 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  void _onNavTap(int index) {
-    if (_navItems[index].enabled) {
+  void _onNavTap(int index, List<_NavItem> navItems) {
+    if (index < navItems.length && navItems[index].enabled) {
       setState(() {
         _selectedNavIndex = index;
-        if (index != 1) {
+        if (navItems[index].label != 'Diziler') {
           _showSeriesCreate = false;
         }
       });
     }
   }
 
-  Widget _buildContent() {
-    return switch (_selectedNavIndex) {
-      0 => _buildOverviewContent(),
-      1 => _buildSeriesContent(),
-      2 => AdminUsersPage(key: _usersPageKey),
+  Widget _buildContent(BuildContext context, List<_NavItem> navItems) {
+    if (_selectedNavIndex >= navItems.length) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return switch (navItems[_selectedNavIndex].label) {
+      'Genel Bakış' => _buildOverviewContent(),
+      'Diziler' => _buildSeriesContent(),
+      'Kullanıcılar' => AdminUsersPage(key: _usersPageKey),
+      'İşlem Kayıtları' => AdminAuditPage(key: _auditPageKey),
+      'Yöneticiler' => AdminManagementPage(key: _managementPageKey),
       _ => const Center(
         child: Text(
           'Bu bölüm yakında eklenecek.',
@@ -337,27 +442,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
       },
     );
   }
-
-  static const _navItems = [
-    _NavItem(
-      label: 'Genel Bakış',
-      icon: Icons.dashboard_outlined,
-      enabled: true,
-    ),
-    _NavItem(label: 'Diziler', icon: Icons.movie_outlined, enabled: true),
-    _NavItem(label: 'Kullanıcılar', icon: Icons.people_outlined, enabled: true),
-    _NavItem(
-      label: 'Bölümler',
-      icon: Icons.playlist_play_outlined,
-      enabled: false,
-    ),
-    _NavItem(
-      label: 'Kategoriler',
-      icon: Icons.category_outlined,
-      enabled: false,
-    ),
-    _NavItem(label: 'Medya', icon: Icons.perm_media_outlined, enabled: false),
-  ];
 }
 
 class _NavItem {
