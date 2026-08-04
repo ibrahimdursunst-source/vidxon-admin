@@ -9,7 +9,6 @@ void main() {
     test('ready active video includes publish', () {
       final labels = episodeMenuLabels(
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       );
@@ -20,7 +19,6 @@ void main() {
     test('processing video excludes publish', () {
       final labels = episodeMenuLabels(
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.processing,
         ),
       );
@@ -38,7 +36,6 @@ void main() {
       final labels = episodeMenuLabels(
         testEpisode(
           isArchived: true,
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       );
@@ -51,7 +48,6 @@ void main() {
     test('archived parent series hides publish', () {
       final labels = episodeMenuLabels(
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
         parentSeriesArchived: true,
@@ -63,7 +59,6 @@ void main() {
     test('error video excludes publish', () {
       final labels = episodeMenuLabels(
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.error,
         ),
       );

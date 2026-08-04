@@ -44,7 +44,6 @@ void main() {
     testWidgets('cancel publish does not call repository', (tester) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       ]);
@@ -62,7 +61,6 @@ void main() {
     testWidgets('confirm publish calls repository once', (tester) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
           contentVersion: 2,
         ),
@@ -82,7 +80,6 @@ void main() {
     testWidgets('processing video hides publish action', (tester) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.processing,
         ),
       ]);
@@ -105,7 +102,7 @@ void main() {
 
     testWidgets('archived episode shows only restore', (tester) async {
       final repository = FakeEpisodeRepository([
-        testEpisode(isArchived: true, streamUid: 'stream-1'),
+        testEpisode(isArchived: true, streamStatus: CloudflareStreamStatus.ready),
       ]);
 
       await pumpEpisodes(tester, repository);
@@ -118,7 +115,6 @@ void main() {
     testWidgets('archived parent hides publish action', (tester) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       ]);
@@ -136,7 +132,6 @@ void main() {
           FakeEpisodeRepository([
               testEpisode(
                 id: testEpisodeId1,
-                streamUid: 'stream-1',
                 streamStatus: CloudflareStreamStatus.ready,
                 contentVersion: 2,
                 title: 'Before',
@@ -163,7 +158,6 @@ void main() {
     testWidgets('publish busy blocks double submit', (tester) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       ])..publishDelay = Completer<void>();
@@ -185,7 +179,7 @@ void main() {
 
     testWidgets('restore does not auto publish episode', (tester) async {
       final repository = FakeEpisodeRepository([
-        testEpisode(isArchived: true, streamUid: 'stream-1'),
+        testEpisode(isArchived: true, streamStatus: CloudflareStreamStatus.ready),
       ]);
 
       await pumpEpisodes(tester, repository);

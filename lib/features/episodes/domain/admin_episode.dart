@@ -16,8 +16,6 @@ class AdminEpisode {
     required this.cloudflareStreamStatus,
     required this.cloudflareStreamPendingStatus,
     this.thumbnailPath,
-    this.cloudflareStreamUid,
-    this.cloudflareStreamPendingUid,
     this.cloudflareStreamPendingRequestedAt,
     this.durationSeconds,
     this.cloudflareStreamLastCheckedAt,
@@ -33,7 +31,6 @@ class AdminEpisode {
   final String title;
   final String synopsis;
   final String? thumbnailPath;
-  final String? cloudflareStreamUid;
   final int? durationSeconds;
   final bool isFree;
   final int coinPrice;
@@ -43,7 +40,6 @@ class AdminEpisode {
   final int totalViews;
   final CloudflareStreamStatus cloudflareStreamStatus;
   final CloudflareStreamStatus cloudflareStreamPendingStatus;
-  final String? cloudflareStreamPendingUid;
   final DateTime? cloudflareStreamPendingRequestedAt;
   final DateTime? cloudflareStreamLastCheckedAt;
   final DateTime? archivedAt;
@@ -52,11 +48,9 @@ class AdminEpisode {
   final DateTime? updatedAt;
 
   bool get hasActiveVideo =>
-      cloudflareStreamUid != null && cloudflareStreamUid!.trim().isNotEmpty;
+      cloudflareStreamStatus != CloudflareStreamStatus.none;
 
   bool get hasPendingReplacement =>
-      cloudflareStreamPendingUid != null &&
-      cloudflareStreamPendingUid!.trim().isNotEmpty &&
       cloudflareStreamPendingStatus != CloudflareStreamStatus.none;
 
   bool get allowsInitialVideoUpload =>
@@ -142,9 +136,7 @@ class AdminEpisode {
     bool? isPublished,
     bool? isArchived,
     int? contentVersion,
-    String? cloudflareStreamUid,
     CloudflareStreamStatus? cloudflareStreamStatus,
-    String? cloudflareStreamPendingUid,
     CloudflareStreamStatus? cloudflareStreamPendingStatus,
     DateTime? cloudflareStreamPendingRequestedAt,
     DateTime? releaseAt,
@@ -168,9 +160,6 @@ class AdminEpisode {
       cloudflareStreamPendingStatus:
           cloudflareStreamPendingStatus ?? this.cloudflareStreamPendingStatus,
       thumbnailPath: thumbnailPath,
-      cloudflareStreamUid: cloudflareStreamUid ?? this.cloudflareStreamUid,
-      cloudflareStreamPendingUid:
-          cloudflareStreamPendingUid ?? this.cloudflareStreamPendingUid,
       cloudflareStreamPendingRequestedAt:
           cloudflareStreamPendingRequestedAt ??
           this.cloudflareStreamPendingRequestedAt,
@@ -212,7 +201,6 @@ class AdminEpisode {
       title: title,
       synopsis: map['synopsis']?.toString() ?? '',
       thumbnailPath: _nullableString(map['thumbnail_path']),
-      cloudflareStreamUid: _nullableString(map['cloudflare_stream_uid']),
       durationSeconds: _parseNullableInt(map['duration_seconds']),
       isFree: map['is_free'] == true,
       coinPrice: _parseInt(map['coin_price']),
@@ -225,9 +213,6 @@ class AdminEpisode {
       ),
       cloudflareStreamPendingStatus: CloudflareStreamStatus.parse(
         map['cloudflare_stream_pending_status'],
-      ),
-      cloudflareStreamPendingUid: _nullableString(
-        map['cloudflare_stream_pending_uid'],
       ),
       cloudflareStreamPendingRequestedAt: _parseUtcDateTime(
         map['cloudflare_stream_pending_requested_at'],
