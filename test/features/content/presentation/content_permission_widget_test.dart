@@ -305,7 +305,6 @@ void main() {
     ) async {
       final repository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       ]);

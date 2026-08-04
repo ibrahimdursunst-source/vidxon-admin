@@ -97,7 +97,6 @@ void main() {
       final seriesRepository = FakeSeriesRepository((_) async => testSeries());
       final episodeRepository = FakeEpisodeRepository([
         testEpisode(
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
       ]);
@@ -188,7 +187,6 @@ void main() {
                       showEpisodePreviewDialog(
                         context: context,
                         episode: testEpisode(
-                          streamUid: 'stream-1',
                           streamStatus: CloudflareStreamStatus.ready,
                         ),
                         videoSource: 'active',

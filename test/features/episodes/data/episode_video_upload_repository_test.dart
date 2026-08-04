@@ -45,7 +45,6 @@ AdminEpisode _testEpisode(String episodeId) {
     'episode_number': 1,
     'title': 'Bölüm 1',
     'synopsis': '',
-    'cloudflare_stream_uid': 'streamuid123',
     'cloudflare_stream_status': 'processing',
     'is_free': true,
     'coin_price': 0,
@@ -178,14 +177,13 @@ void main() {
   });
 
   group('AdminEpisode upload eligibility', () {
-    test('blocks upload when video uid exists', () {
+    test('blocks upload when video status is processing', () {
       final episode = AdminEpisode.fromMap({
         'id': episodeId,
         'series_id': '22222222-2222-2222-2222-222222222222',
         'episode_number': 1,
         'title': 'Bölüm',
         'synopsis': '',
-        'cloudflare_stream_uid': 'uid-1',
         'cloudflare_stream_status': 'processing',
         'is_free': true,
         'coin_price': 0,
@@ -196,14 +194,13 @@ void main() {
       expect(episode.allowsInitialVideoUpload, isFalse);
     });
 
-    test('allows upload only for none status without uid', () {
+    test('allows upload only for none status', () {
       final episode = AdminEpisode.fromMap({
         'id': episodeId,
         'series_id': '22222222-2222-2222-2222-222222222222',
         'episode_number': 1,
         'title': 'Bölüm',
         'synopsis': '',
-        'cloudflare_stream_uid': null,
         'cloudflare_stream_status': 'none',
         'is_free': true,
         'coin_price': 0,
@@ -214,7 +211,7 @@ void main() {
       expect(episode.allowsInitialVideoUpload, isTrue);
     });
 
-    test('blocks upload for ready and error statuses even without uid', () {
+    test('blocks upload for ready and error statuses', () {
       for (final status in ['ready', 'error', 'processing']) {
         final episode = AdminEpisode.fromMap({
           'id': episodeId,
@@ -222,7 +219,6 @@ void main() {
           'episode_number': 1,
           'title': 'Bölüm',
           'synopsis': '',
-          'cloudflare_stream_uid': null,
           'cloudflare_stream_status': status,
           'is_free': true,
           'coin_price': 0,

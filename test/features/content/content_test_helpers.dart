@@ -92,10 +92,8 @@ AdminEpisode testEpisode({
   bool isPublished = false,
   bool isArchived = false,
   int contentVersion = 0,
-  String? streamUid,
   CloudflareStreamStatus streamStatus = CloudflareStreamStatus.none,
   CloudflareStreamStatus pendingStatus = CloudflareStreamStatus.none,
-  String? pendingUid,
 }) {
   return AdminEpisode.fromMap({
     'id': id,
@@ -103,9 +101,7 @@ AdminEpisode testEpisode({
     'episode_number': episodeNumber,
     'title': title,
     'synopsis': '',
-    'cloudflare_stream_uid': streamUid,
     'cloudflare_stream_status': streamStatus.name,
-    'cloudflare_stream_pending_uid': pendingUid,
     'cloudflare_stream_pending_status': pendingStatus.name,
     'is_free': true,
     'coin_price': 0,
