@@ -52,7 +52,6 @@ void main() {
         tester,
         episode: testEpisode(
           id: testEpisodeId1,
-          streamUid: 'stream-1',
           streamStatus: CloudflareStreamStatus.ready,
         ),
         videoSource: 'active',
@@ -78,7 +77,6 @@ void main() {
                   showEpisodePreviewDialog(
                     context: context,
                     episode: testEpisode(
-                      streamUid: 'stream-1',
                       streamStatus: CloudflareStreamStatus.ready,
                     ),
                     videoSource: 'active',
@@ -111,7 +109,6 @@ void main() {
       final repository = await openDialog(
         tester,
         episode: testEpisode(
-          pendingUid: 'pending-1',
           pendingStatus: CloudflareStreamStatus.processing,
         ),
         videoSource: 'pending',
@@ -129,7 +126,6 @@ void main() {
       final repository = await openDialog(
         tester,
         episode: testEpisode(
-          pendingUid: 'pending-1',
           pendingStatus: CloudflareStreamStatus.ready,
         ),
         videoSource: 'pending',

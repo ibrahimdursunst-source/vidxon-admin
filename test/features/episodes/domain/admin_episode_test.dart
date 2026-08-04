@@ -4,7 +4,7 @@ import 'package:vidxon_admin/features/episodes/domain/cloudflare_stream_status.d
 
 void main() {
   group('AdminEpisode.fromMap', () {
-    test('parses full episode row', () {
+    test('parses full episode row without Stream UID columns', () {
       final episode = AdminEpisode.fromMap({
         'id': '11111111-1111-1111-1111-111111111111',
         'series_id': '22222222-2222-2222-2222-222222222222',
@@ -12,7 +12,6 @@ void main() {
         'title': ' Pilot ',
         'synopsis': 'Açıklama',
         'thumbnail_path': 'thumbs/a.jpg',
-        'cloudflare_stream_uid': 'stream-123',
         'cloudflare_stream_status': 'ready',
         'cloudflare_stream_last_checked_at': '2026-07-29T12:00:00.000Z',
         'duration_seconds': 120,
@@ -44,7 +43,7 @@ void main() {
         'title': 'Bölüm 1',
         'synopsis': '',
         'thumbnail_path': null,
-        'cloudflare_stream_uid': null,
+        'cloudflare_stream_status': 'none',
         'duration_seconds': null,
         'is_free': true,
         'coin_price': 0,
