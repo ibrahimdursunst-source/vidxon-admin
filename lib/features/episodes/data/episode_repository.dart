@@ -12,7 +12,8 @@ class EpisodeRepository {
 
   SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
 
-  static const _episodeSelect = '''
+  /// Safe column projection for admin reads against [public.episodes].
+  static const adminEpisodeSelect = '''
     id,
     series_id,
     episode_number,
@@ -36,10 +37,13 @@ class EpisodeRepository {
     updated_at
   ''';
 
+  /// Permitted column for count/head queries against [public.episodes].
+  static const adminEpisodeCountColumn = 'id';
+
   Future<List<AdminEpisode>> fetchEpisodesForSeries(String seriesId) async {
     final response = await _resolvedClient
         .from('episodes')
-        .select(_episodeSelect)
+        .select(adminEpisodeSelect)
         .eq('series_id', seriesId)
         .order('episode_number', ascending: true)
         .order('created_at', ascending: true);
@@ -54,7 +58,7 @@ class EpisodeRepository {
   Future<AdminEpisode> fetchById(String episodeId) async {
     final response = await _resolvedClient
         .from('episodes')
-        .select(_episodeSelect)
+        .select(adminEpisodeSelect)
         .eq('id', episodeId)
         .maybeSingle();
 

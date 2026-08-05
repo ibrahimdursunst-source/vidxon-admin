@@ -91,7 +91,10 @@ class AdminSeries {
     );
   }
 
-  factory AdminSeries.fromMap(Map<String, dynamic> map) {
+  factory AdminSeries.fromMap(
+    Map<String, dynamic> map, {
+    required int episodeCount,
+  }) {
     final categoryData = _parseCategoryData(map['series_categories']);
 
     return AdminSeries(
@@ -107,7 +110,7 @@ class AdminSeries {
       totalViews: _parseInt(map['total_views']),
       categories: categoryData.names,
       categoryIds: categoryData.ids,
-      episodeCount: _parseEpisodeCount(map['episodes']),
+      episodeCount: episodeCount,
       archivedAt: _parseDateTime(map['archived_at']),
       createdAt: _parseDateTime(map['created_at']),
       updatedAt: _parseDateTime(map['updated_at']),
@@ -171,19 +174,6 @@ class AdminSeries {
     }
 
     return _CategoryData(names, ids);
-  }
-
-  static int _parseEpisodeCount(dynamic value) {
-    if (value is! List || value.isEmpty) {
-      return 0;
-    }
-
-    final first = value.first;
-    if (first is Map<String, dynamic>) {
-      return _parseInt(first['count']);
-    }
-
-    return 0;
   }
 }
 

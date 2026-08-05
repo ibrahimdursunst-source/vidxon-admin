@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../episodes/data/episode_repository.dart';
 import '../domain/admin_series.dart';
 
 class SeriesRepository {
@@ -31,8 +32,7 @@ class SeriesRepository {
         id,
         name
       )
-    ),
-    episodes(count)
+    )
   ''';
 
   Future<List<AdminSeries>> fetchAll() async {
@@ -42,10 +42,20 @@ class SeriesRepository {
         .order('updated_at', ascending: false);
 
     final rows = response as List<dynamic>;
+    final counts = await Future.wait(
+      rows.map((row) {
+        final map = row as Map<String, dynamic>;
+        return _countEpisodesForSeries(map['id'].toString());
+      }),
+    );
 
-    return rows
-        .map((row) => AdminSeries.fromMap(row as Map<String, dynamic>))
-        .toList();
+    return [
+      for (var i = 0; i < rows.length; i++)
+        AdminSeries.fromMap(
+          rows[i] as Map<String, dynamic>,
+          episodeCount: counts[i],
+        ),
+    ];
   }
 
   Future<AdminSeries> fetchById(String seriesId) async {
@@ -59,6 +69,18 @@ class SeriesRepository {
       throw StateError('Series not found');
     }
 
-    return AdminSeries.fromMap(response);
+    final episodeCount = await _countEpisodesForSeries(seriesId);
+
+    return AdminSeries.fromMap(response, episodeCount: episodeCount);
+  }
+
+  Future<int> _countEpisodesForSeries(String seriesId) async {
+    final response = await _resolvedClient
+        .from('episodes')
+        .select(EpisodeRepository.adminEpisodeCountColumn)
+        .eq('series_id', seriesId)
+        .count(CountOption.exact);
+
+    return response.count;
   }
 }

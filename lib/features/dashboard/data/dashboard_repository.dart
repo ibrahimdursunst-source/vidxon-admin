@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../episodes/data/episode_repository.dart';
 import '../domain/dashboard_counts.dart';
 
 class DashboardRepository {
@@ -13,7 +14,7 @@ class DashboardRepository {
     final results = await Future.wait([
       _resolvedClient.from('categories').count(CountOption.exact),
       _resolvedClient.from('series').count(CountOption.exact),
-      _resolvedClient.from('episodes').count(CountOption.exact),
+      _fetchEpisodeCount(),
     ]);
 
     return DashboardCounts(
@@ -21,5 +22,14 @@ class DashboardRepository {
       seriesCount: results[1],
       episodeCount: results[2],
     );
+  }
+
+  Future<int> _fetchEpisodeCount() async {
+    final response = await _resolvedClient
+        .from('episodes')
+        .select(EpisodeRepository.adminEpisodeCountColumn)
+        .count(CountOption.exact);
+
+    return response.count;
   }
 }
