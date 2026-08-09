@@ -85,6 +85,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(configureContentWidgetTests);
 
+  Future<void> dragFirstEpisodeDown(WidgetTester tester) async {
+    await tester.longPress(find.byIcon(Icons.drag_handle).first);
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byIcon(Icons.drag_handle).first,
+      const Offset(0, 80),
+    );
+    await tester.pumpAndSettle();
+  }
+
   group('EpisodeReorderPage widget', () {
     Future<void> openReorder(WidgetTester tester) async {
       final episodes = [
@@ -223,28 +233,30 @@ void main() {
       expect(find.text('refresh:1'), findsOneWidget);
     });
 
-    testWidgets('conflict triggers parent refresh without success version', (
-      tester,
-    ) async {
+    testWidgets('conflict reconciles in place without popping', (tester) async {
       final mutationRepository = TrackingSeriesMutationRepository(
-        reorderThrowsConflict: true,
+        reorderConflictForExpectedVersions: {7},
       );
       final episodes = [
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
+      final seriesRepository = FakeSeriesRepository(
+        (_) async => testSeries(contentVersion: 44),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
-          home: _ReorderHost(
+          home: EpisodeReorderPage(
+            seriesId: testSeriesId,
             episodes: episodes,
+            expectedSeriesVersion: 7,
             mutationRepository: mutationRepository,
+            seriesRepository: seriesRepository,
             episodeRepository: FakeEpisodeRepository(episodes),
           ),
         ),
       );
-
-      await tester.tap(find.text('Open Reorder'));
       await tester.pumpAndSettle();
 
       await tester.longPress(find.byIcon(Icons.drag_handle).first);
@@ -257,9 +269,55 @@ void main() {
       await tester.tap(find.text('Sıralamayı Kaydet'));
       await tester.pumpAndSettle();
 
-      expect(find.text('refresh:1'), findsOneWidget);
-      expect(find.text('version:-'), findsOneWidget);
-      expect(find.text(ContentErrorMapper.conflictMessage), findsOneWidget);
+      expect(mutationRepository.reorderCalls, 1);
+      expect(find.text('Bölüm Sıralaması'), findsOneWidget);
+      expect(
+        find.text(ContentErrorMapper.reorderConflictReconciledMessage),
+        findsOneWidget,
+      );
+      expect(seriesRepository.fetchByIdCalls, greaterThan(0));
+    });
+
+    testWidgets('second save after conflict uses reconciled version', (
+      tester,
+    ) async {
+      final mutationRepository = TrackingSeriesMutationRepository(
+        reorderConflictForExpectedVersions: {7},
+      );
+      final episodes = [
+        testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
+        testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
+      ];
+      final seriesRepository = FakeSeriesRepository(
+        (_) async => testSeries(contentVersion: 44),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EpisodeReorderPage(
+            seriesId: testSeriesId,
+            episodes: episodes,
+            expectedSeriesVersion: 7,
+            mutationRepository: mutationRepository,
+            seriesRepository: seriesRepository,
+            episodeRepository: FakeEpisodeRepository(episodes),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await dragFirstEpisodeDown(tester);
+      await tester.tap(find.text('Sıralamayı Kaydet'));
+      await tester.pumpAndSettle();
+
+      await tester.pump(const Duration(seconds: 7));
+
+      await dragFirstEpisodeDown(tester);
+      await tester.tap(find.text('Sıralamayı Kaydet'));
+      await tester.pumpAndSettle();
+
+      expect(mutationRepository.reorderCalls, 2);
+      expect(mutationRepository.lastReorderExpectedVersion, 44);
     });
   });
 
