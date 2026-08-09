@@ -32,6 +32,9 @@ abstract final class ContentErrorMapper {
       'Bu içerik başka bir yönetici tarafından değiştirildi. '
       'Güncel veriler yeniden yüklendi; lütfen değişikliğinizi tekrar kontrol edin.';
 
+  static const reorderConflictReconciledMessage =
+      'İçerik düzenleme sırasında değişti. En güncel sıralama yüklendi.';
+
   static ContentException fromPostgrest(PostgrestException error) {
     final message = error.message;
     final lowered = message.toLowerCase();

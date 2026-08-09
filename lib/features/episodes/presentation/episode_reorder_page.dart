@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../content/data/content_errors.dart';
 import '../../series/data/series_mutation_repository.dart';
+import '../../series/data/series_repository.dart';
 import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import 'episode_reorder_result.dart';
@@ -12,6 +13,7 @@ class EpisodeReorderPage extends StatefulWidget {
     required this.episodes,
     required this.expectedSeriesVersion,
     this.episodeRepository,
+    this.seriesRepository,
     this.mutationRepository,
     super.key,
   });
@@ -20,6 +22,7 @@ class EpisodeReorderPage extends StatefulWidget {
   final List<AdminEpisode> episodes;
   final int expectedSeriesVersion;
   final EpisodeRepository? episodeRepository;
+  final SeriesRepository? seriesRepository;
   final SeriesMutationRepository? mutationRepository;
 
   @override
@@ -27,10 +30,15 @@ class EpisodeReorderPage extends StatefulWidget {
 }
 
 class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
-  late final SeriesMutationRepository _repository =
+  late final SeriesMutationRepository _mutationRepository =
       widget.mutationRepository ?? SeriesMutationRepository();
+  late final SeriesRepository _seriesRepository =
+      widget.seriesRepository ?? SeriesRepository();
+  late final EpisodeRepository _episodeRepository =
+      widget.episodeRepository ?? EpisodeRepository();
 
   late List<AdminEpisode> _ordered;
+  late List<AdminEpisode> _baselineEpisodes;
   late int _expectedVersion;
   bool _hasChanges = false;
   bool _isSaving = false;
@@ -39,7 +47,8 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   @override
   void initState() {
     super.initState();
-    _ordered = sortEpisodesByNumber(widget.episodes);
+    _baselineEpisodes = List<AdminEpisode>.from(widget.episodes);
+    _ordered = sortEpisodesByNumber(_baselineEpisodes);
     _expectedVersion = widget.expectedSeriesVersion;
   }
 
@@ -70,7 +79,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
     });
 
     try {
-      final result = await _repository.reorderEpisodes(
+      final result = await _mutationRepository.reorderEpisodes(
         seriesId: widget.seriesId,
         orderedEpisodeIds: _ordered.map((episode) => episode.id).toList(),
         expectedSeriesVersion: _expectedVersion,
@@ -80,6 +89,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
         return;
       }
 
+      _expectedVersion = result.contentVersion;
       Navigator.of(context).pop(EpisodeReorderSuccess(result.contentVersion));
     } on ContentException catch (error) {
       if (!mounted) {
@@ -87,24 +97,14 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       }
 
       if (error.isConflict) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(ContentErrorMapper.conflictMessage),
-            duration: Duration(seconds: 6),
-          ),
-        );
-        setState(() {
-          _hasChanges = false;
-          _isSaving = false;
-        });
-        Navigator.of(context).pop(const EpisodeReorderConflict());
+        await _reconcileAfterConflict();
         return;
       }
 
       setState(() {
         _errorMessage = error.message;
         _isSaving = false;
-        _ordered = sortEpisodesByNumber(widget.episodes);
+        _ordered = sortEpisodesByNumber(_baselineEpisodes);
         _hasChanges = false;
       });
     } catch (_) {
@@ -115,7 +115,49 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       setState(() {
         _errorMessage = 'Sıralama kaydedilemedi.';
         _isSaving = false;
-        _ordered = sortEpisodesByNumber(widget.episodes);
+        _ordered = sortEpisodesByNumber(_baselineEpisodes);
+        _hasChanges = false;
+      });
+    }
+  }
+
+  Future<void> _reconcileAfterConflict() async {
+    try {
+      final series = await _seriesRepository.fetchById(widget.seriesId);
+      final episodes = await _episodeRepository.fetchEpisodesForSeries(
+        widget.seriesId,
+      );
+      final active = activeEpisodes(episodes);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _expectedVersion = series.contentVersion;
+        _baselineEpisodes = List<AdminEpisode>.from(active);
+        _ordered = sortEpisodesByNumber(active);
+        _hasChanges = false;
+        _isSaving = false;
+        _errorMessage = null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(ContentErrorMapper.reorderConflictReconciledMessage),
+          duration: Duration(seconds: 6),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSaving = false;
+        _errorMessage =
+            'Güncel sıralama yüklenemedi. Lütfen sayfayı kapatıp tekrar deneyin.';
+        _ordered = sortEpisodesByNumber(_baselineEpisodes);
         _hasChanges = false;
       });
     }

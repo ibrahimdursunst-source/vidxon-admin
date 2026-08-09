@@ -460,9 +460,13 @@ class FakeEpisodePreviewRepository extends EpisodePreviewRepository {
 }
 
 class TrackingSeriesMutationRepository extends FakeSeriesMutationRepository {
-  TrackingSeriesMutationRepository({this.reorderThrowsConflict = false});
+  TrackingSeriesMutationRepository({
+    this.reorderThrowsConflict = false,
+    this.reorderConflictForExpectedVersions,
+  });
 
   final bool reorderThrowsConflict;
+  final Set<int>? reorderConflictForExpectedVersions;
   Completer<void>? reorderDelay;
 
   @override
@@ -479,7 +483,11 @@ class TrackingSeriesMutationRepository extends FakeSeriesMutationRepository {
       await reorderDelay!.future;
     }
 
-    if (reorderThrowsConflict) {
+    final shouldConflict =
+        reorderThrowsConflict ||
+        (reorderConflictForExpectedVersions?.contains(expectedSeriesVersion) ??
+            false);
+    if (shouldConflict) {
       throw const ContentException(
         message: ContentErrorMapper.conflictMessage,
         kind: ContentFailureKind.conflict,

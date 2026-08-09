@@ -4,6 +4,7 @@ import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
 import '../../series/data/series_mutation_repository.dart';
+import '../../series/data/series_repository.dart';
 import '../../series/domain/admin_series.dart';
 import '../data/episode_preview_repository.dart';
 import '../data/episode_repository.dart';
@@ -22,6 +23,7 @@ class SeriesEpisodesPage extends StatefulWidget {
     required this.seriesTitle,
     this.initialSeries,
     this.episodeRepository,
+    this.seriesRepository,
     this.previewRepository,
     this.mutationRepository,
     this.isSeriesArchived = false,
@@ -32,6 +34,7 @@ class SeriesEpisodesPage extends StatefulWidget {
   final String seriesTitle;
   final AdminSeries? initialSeries;
   final EpisodeRepository? episodeRepository;
+  final SeriesRepository? seriesRepository;
   final EpisodePreviewRepository? previewRepository;
   final SeriesMutationRepository? mutationRepository;
   final bool isSeriesArchived;
@@ -45,6 +48,8 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
 
   late final EpisodeRepository _repository =
       widget.episodeRepository ?? EpisodeRepository();
+  late final SeriesRepository _seriesRepository =
+      widget.seriesRepository ?? SeriesRepository();
 
   late Future<List<AdminEpisode>> _episodesFuture;
   int? _seriesContentVersion;
@@ -58,13 +63,27 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       _seriesContentVersion = initial.contentVersion;
     }
     _episodesFuture = _repository.fetchEpisodesForSeries(widget.seriesId);
+    _syncSeriesContentVersion();
+  }
+
+  Future<void> _syncSeriesContentVersion() async {
+    try {
+      final series = await _seriesRepository.fetchById(widget.seriesId);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _seriesContentVersion = series.contentVersion);
+    } catch (_) {
+      // Keep the last known version when sync fails.
+    }
   }
 
   Future<void> refresh() async {
     setState(() {
       _episodesFuture = _repository.fetchEpisodesForSeries(widget.seriesId);
     });
-    await _episodesFuture;
+    await Future.wait([_episodesFuture, _syncSeriesContentVersion()]);
   }
 
   Future<void> _openCreateForm() async {
@@ -102,32 +121,36 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       return;
     }
 
+    await _syncSeriesContentVersion();
+    if (!mounted) {
+      return;
+    }
+
     final version = _seriesContentVersion ?? 0;
-    final result = await Navigator.of(context).push<EpisodeReorderPageResult>(
+    final navigator = Navigator.of(context);
+    final result = await navigator.push<EpisodeReorderPageResult>(
       MaterialPageRoute(
         builder: (context) => EpisodeReorderPage(
           seriesId: widget.seriesId,
           episodes: active,
           expectedSeriesVersion: version,
           episodeRepository: _repository,
+          seriesRepository: _seriesRepository,
           mutationRepository: widget.mutationRepository,
         ),
       ),
     );
 
     if (!mounted || result == null) {
-      return;
-    }
-
-    if (result is EpisodeReorderConflict) {
-      refresh();
+      await _syncSeriesContentVersion();
       return;
     }
 
     if (result is EpisodeReorderSuccess) {
       setState(() => _seriesContentVersion = result.seriesContentVersion);
-      refresh();
     }
+
+    await refresh();
   }
 
   Future<void> _openVideoUpload(
