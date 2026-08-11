@@ -42,6 +42,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   late int _expectedVersion;
   bool _hasChanges = false;
   bool _isSaving = false;
+  bool _persistCompleted = false;
   String? _errorMessage;
 
   @override
@@ -52,8 +53,14 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
     _expectedVersion = widget.expectedSeriesVersion;
   }
 
+  @override
+  void dispose() {
+    _persistCompleted = true;
+    super.dispose();
+  }
+
   void _onReorder(int oldIndex, int newIndex) {
-    if (_isSaving) {
+    if (_isSaving || _persistCompleted) {
       return;
     }
 
@@ -69,7 +76,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   }
 
   Future<void> _save() async {
-    if (!_hasChanges || _isSaving) {
+    if (!_hasChanges || _isSaving || _persistCompleted) {
       return;
     }
 
@@ -85,14 +92,25 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
         expectedSeriesVersion: _expectedVersion,
       );
 
+      if (!mounted || _persistCompleted) {
+        return;
+      }
+
+      setState(() {
+        _expectedVersion = result.contentVersion;
+        _baselineEpisodes = List<AdminEpisode>.from(_ordered);
+        _hasChanges = false;
+        _isSaving = false;
+        _persistCompleted = true;
+      });
+
       if (!mounted) {
         return;
       }
 
-      _expectedVersion = result.contentVersion;
       Navigator.of(context).pop(EpisodeReorderSuccess(result.contentVersion));
     } on ContentException catch (error) {
-      if (!mounted) {
+      if (!mounted || _persistCompleted) {
         return;
       }
 
@@ -108,7 +126,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
         _hasChanges = false;
       });
     } catch (_) {
-      if (!mounted) {
+      if (!mounted || _persistCompleted) {
         return;
       }
 
@@ -129,7 +147,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       );
       final active = activeEpisodes(episodes);
 
-      if (!mounted) {
+      if (!mounted || _persistCompleted) {
         return;
       }
 
@@ -149,7 +167,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
         ),
       );
     } catch (_) {
-      if (!mounted) {
+      if (!mounted || _persistCompleted) {
         return;
       }
 
@@ -164,7 +182,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   }
 
   Future<bool> _confirmLeave() async {
-    if (!_hasChanges || _isSaving) {
+    if (!_hasChanges || _isSaving || _persistCompleted) {
       return true;
     }
 
@@ -197,9 +215,9 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_hasChanges || _isSaving,
+      canPop: !_hasChanges && !_isSaving,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop || _isSaving) {
+        if (didPop || _isSaving || _persistCompleted) {
           return;
         }
 
