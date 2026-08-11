@@ -54,6 +54,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
   late Future<List<AdminEpisode>> _episodesFuture;
   int? _seriesContentVersion;
   bool _lifecycleBusy = false;
+  bool _reorderNavigationOpen = false;
 
   @override
   void initState() {
@@ -80,6 +81,10 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
   }
 
   Future<void> refresh() async {
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _episodesFuture = _repository.fetchEpisodesForSeries(widget.seriesId);
     });
@@ -116,41 +121,51 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
   }
 
   Future<void> _openReorder(List<AdminEpisode> episodes) async {
+    if (_reorderNavigationOpen) {
+      return;
+    }
+
     final active = activeEpisodes(episodes);
     if (active.length < 2) {
       return;
     }
 
-    await _syncSeriesContentVersion();
-    if (!mounted) {
-      return;
-    }
-
-    final version = _seriesContentVersion ?? 0;
-    final navigator = Navigator.of(context);
-    final result = await navigator.push<EpisodeReorderPageResult>(
-      MaterialPageRoute(
-        builder: (context) => EpisodeReorderPage(
-          seriesId: widget.seriesId,
-          episodes: active,
-          expectedSeriesVersion: version,
-          episodeRepository: _repository,
-          seriesRepository: _seriesRepository,
-          mutationRepository: widget.mutationRepository,
-        ),
-      ),
-    );
-
-    if (!mounted || result == null) {
+    _reorderNavigationOpen = true;
+    try {
       await _syncSeriesContentVersion();
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    if (result is EpisodeReorderSuccess) {
-      setState(() => _seriesContentVersion = result.seriesContentVersion);
-    }
+      final version = _seriesContentVersion ?? 0;
+      final navigator = Navigator.of(context);
+      final result = await navigator.push<EpisodeReorderPageResult>(
+        MaterialPageRoute(
+          builder: (context) => EpisodeReorderPage(
+            seriesId: widget.seriesId,
+            episodes: active,
+            expectedSeriesVersion: version,
+            episodeRepository: _repository,
+            seriesRepository: _seriesRepository,
+            mutationRepository: widget.mutationRepository,
+          ),
+        ),
+      );
 
-    await refresh();
+      if (!mounted) {
+        return;
+      }
+
+      if (result is EpisodeReorderSuccess) {
+        setState(() => _seriesContentVersion = result.seriesContentVersion);
+        await refresh();
+        return;
+      }
+
+      await _syncSeriesContentVersion();
+    } finally {
+      _reorderNavigationOpen = false;
+    }
   }
 
   Future<void> _openVideoUpload(
