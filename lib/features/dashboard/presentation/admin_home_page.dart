@@ -152,7 +152,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   Future<void> _signOut() async {
-    await Supabase.instance.client.auth.signOut();
+    await Supabase.instance.client.auth.signOut(
+      scope: SignOutScope.global,
+    );
   }
 
   @override

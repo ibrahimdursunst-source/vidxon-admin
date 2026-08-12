@@ -442,7 +442,9 @@ class AccessDeniedPage extends StatelessWidget {
       message: 'Bu hesap Vidxon admin kullanıcıları arasında bulunmuyor.',
       actionLabel: 'Çıkış Yap',
       onAction: () async {
-        await Supabase.instance.client.auth.signOut();
+        await Supabase.instance.client.auth.signOut(
+          scope: SignOutScope.global,
+        );
       },
     );
   }
