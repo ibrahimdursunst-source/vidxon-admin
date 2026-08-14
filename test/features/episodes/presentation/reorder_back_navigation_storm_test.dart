@@ -32,7 +32,6 @@ void main() {
     WidgetTester tester, {
     required TrackingSeriesMutationRepository mutationRepository,
     required FakeEpisodeRepository episodeRepository,
-    required FakeSeriesRepository seriesRepository,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -52,7 +51,6 @@ void main() {
                           seriesTitle: 'Test Dizi',
                           initialSeries: testSeries(contentVersion: 29),
                           episodeRepository: episodeRepository,
-                          seriesRepository: seriesRepository,
                           mutationRepository: mutationRepository,
                         ),
                       ),
@@ -80,16 +78,15 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final episodeRepository = FakeEpisodeRepository(episodes);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 30),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 30,
       );
 
       await pumpEpisodesHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
       );
 
       await tester.tap(find.text('Sıralamayı Düzenle'));
@@ -116,16 +113,15 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final episodeRepository = FakeEpisodeRepository(episodes);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 29),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 29,
       );
 
       await pumpEpisodesHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
       );
 
       await tester.tap(find.text('Sıralamayı Düzenle'));
@@ -170,16 +166,15 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final episodeRepository = FakeEpisodeRepository(episodes);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 29),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 29,
       );
 
       await pumpEpisodesHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
       );
 
       await tester.tap(find.text('Sıralamayı Düzenle'));
@@ -199,16 +194,15 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final episodeRepository = FakeEpisodeRepository(episodes);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 29),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 29,
       );
 
       await pumpEpisodesHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
       );
 
       await tester.pageBack();

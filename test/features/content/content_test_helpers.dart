@@ -9,6 +9,7 @@ import 'package:vidxon_admin/features/episodes/data/episode_preview_repository.d
 import 'package:vidxon_admin/features/episodes/data/episode_repository.dart';
 import 'package:vidxon_admin/features/episodes/domain/admin_episode.dart';
 import 'package:vidxon_admin/features/episodes/domain/cloudflare_stream_status.dart';
+import 'package:vidxon_admin/features/episodes/domain/reorder_snapshot.dart';
 import 'package:vidxon_admin/features/episodes/domain/stream_preview_response.dart';
 import 'package:vidxon_admin/features/media/data/image_upload_repository.dart';
 import 'package:vidxon_admin/features/media/domain/image_upload_response.dart';
@@ -334,11 +335,20 @@ class FakeSeriesMutationRepository extends SeriesMutationRepository {
 }
 
 class FakeEpisodeRepository extends EpisodeRepository {
-  FakeEpisodeRepository(this._episodes) : super(client: null);
+  FakeEpisodeRepository(
+    this._episodes, {
+    this.reorderSnapshot,
+    this.reorderSnapshotError,
+    this.reorderSnapshotContentVersion = 0,
+  }) : super(client: null);
 
   List<AdminEpisode> _episodes;
+  final ReorderSnapshot? reorderSnapshot;
+  final Object? reorderSnapshotError;
+  int reorderSnapshotContentVersion;
   int fetchListCalls = 0;
   int fetchByIdCalls = 0;
+  int loadReorderSnapshotCalls = 0;
   int publishCalls = 0;
   int unpublishCalls = 0;
   int archiveCalls = 0;
@@ -351,6 +361,24 @@ class FakeEpisodeRepository extends EpisodeRepository {
   Future<List<AdminEpisode>> fetchEpisodesForSeries(String seriesId) async {
     fetchListCalls += 1;
     return List<AdminEpisode>.from(_episodes);
+  }
+
+  @override
+  Future<ReorderSnapshot> loadReorderSnapshot(String seriesId) async {
+    loadReorderSnapshotCalls += 1;
+    if (reorderSnapshotError != null) {
+      throw reorderSnapshotError!;
+    }
+
+    if (reorderSnapshot != null) {
+      return reorderSnapshot!;
+    }
+
+    return ReorderSnapshot(
+      seriesId: seriesId,
+      activeEpisodes: activeEpisodes(_episodes),
+      contentVersion: reorderSnapshotContentVersion,
+    );
   }
 
   void setEpisodes(List<AdminEpisode> episodes) {

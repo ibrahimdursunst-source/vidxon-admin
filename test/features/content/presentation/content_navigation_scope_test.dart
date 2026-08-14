@@ -224,8 +224,10 @@ void main() {
       WidgetTester tester, {
       required TrackingSeriesMutationRepository mutationRepository,
       required FakeEpisodeRepository episodeRepository,
-      FakeSeriesRepository? seriesRepository,
+      int reorderSnapshotContentVersion = 7,
     }) async {
+      episodeRepository.reorderSnapshotContentVersion =
+          reorderSnapshotContentVersion;
       await tester.binding.setSurfaceSize(const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -240,11 +242,6 @@ void main() {
                   seriesTitle: 'Test Dizi',
                   initialSeries: testSeries(contentVersion: 7),
                   episodeRepository: episodeRepository,
-                  seriesRepository:
-                      seriesRepository ??
-                      FakeSeriesRepository(
-                        (_) async => testSeries(contentVersion: 7),
-                      ),
                   mutationRepository: mutationRepository,
                 ),
               ),
@@ -298,15 +295,11 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ]);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 44),
-      );
-
       await pumpReorderHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
+        reorderSnapshotContentVersion: 44,
       );
       final initialFetchCalls = episodeRepository.fetchListCalls;
 
@@ -338,15 +331,11 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ]);
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 44),
-      );
-
       await pumpReorderHost(
         tester,
         mutationRepository: mutationRepository,
         episodeRepository: episodeRepository,
-        seriesRepository: seriesRepository,
+        reorderSnapshotContentVersion: 44,
       );
 
       await openReorder(tester);
@@ -362,7 +351,7 @@ void main() {
 
       expect(mutationRepository.reorderCalls, 1);
       expect(find.text('Bölüm Sıralaması'), findsOneWidget);
-      expect(seriesRepository.fetchByIdCalls, greaterThan(0));
+      expect(episodeRepository.loadReorderSnapshotCalls, greaterThan(0));
     });
 
     testWidgets('cancel does not mutate or refresh as success', (tester) async {

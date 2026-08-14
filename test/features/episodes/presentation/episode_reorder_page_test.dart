@@ -241,8 +241,9 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 44),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 44,
       );
 
       await tester.pumpWidget(
@@ -252,8 +253,7 @@ void main() {
             episodes: episodes,
             expectedSeriesVersion: 7,
             mutationRepository: mutationRepository,
-            seriesRepository: seriesRepository,
-            episodeRepository: FakeEpisodeRepository(episodes),
+            episodeRepository: episodeRepository,
           ),
         ),
       );
@@ -275,7 +275,7 @@ void main() {
         find.text(ContentErrorMapper.reorderConflictReconciledMessage),
         findsOneWidget,
       );
-      expect(seriesRepository.fetchByIdCalls, greaterThan(0));
+      expect(episodeRepository.loadReorderSnapshotCalls, greaterThan(0));
     });
 
     testWidgets('second save after conflict uses reconciled version', (
@@ -288,8 +288,9 @@ void main() {
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
       ];
-      final seriesRepository = FakeSeriesRepository(
-        (_) async => testSeries(contentVersion: 44),
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 44,
       );
 
       await tester.pumpWidget(
@@ -299,8 +300,7 @@ void main() {
             episodes: episodes,
             expectedSeriesVersion: 7,
             mutationRepository: mutationRepository,
-            seriesRepository: seriesRepository,
-            episodeRepository: FakeEpisodeRepository(episodes),
+            episodeRepository: episodeRepository,
           ),
         ),
       );

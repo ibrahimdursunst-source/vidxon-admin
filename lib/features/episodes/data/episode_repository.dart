@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../content/data/content_errors.dart';
 import '../domain/admin_episode.dart';
 import '../domain/create_episode_input.dart';
+import '../domain/reorder_snapshot.dart';
 import '../domain/update_episode_input.dart';
 
 class EpisodeRepository {
@@ -53,6 +54,96 @@ class EpisodeRepository {
     return rows
         .map((row) => AdminEpisode.fromMap(row as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Loads reorder state from one atomic admin RPC snapshot.
+  Future<ReorderSnapshot> loadReorderSnapshot(String seriesId) async {
+    try {
+      final result = await _resolvedClient.rpc(
+        'admin_get_series_reorder_snapshot',
+        params: {'p_series_id': seriesId},
+      );
+
+      final row = _parseSnapshotRow(result);
+      if (row == null) {
+        throw const ContentException(
+          message:
+              'Sıralama için güncel dizi verisi yüklenemedi. Lütfen tekrar deneyin.',
+          kind: ContentFailureKind.serverError,
+        );
+      }
+
+      final episodesRaw = row['episodes'];
+      final episodesJson = episodesRaw is List<dynamic>
+          ? episodesRaw
+          : episodesRaw is Map<String, dynamic>
+          ? [episodesRaw]
+          : const <dynamic>[];
+
+      final episodes = episodesJson
+          .whereType<Map<String, dynamic>>()
+          .map(AdminEpisode.fromMap)
+          .toList();
+
+      final contentVersion = _parseRequiredInt(
+        row['content_version'],
+        fieldName: 'content_version',
+      );
+
+      return ReorderSnapshot(
+        seriesId: row['series_id']?.toString() ?? seriesId,
+        activeEpisodes: episodes,
+        contentVersion: contentVersion,
+      );
+    } on PostgrestException catch (error) {
+      throw ContentErrorMapper.fromPostgrest(error);
+    } on ContentException {
+      rethrow;
+    } on FormatException {
+      throw const ContentException(
+        message:
+            'Sıralama için güncel dizi verisi yüklenemedi. Lütfen tekrar deneyin.',
+        kind: ContentFailureKind.serverError,
+      );
+    } catch (_) {
+      throw const ContentException(
+        message:
+            'Sıralama için güncel dizi verisi yüklenemedi. Lütfen tekrar deneyin.',
+        kind: ContentFailureKind.serverError,
+      );
+    }
+  }
+
+  Map<String, dynamic>? _parseSnapshotRow(dynamic result) {
+    if (result is Map<String, dynamic>) {
+      return result;
+    }
+
+    if (result is List && result.isNotEmpty) {
+      final first = result.first;
+      if (first is Map<String, dynamic>) {
+        return first;
+      }
+    }
+
+    return null;
+  }
+
+  int _parseRequiredInt(dynamic value, {required String fieldName}) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    final parsed = int.tryParse(value?.toString() ?? '');
+    if (parsed == null) {
+      throw FormatException('Episode $fieldName is required.');
+    }
+
+    return parsed;
   }
 
   Future<AdminEpisode> fetchById(String episodeId) async {

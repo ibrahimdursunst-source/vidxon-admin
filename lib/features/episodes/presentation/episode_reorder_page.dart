@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../content/data/content_errors.dart';
 import '../../series/data/series_mutation_repository.dart';
-import '../../series/data/series_repository.dart';
 import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import 'episode_reorder_result.dart';
@@ -13,7 +12,6 @@ class EpisodeReorderPage extends StatefulWidget {
     required this.episodes,
     required this.expectedSeriesVersion,
     this.episodeRepository,
-    this.seriesRepository,
     this.mutationRepository,
     super.key,
   });
@@ -22,7 +20,6 @@ class EpisodeReorderPage extends StatefulWidget {
   final List<AdminEpisode> episodes;
   final int expectedSeriesVersion;
   final EpisodeRepository? episodeRepository;
-  final SeriesRepository? seriesRepository;
   final SeriesMutationRepository? mutationRepository;
 
   @override
@@ -32,8 +29,6 @@ class EpisodeReorderPage extends StatefulWidget {
 class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
   late final SeriesMutationRepository _mutationRepository =
       widget.mutationRepository ?? SeriesMutationRepository();
-  late final SeriesRepository _seriesRepository =
-      widget.seriesRepository ?? SeriesRepository();
   late final EpisodeRepository _episodeRepository =
       widget.episodeRepository ?? EpisodeRepository();
 
@@ -141,20 +136,18 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
 
   Future<void> _reconcileAfterConflict() async {
     try {
-      final series = await _seriesRepository.fetchById(widget.seriesId);
-      final episodes = await _episodeRepository.fetchEpisodesForSeries(
+      final snapshot = await _episodeRepository.loadReorderSnapshot(
         widget.seriesId,
       );
-      final active = activeEpisodes(episodes);
 
       if (!mounted || _persistCompleted) {
         return;
       }
 
       setState(() {
-        _expectedVersion = series.contentVersion;
-        _baselineEpisodes = List<AdminEpisode>.from(active);
-        _ordered = sortEpisodesByNumber(active);
+        _expectedVersion = snapshot.contentVersion;
+        _baselineEpisodes = List<AdminEpisode>.from(snapshot.activeEpisodes);
+        _ordered = sortEpisodesByNumber(snapshot.activeEpisodes);
         _hasChanges = false;
         _isSaving = false;
         _errorMessage = null;

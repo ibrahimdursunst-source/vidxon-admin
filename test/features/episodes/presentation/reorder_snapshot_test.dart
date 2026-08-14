@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vidxon_admin/features/content/data/content_errors.dart';
 import 'package:vidxon_admin/features/episodes/presentation/episode_reorder_page.dart';
 import 'package:vidxon_admin/features/episodes/presentation/series_episodes_page.dart';
 
@@ -15,29 +16,95 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> openReorder(WidgetTester tester) async {
-    await tester.tap(find.text('Sıralamayı Düzenle'));
-    await settle(tester);
-    expect(find.text('Bölüm Sıralaması'), findsOneWidget);
-  }
+  group('Reorder snapshot model', () {
+    testWidgets('snapshot load failure blocks reorder navigation', (tester) async {
+      final episodes = [
+        testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
+        testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
+      ];
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotError: const ContentException(
+          message: 'Snapshot failed',
+          kind: ContentFailureKind.serverError,
+        ),
+      );
 
-  Future<void> dragAndSave(WidgetTester tester) async {
-    await tester.longPress(find.byIcon(Icons.drag_handle).first);
-    await settle(tester);
-    await tester.drag(
-      find.byIcon(Icons.drag_handle).first,
-      const Offset(0, 80),
-    );
-    await settle(tester);
-    await tester.tap(find.text('Sıralamayı Kaydet'));
-    await settle(tester);
-  }
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
-  group('Series reorder version regression', () {
-    testWidgets('loads coherent snapshot before opening reorder', (
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SeriesEpisodesPage(
+            seriesId: testSeriesId,
+            seriesTitle: 'Test Dizi',
+            episodeRepository: episodeRepository,
+          ),
+        ),
+      );
+      await settle(tester);
+
+      await tester.tap(find.text('Sıralamayı Düzenle'));
+      await settle(tester);
+
+      expect(episodeRepository.loadReorderSnapshotCalls, 1);
+      expect(episodeRepository.fetchListCalls, 1);
+      expect(find.text('Bölüm Sıralaması'), findsNothing);
+      expect(find.text('Snapshot failed'), findsOneWidget);
+    });
+
+    testWidgets('uses single snapshot RPC result at save time', (tester) async {
+      final mutationRepository = TrackingSeriesMutationRepository();
+      final episodes = [
+        testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
+        testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
+      ];
+      final episodeRepository = FakeEpisodeRepository(
+        episodes,
+        reorderSnapshotContentVersion: 51,
+      );
+
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SeriesEpisodesPage(
+            seriesId: testSeriesId,
+            seriesTitle: 'Test Dizi',
+            initialSeries: testSeries(contentVersion: 3),
+            episodeRepository: episodeRepository,
+            mutationRepository: mutationRepository,
+          ),
+        ),
+      );
+      await settle(tester);
+      final listFetchCallsBeforeOpen = episodeRepository.fetchListCalls;
+
+      await tester.tap(find.text('Sıralamayı Düzenle'));
+      await settle(tester);
+      await tester.longPress(find.byIcon(Icons.drag_handle).first);
+      await settle(tester);
+      await tester.drag(
+        find.byIcon(Icons.drag_handle).first,
+        const Offset(0, 80),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Sıralamayı Kaydet'));
+      await settle(tester);
+
+      expect(episodeRepository.loadReorderSnapshotCalls, 1);
+      expect(episodeRepository.fetchListCalls, listFetchCallsBeforeOpen + 1);
+      expect(mutationRepository.reorderCalls, 1);
+      expect(mutationRepository.lastReorderExpectedVersion, 51);
+    });
+
+    testWidgets('conflict reloads snapshot without replaying save', (
       tester,
     ) async {
-      final mutationRepository = TrackingSeriesMutationRepository();
+      final mutationRepository = TrackingSeriesMutationRepository(
+        reorderConflictForExpectedVersions: {29},
+      );
       final episodes = [
         testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
         testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
@@ -47,83 +114,6 @@ void main() {
         reorderSnapshotContentVersion: 44,
       );
 
-      await tester.binding.setSurfaceSize(const Size(1400, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SeriesEpisodesPage(
-            seriesId: testSeriesId,
-            seriesTitle: 'Test Dizi',
-            initialSeries: testSeries(contentVersion: 29),
-            episodeRepository: episodeRepository,
-            mutationRepository: mutationRepository,
-          ),
-        ),
-      );
-      await settle(tester);
-
-      expect(episodeRepository.loadReorderSnapshotCalls, 0);
-
-      await openReorder(tester);
-      await dragAndSave(tester);
-
-      expect(episodeRepository.loadReorderSnapshotCalls, 1);
-      expect(mutationRepository.reorderCalls, 1);
-      expect(mutationRepository.lastReorderExpectedVersion, 44);
-    });
-
-    testWidgets('sequential reorders from episode list use updated version', (
-      tester,
-    ) async {
-      var currentVersion = 29;
-      final mutationRepository = TrackingSeriesMutationRepository();
-      final episodes = [
-        testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
-        testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
-      ];
-      final episodeRepository = FakeEpisodeRepository(
-        episodes,
-        reorderSnapshotContentVersion: currentVersion,
-      );
-
-      await tester.binding.setSurfaceSize(const Size(1400, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SeriesEpisodesPage(
-            seriesId: testSeriesId,
-            seriesTitle: 'Test Dizi',
-            initialSeries: testSeries(contentVersion: 29),
-            episodeRepository: episodeRepository,
-            mutationRepository: mutationRepository,
-          ),
-        ),
-      );
-      await settle(tester);
-
-      await openReorder(tester);
-      await dragAndSave(tester);
-      expect(mutationRepository.lastReorderExpectedVersion, 29);
-
-      currentVersion = 30;
-      episodeRepository.reorderSnapshotContentVersion = 30;
-      await openReorder(tester);
-      await dragAndSave(tester);
-      expect(mutationRepository.reorderCalls, 2);
-      expect(mutationRepository.lastReorderExpectedVersion, 30);
-    });
-
-    testWidgets('40001 conflict is not retried automatically', (tester) async {
-      final mutationRepository = TrackingSeriesMutationRepository(
-        reorderConflictForExpectedVersions: {29},
-      );
-      final episodes = [
-        testEpisode(id: testEpisodeId1, episodeNumber: 1, title: 'Bir'),
-        testEpisode(id: testEpisodeId2, episodeNumber: 2, title: 'İki'),
-      ];
-
       await tester.pumpWidget(
         MaterialApp(
           home: EpisodeReorderPage(
@@ -131,18 +121,29 @@ void main() {
             episodes: episodes,
             expectedSeriesVersion: 29,
             mutationRepository: mutationRepository,
-            episodeRepository: FakeEpisodeRepository(
-              episodes,
-              reorderSnapshotContentVersion: 44,
-            ),
+            episodeRepository: episodeRepository,
           ),
         ),
       );
       await settle(tester);
-      await dragAndSave(tester);
+
+      await tester.longPress(find.byIcon(Icons.drag_handle).first);
+      await settle(tester);
+      await tester.drag(
+        find.byIcon(Icons.drag_handle).first,
+        const Offset(0, 80),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Sıralamayı Kaydet'));
+      await settle(tester);
 
       expect(mutationRepository.reorderCalls, 1);
+      expect(episodeRepository.loadReorderSnapshotCalls, 1);
       expect(find.text('Bölüm Sıralaması'), findsOneWidget);
+      expect(
+        find.text(ContentErrorMapper.reorderConflictReconciledMessage),
+        findsOneWidget,
+      );
     });
   });
 }
