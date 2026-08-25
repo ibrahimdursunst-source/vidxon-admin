@@ -1,3 +1,4 @@
+import '../../content_rating/domain/content_rating_catalog.dart';
 import 'episode_release_at.dart';
 
 class EpisodeValidationException implements Exception {
@@ -18,6 +19,9 @@ class CreateEpisodeInput {
     required this.coinPrice,
     this.synopsis = '',
     this.releaseAtLocal,
+    this.useContentRatingOverride = false,
+    this.contentAgeRating,
+    this.contentDescriptors,
   });
 
   final String seriesId;
@@ -27,6 +31,14 @@ class CreateEpisodeInput {
   final bool isFree;
   final int coinPrice;
   final DateTime? releaseAtLocal;
+  final bool useContentRatingOverride;
+  final int? contentAgeRating;
+
+  /// When [useContentRatingOverride] is true:
+  /// - `null` = inherit series descriptors
+  /// - `[]` = explicit empty override
+  /// - non-empty = explicit descriptor list
+  final List<String>? contentDescriptors;
 
   int get normalizedCoinPrice =>
       normalizeCoinPrice(isFree: isFree, coinPrice: coinPrice);
@@ -61,7 +73,21 @@ Map<String, dynamic> buildCreateEpisodeRpcParams(CreateEpisodeInput input) {
     'p_coin_price': input.normalizedCoinPrice,
     'p_is_published': false,
     'p_release_at': releaseAtLocalToRpcPayload(input.releaseAtLocal),
+    'p_content_age_rating':
+        input.useContentRatingOverride ? input.contentAgeRating : null,
+    'p_content_descriptors': input.useContentRatingOverride
+        ? normalizeEpisodeContentDescriptors(input.contentDescriptors)
+        : null,
   };
+}
+
+/// Preserves `null` (inherit) vs `[]` (explicit empty) for episode RPCs.
+List<String>? normalizeEpisodeContentDescriptors(List<String>? descriptors) {
+  if (descriptors == null) {
+    return null;
+  }
+
+  return ContentRatingCatalog.normalizeDescriptors(descriptors);
 }
 
 int normalizeCoinPrice({required bool isFree, required int coinPrice}) {

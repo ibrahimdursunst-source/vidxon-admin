@@ -111,6 +111,8 @@ void main() {
           'p_coin_price',
           'p_is_published',
           'p_release_at',
+          'p_content_age_rating',
+          'p_content_descriptors',
         ]),
       );
       expect(params['p_coin_price'], 10);
@@ -157,6 +159,10 @@ void main() {
           'p_coin_price',
           'p_release_at',
           'p_expected_content_version',
+          'p_content_age_rating',
+          'p_content_descriptors',
+          'p_clear_content_rating_override',
+          'p_apply_content_rating_override',
         ]),
       );
       expect(params.containsKey('p_episode_number'), isFalse);

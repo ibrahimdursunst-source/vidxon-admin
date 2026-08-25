@@ -9,6 +9,8 @@ class CreateSeriesInput {
     required this.categoryIds,
     this.synopsis,
     this.releaseDate,
+    this.contentAgeRating,
+    this.contentDescriptors = const [],
   });
 
   final String title;
@@ -20,6 +22,8 @@ class CreateSeriesInput {
   final bool isPremium;
   final String? releaseDate;
   final List<String> categoryIds;
+  final int? contentAgeRating;
+  final List<String> contentDescriptors;
 }
 
 Map<String, dynamic> buildCreateSeriesRpcParams(CreateSeriesInput input) {
@@ -40,5 +44,7 @@ Map<String, dynamic> buildCreateSeriesRpcParams(CreateSeriesInput input) {
         ? null
         : releaseDate,
     'p_category_ids': input.categoryIds,
+    'p_content_age_rating': input.contentAgeRating,
+    'p_content_descriptors': input.contentDescriptors,
   };
 }

@@ -28,6 +28,8 @@ void main() {
       expect(params['p_category_ids'], [
         '11111111-1111-1111-1111-111111111111',
       ]);
+      expect(params['p_content_age_rating'], isNull);
+      expect(params['p_content_descriptors'], isEmpty);
     });
 
     test('sends null synopsis and release date when empty', () {

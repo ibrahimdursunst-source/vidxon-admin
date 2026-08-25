@@ -43,6 +43,7 @@ Future<bool> confirmContentAction(
   required String title,
   required String message,
   required String confirmLabel,
+  String cancelLabel = 'Vazgeç',
 }) async {
   final result = await showDialog<bool>(
     context: context,
@@ -54,7 +55,7 @@ Future<bool> confirmContentAction(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Vazgeç'),
+            child: Text(cancelLabel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),

@@ -1,3 +1,5 @@
+import '../../content_rating/domain/content_rating_catalog.dart';
+
 class AdminSeries {
   const AdminSeries({
     required this.id,
@@ -10,6 +12,7 @@ class AdminSeries {
     required this.isArchived,
     required this.contentVersion,
     required this.totalViews,
+    this.qualifiedViewsTotal = 0,
     required this.categories,
     required this.categoryIds,
     required this.episodeCount,
@@ -18,6 +21,8 @@ class AdminSeries {
     this.updatedAt,
     this.isFeatured = false,
     this.isPremium = false,
+    this.contentAgeRating,
+    this.contentDescriptors = const [],
   });
 
   final String id;
@@ -30,6 +35,7 @@ class AdminSeries {
   final bool isArchived;
   final int contentVersion;
   final int totalViews;
+  final int qualifiedViewsTotal;
   final List<String> categories;
   final List<String> categoryIds;
   final int episodeCount;
@@ -38,6 +44,8 @@ class AdminSeries {
   final DateTime? updatedAt;
   final bool isFeatured;
   final bool isPremium;
+  final int? contentAgeRating;
+  final List<String> contentDescriptors;
 
   String get statusLabel => switch (status) {
     'ongoing' => 'Devam Ediyor',
@@ -60,6 +68,7 @@ class AdminSeries {
     bool? isArchived,
     int? contentVersion,
     int? totalViews,
+    int? qualifiedViewsTotal,
     List<String>? categories,
     List<String>? categoryIds,
     int? episodeCount,
@@ -68,6 +77,9 @@ class AdminSeries {
     DateTime? updatedAt,
     bool? isFeatured,
     bool? isPremium,
+    int? contentAgeRating,
+    List<String>? contentDescriptors,
+    bool clearContentAgeRating = false,
   }) {
     return AdminSeries(
       id: id,
@@ -80,6 +92,7 @@ class AdminSeries {
       isArchived: isArchived ?? this.isArchived,
       contentVersion: contentVersion ?? this.contentVersion,
       totalViews: totalViews ?? this.totalViews,
+      qualifiedViewsTotal: qualifiedViewsTotal ?? this.qualifiedViewsTotal,
       categories: categories ?? this.categories,
       categoryIds: categoryIds ?? this.categoryIds,
       episodeCount: episodeCount ?? this.episodeCount,
@@ -88,6 +101,10 @@ class AdminSeries {
       updatedAt: updatedAt ?? this.updatedAt,
       isFeatured: isFeatured ?? this.isFeatured,
       isPremium: isPremium ?? this.isPremium,
+      contentAgeRating: clearContentAgeRating
+          ? null
+          : (contentAgeRating ?? this.contentAgeRating),
+      contentDescriptors: contentDescriptors ?? this.contentDescriptors,
     );
   }
 
@@ -108,6 +125,7 @@ class AdminSeries {
       isArchived: map['is_archived'] == true,
       contentVersion: _parseInt(map['content_version']),
       totalViews: _parseInt(map['total_views']),
+      qualifiedViewsTotal: _parseInt(map['qualified_views_total']),
       categories: categoryData.names,
       categoryIds: categoryData.ids,
       episodeCount: episodeCount,
@@ -116,6 +134,12 @@ class AdminSeries {
       updatedAt: _parseDateTime(map['updated_at']),
       isFeatured: map['is_featured'] == true,
       isPremium: map['is_premium'] == true,
+      contentAgeRating: ContentRatingCatalog.parseAgeRating(
+        map['content_age_rating'],
+      ),
+      contentDescriptors: ContentRatingCatalog.parseDescriptors(
+        map['content_descriptors'],
+      ),
     );
   }
 

@@ -7,6 +7,8 @@ import '../../categories/domain/admin_category.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content_rating/domain/content_rating_catalog.dart';
+import '../../content_rating/presentation/content_rating_editor.dart';
 import '../../episodes/presentation/series_episodes_page.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
@@ -64,6 +66,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   bool _isFeatured = false;
   bool _isPremium = false;
   final Set<String> _selectedCategoryIds = {};
+  int? _contentAgeRating;
+  List<String> _contentDescriptors = [];
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -131,6 +135,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     _selectedCategoryIds
       ..clear()
       ..addAll(series.categoryIds);
+    _contentAgeRating = series.contentAgeRating;
+    _contentDescriptors = List<String>.from(series.contentDescriptors);
   }
 
   Future<void> _reloadSeries() async {
@@ -170,6 +176,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
           isPremium: _isPremium,
           categoryIds: _selectedCategoryIds.toList(),
           expectedContentVersion: series.contentVersion,
+          contentAgeRating: _contentAgeRating,
+          contentDescriptors: ContentRatingCatalog.normalizeDescriptors(
+            _contentDescriptors,
+          ),
         ),
       );
 
@@ -628,6 +638,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                           isPremium: _isPremium,
                           selectedCategoryIds: _selectedCategoryIds,
                           categoriesFuture: _categoriesFuture,
+                          contentAgeRating: _contentAgeRating,
+                          contentDescriptors: _contentDescriptors,
                           disabled: busy || series.isArchived,
                           onStatusChanged: (value) =>
                               setState(() => _status = value),
@@ -635,6 +647,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                               setState(() => _isFeatured = value),
                           onPremiumChanged: (value) =>
                               setState(() => _isPremium = value),
+                          onContentAgeChanged: (value) =>
+                              setState(() => _contentAgeRating = value),
+                          onContentDescriptorsChanged: (value) =>
+                              setState(() => _contentDescriptors = value),
                           onCategoryToggle: (id, selected) {
                             setState(() {
                               if (selected) {
@@ -716,6 +732,10 @@ class _SeriesMetaHeader extends StatelessWidget {
               : const Color(0xFF555555),
         ),
         _Badge(label: series.statusLabel, color: const Color(0xFF555555)),
+        _Badge(
+          label: 'Nitelikli: ${series.qualifiedViewsTotal}',
+          color: const Color(0xFF3D5AFE),
+        ),
         Text(
           '${series.episodeCount} bölüm',
           style: const TextStyle(color: Color(0xFFB3B3B3)),
@@ -840,10 +860,14 @@ class _EditSection extends StatelessWidget {
     required this.isPremium,
     required this.selectedCategoryIds,
     required this.categoriesFuture,
+    required this.contentAgeRating,
+    required this.contentDescriptors,
     required this.disabled,
     required this.onStatusChanged,
     required this.onFeaturedChanged,
     required this.onPremiumChanged,
+    required this.onContentAgeChanged,
+    required this.onContentDescriptorsChanged,
     required this.onCategoryToggle,
     required this.onReloadCategories,
   });
@@ -855,10 +879,14 @@ class _EditSection extends StatelessWidget {
   final bool isPremium;
   final Set<String> selectedCategoryIds;
   final Future<List<AdminCategory>> categoriesFuture;
+  final int? contentAgeRating;
+  final List<String> contentDescriptors;
   final bool disabled;
   final ValueChanged<SeriesStatusValue> onStatusChanged;
   final ValueChanged<bool> onFeaturedChanged;
   final ValueChanged<bool> onPremiumChanged;
+  final ValueChanged<int?> onContentAgeChanged;
+  final ValueChanged<List<String>> onContentDescriptorsChanged;
   final void Function(String id, bool selected) onCategoryToggle;
   final VoidCallback onReloadCategories;
 
@@ -902,6 +930,14 @@ class _EditSection extends StatelessWidget {
                 labelText: 'Açıklama',
                 alignLabelWithHint: true,
               ),
+            ),
+            const SizedBox(height: 24),
+            ContentRatingEditor(
+              ageRating: contentAgeRating,
+              descriptors: contentDescriptors,
+              enabled: !disabled,
+              onAgeChanged: onContentAgeChanged,
+              onDescriptorsChanged: onContentDescriptorsChanged,
             ),
             const SizedBox(height: 16),
             InputDecorator(

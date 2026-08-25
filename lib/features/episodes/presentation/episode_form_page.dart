@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
+import '../../content_rating/presentation/content_rating_editor.dart';
 import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import '../domain/create_episode_input.dart';
@@ -35,6 +36,11 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
   AdminEpisode? _episode;
   bool _isFree = false;
   DateTime? _releaseAtLocal;
+  bool _useContentRatingOverride = false;
+  int? _contentAgeRating;
+
+  /// Null = inherit series descriptors; non-null (including empty) = explicit.
+  List<String>? _contentDescriptors;
   bool _isSubmitting = false;
   String? _errorMessage;
 
@@ -57,6 +63,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
     _coinPriceController.text = episode.coinPrice.toString();
     _isFree = episode.isFree;
     _releaseAtLocal = releaseAtUtcToLocal(episode.releaseAt);
+    _useContentRatingOverride = episode.hasContentRatingOverride;
+    _contentAgeRating = episode.contentAgeRating;
+    // Preserve NULL (inherit) vs [] (explicit empty); do not collapse null → [].
+    _contentDescriptors = episode.contentDescriptors == null
+        ? null
+        : List<String>.from(episode.contentDescriptors!);
   }
 
   @override
@@ -166,6 +178,9 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
             coinPrice: coinPrice,
             expectedContentVersion: episode.contentVersion,
             releaseAtLocal: _releaseAtLocal,
+            useContentRatingOverride: _useContentRatingOverride,
+            contentAgeRating: _contentAgeRating,
+            contentDescriptors: _contentDescriptors,
           ),
         );
       } else {
@@ -187,6 +202,9 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
             isFree: _isFree,
             coinPrice: coinPrice,
             releaseAtLocal: _releaseAtLocal,
+            useContentRatingOverride: _useContentRatingOverride,
+            contentAgeRating: _contentAgeRating,
+            contentDescriptors: _contentDescriptors,
           ),
         );
       }
@@ -319,6 +337,79 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                   const SizedBox(height: 16),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Bu bölüm için farklı derecelendirme kullan',
+                    ),
+                    subtitle: Text(
+                      _useContentRatingOverride
+                          ? 'Bölüme özel derecelendirme'
+                          : 'Dizi derecelendirmesini kullan',
+                    ),
+                    value: _useContentRatingOverride,
+                    onChanged: _isSubmitting
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _useContentRatingOverride = value;
+                              if (!value) {
+                                // Override off → full series inheritance.
+                                _contentAgeRating = null;
+                                _contentDescriptors = null;
+                              }
+                            });
+                          },
+                  ),
+                  if (_useContentRatingOverride) ...[
+                    const SizedBox(height: 8),
+                    ContentRatingEditor(
+                      ageRating: _contentAgeRating,
+                      descriptors: const [],
+                      includeDescriptors: false,
+                      enabled: !_isSubmitting,
+                      onAgeChanged: (value) {
+                        setState(() => _contentAgeRating = value);
+                      },
+                      onDescriptorsChanged: (_) {},
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Tanımlayıcıları diziden miras al'),
+                      subtitle: Text(
+                        _contentDescriptors == null
+                            ? 'Dizi tanımlayıcıları kullanılır'
+                            : _contentDescriptors!.isEmpty
+                            ? 'Bu bölümde tanımlayıcı yok (açık boş liste)'
+                            : 'Bölüme özel tanımlayıcı listesi',
+                      ),
+                      value: _contentDescriptors == null,
+                      onChanged: _isSubmitting
+                          ? null
+                          : (inherit) {
+                              setState(() {
+                                // Explicit off → start as [] (not inferred from empty).
+                                _contentDescriptors = inherit ? null : <String>[];
+                              });
+                            },
+                    ),
+                    if (_contentDescriptors != null) ...[
+                      const SizedBox(height: 8),
+                      ContentRatingEditor(
+                        ageRating: null,
+                        descriptors: _contentDescriptors!,
+                        includeAge: false,
+                        showSectionTitle: false,
+                        enabled: !_isSubmitting,
+                        onAgeChanged: (_) {},
+                        onDescriptorsChanged: (value) {
+                          setState(() => _contentDescriptors = value);
+                        },
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
                     title: const Text('Ücretsiz Bölüm'),
                     value: _isFree,
                     onChanged: _isSubmitting ? null : _onIsFreeChanged,
@@ -413,7 +504,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     ],
                     const SizedBox(height: 8),
                     _ReadOnlyInfo(
-                      label: 'Toplam İzlenme',
+                      label: 'Nitelikli İzlenme',
+                      value: episode.qualifiedViewsTotal.toString(),
+                    ),
+                    const SizedBox(height: 8),
+                    _ReadOnlyInfo(
+                      label: 'Eski Sayaç (seed)',
                       value: episode.totalViews.toString(),
                     ),
                   ],

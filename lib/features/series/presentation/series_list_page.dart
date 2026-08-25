@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/config/media_config.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content_rating/presentation/synopsis_preview.dart';
 import '../../episodes/presentation/series_episodes_page.dart';
 import '../data/series_repository.dart';
 import '../domain/admin_series.dart';
@@ -364,7 +365,7 @@ class _SeriesDataTable extends StatelessWidget {
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
             dataRowMinHeight: 72,
-            dataRowMaxHeight: 72,
+            dataRowMaxHeight: 120,
             columns: const [
               DataColumn(label: Text('Poster')),
               DataColumn(label: Text('Dizi Adı')),
@@ -387,23 +388,27 @@ class _SeriesDataTable extends StatelessWidget {
       cells: [
         DataCell(_SeriesPoster(posterPath: item.posterPath, size: 48)),
         DataCell(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                item.title,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              if (item.slug.isNotEmpty)
+          SizedBox(
+            width: 260,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Text(
-                  item.slug,
-                  style: const TextStyle(
-                    color: Color(0xFF777777),
-                    fontSize: 12,
-                  ),
+                  item.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-            ],
+                if (item.slug.isNotEmpty)
+                  Text(
+                    item.slug,
+                    style: const TextStyle(
+                      color: Color(0xFF777777),
+                      fontSize: 12,
+                    ),
+                  ),
+                SynopsisPreview(synopsis: item.synopsis),
+              ],
+            ),
           ),
         ),
         DataCell(Text(item.statusLabel)),
@@ -515,6 +520,7 @@ class _SeriesCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  SynopsisPreview(synopsis: item.synopsis),
                   const SizedBox(height: 6),
                   Text(
                     '${item.statusLabel} · ${_formatCategories(item.categories)}',

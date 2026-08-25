@@ -41,6 +41,11 @@ void main() {
       }
 
       expect(EpisodeRepository.adminEpisodeSelect, contains('id'));
+      expect(EpisodeRepository.adminEpisodeSelect, contains('content_age_rating'));
+      expect(
+        EpisodeRepository.adminEpisodeSelect,
+        contains('content_descriptors'),
+      );
       expect(EpisodeRepository.adminEpisodeSelect, isNot(contains('*')));
     });
 

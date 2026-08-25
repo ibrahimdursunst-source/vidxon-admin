@@ -33,6 +33,9 @@ class EpisodeRepository {
     archived_at,
     content_version,
     total_views,
+    qualified_views_total,
+    content_age_rating,
+    content_descriptors,
     release_at,
     created_at,
     updated_at
@@ -199,7 +202,7 @@ class EpisodeRepository {
       }
 
       final episodeId = row['episode_id']?.toString() ?? input.episodeId;
-      return fetchById(episodeId);
+      return await fetchById(episodeId);
     } on PostgrestException catch (error) {
       throw ContentErrorMapper.fromPostgrest(error);
     } on ContentException {
@@ -279,7 +282,7 @@ class EpisodeRepository {
       }
 
       final episodeId = row['episode_id']?.toString() ?? params['p_episode_id'];
-      return fetchById(episodeId.toString());
+      return await fetchById(episodeId.toString());
     } on PostgrestException catch (error) {
       throw ContentErrorMapper.fromPostgrest(error);
     } on ContentException {

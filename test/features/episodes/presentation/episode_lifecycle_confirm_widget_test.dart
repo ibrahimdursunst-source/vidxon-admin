@@ -77,27 +77,45 @@ void main() {
       expect(repository.lastPublishExpectedVersion, 2);
     });
 
-    testWidgets('processing video hides publish action', (tester) async {
-      final repository = FakeEpisodeRepository([
-        testEpisode(
-          streamStatus: CloudflareStreamStatus.processing,
-        ),
-      ]);
+    testWidgets(
+      'processing video shows disabled publish with reason',
+      (tester) async {
+        final repository = FakeEpisodeRepository([
+          testEpisode(
+            streamStatus: CloudflareStreamStatus.processing,
+          ),
+        ]);
 
-      await pumpEpisodes(tester, repository);
-      await openEpisodeMenu(tester);
+        await pumpEpisodes(tester, repository);
+        await openEpisodeMenu(tester);
 
-      expect(find.text('Yayınla'), findsNothing);
-      expect(repository.publishCalls, 0);
-    });
+        expect(find.text('Yayınla'), findsOneWidget);
+        expect(find.text('Video işleniyor.'), findsWidgets);
 
-    testWidgets('no video hides publish action', (tester) async {
+        await tester.tap(find.text('Yayınla'));
+        await _settle(tester);
+
+        expect(repository.publishCalls, 0);
+        expect(find.text('Bu bölüm yayına alınsın mı?'), findsNothing);
+      },
+    );
+
+    testWidgets('no video shows disabled publish with reason', (tester) async {
       final repository = FakeEpisodeRepository([testEpisode()]);
 
       await pumpEpisodes(tester, repository);
       await openEpisodeMenu(tester);
 
-      expect(find.text('Yayınla'), findsNothing);
+      expect(find.text('Yayınla'), findsOneWidget);
+      expect(
+        find.text('Yayınlamak için aktif video gerekir.'),
+        findsWidgets,
+      );
+
+      await tester.tap(find.text('Yayınla'));
+      await _settle(tester);
+
+      expect(repository.publishCalls, 0);
     });
 
     testWidgets('archived episode shows only restore', (tester) async {
@@ -110,20 +128,35 @@ void main() {
 
       expect(find.text('Geri Yükle'), findsOneWidget);
       expect(find.text('Yayınla'), findsNothing);
+      expect(find.text('Yayından Kaldır'), findsNothing);
     });
 
-    testWidgets('archived parent hides publish action', (tester) async {
-      final repository = FakeEpisodeRepository([
-        testEpisode(
-          streamStatus: CloudflareStreamStatus.ready,
-        ),
-      ]);
+    testWidgets(
+      'archived parent shows disabled publish with reason',
+      (tester) async {
+        final repository = FakeEpisodeRepository([
+          testEpisode(
+            streamStatus: CloudflareStreamStatus.ready,
+          ),
+        ]);
 
-      await pumpEpisodes(tester, repository, parentSeriesArchived: true);
-      await openEpisodeMenu(tester);
+        await pumpEpisodes(tester, repository, parentSeriesArchived: true);
+        await openEpisodeMenu(tester);
 
-      expect(find.text('Yayınla'), findsNothing);
-    });
+        expect(find.text('Yayınla'), findsOneWidget);
+        expect(
+          find.text(
+            'Arşivlenmiş bir dizinin bölümü yayınlanamaz.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Yayınla'));
+        await _settle(tester);
+
+        expect(repository.publishCalls, 0);
+      },
+    );
 
     testWidgets('publish conflict reloads episode without success toast', (
       tester,

@@ -1,3 +1,4 @@
+import '../../content_rating/domain/content_rating_catalog.dart';
 import 'admin_series.dart';
 
 class SeriesUpdateResult {
@@ -12,6 +13,8 @@ class SeriesUpdateResult {
     required this.contentVersion,
     required this.updatedAt,
     required this.isArchived,
+    this.contentAgeRating,
+    this.contentDescriptors = const [],
   });
 
   final String seriesId;
@@ -24,6 +27,8 @@ class SeriesUpdateResult {
   final int contentVersion;
   final DateTime updatedAt;
   final bool isArchived;
+  final int? contentAgeRating;
+  final List<String> contentDescriptors;
 
   factory SeriesUpdateResult.fromMap(Map<String, dynamic> map) {
     return SeriesUpdateResult(
@@ -37,6 +42,12 @@ class SeriesUpdateResult {
       contentVersion: parseContentVersion(map['content_version']),
       updatedAt: DateTime.parse(map['updated_at'].toString()).toUtc(),
       isArchived: map['is_archived'] == true,
+      contentAgeRating: ContentRatingCatalog.parseAgeRating(
+        map['content_age_rating'],
+      ),
+      contentDescriptors: ContentRatingCatalog.parseDescriptors(
+        map['content_descriptors'],
+      ),
     );
   }
 
@@ -51,6 +62,9 @@ class SeriesUpdateResult {
       contentVersion: contentVersion,
       updatedAt: updatedAt,
       isArchived: isArchived,
+      contentAgeRating: contentAgeRating,
+      clearContentAgeRating: contentAgeRating == null,
+      contentDescriptors: contentDescriptors,
     );
   }
 }

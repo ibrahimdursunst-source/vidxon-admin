@@ -1,4 +1,5 @@
 import 'cloudflare_stream_status.dart';
+import '../../content_rating/domain/content_rating_catalog.dart';
 
 class AdminEpisode {
   const AdminEpisode({
@@ -13,6 +14,7 @@ class AdminEpisode {
     required this.isArchived,
     required this.contentVersion,
     required this.totalViews,
+    this.qualifiedViewsTotal = 0,
     required this.cloudflareStreamStatus,
     required this.cloudflareStreamPendingStatus,
     this.thumbnailPath,
@@ -23,6 +25,8 @@ class AdminEpisode {
     this.releaseAt,
     this.createdAt,
     this.updatedAt,
+    this.contentAgeRating,
+    this.contentDescriptors,
   });
 
   final String id;
@@ -38,6 +42,7 @@ class AdminEpisode {
   final bool isArchived;
   final int contentVersion;
   final int totalViews;
+  final int qualifiedViewsTotal;
   final CloudflareStreamStatus cloudflareStreamStatus;
   final CloudflareStreamStatus cloudflareStreamPendingStatus;
   final DateTime? cloudflareStreamPendingRequestedAt;
@@ -46,6 +51,13 @@ class AdminEpisode {
   final DateTime? releaseAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int? contentAgeRating;
+
+  /// Null means inherit series descriptors; non-null (including empty) is override.
+  final List<String>? contentDescriptors;
+
+  bool get hasContentRatingOverride =>
+      contentAgeRating != null || contentDescriptors != null;
 
   bool get hasActiveVideo =>
       cloudflareStreamStatus != CloudflareStreamStatus.none;
@@ -74,6 +86,10 @@ class AdminEpisode {
       episodeNumber > 0 &&
       (isFree || coinPrice > 0);
 
+  /// Shown when the parent series is archived (menu / UX only; mirrors gate).
+  static const parentSeriesArchivedPublishBlockReason =
+      'Arşivlenmiş bir dizinin bölümü yayınlanamaz.';
+
   String? get publishBlockReason {
     if (isArchived) {
       return 'Arşivlenmiş bölüm yayınlanamaz.';
@@ -100,6 +116,18 @@ class AdminEpisode {
     }
 
     return null;
+  }
+
+  /// Publish menu eligibility: episode rules plus archived parent gate.
+  bool canPublishFromMenu({required bool parentSeriesArchived}) =>
+      !parentSeriesArchived && canPublish;
+
+  /// Human-readable block reason for the Publish menu item.
+  String? publishMenuBlockReason({required bool parentSeriesArchived}) {
+    if (parentSeriesArchived) {
+      return parentSeriesArchivedPublishBlockReason;
+    }
+    return publishBlockReason;
   }
 
   String get videoStatusLabel => switch (cloudflareStreamStatus) {
@@ -142,6 +170,10 @@ class AdminEpisode {
     DateTime? releaseAt,
     DateTime? updatedAt,
     DateTime? archivedAt,
+    int? contentAgeRating,
+    List<String>? contentDescriptors,
+    bool clearContentAgeRating = false,
+    bool clearContentDescriptors = false,
   }) {
     return AdminEpisode(
       id: id,
@@ -155,6 +187,7 @@ class AdminEpisode {
       isArchived: isArchived ?? this.isArchived,
       contentVersion: contentVersion ?? this.contentVersion,
       totalViews: totalViews,
+      qualifiedViewsTotal: qualifiedViewsTotal,
       cloudflareStreamStatus:
           cloudflareStreamStatus ?? this.cloudflareStreamStatus,
       cloudflareStreamPendingStatus:
@@ -169,6 +202,12 @@ class AdminEpisode {
       releaseAt: releaseAt ?? this.releaseAt,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      contentAgeRating: clearContentAgeRating
+          ? null
+          : (contentAgeRating ?? this.contentAgeRating),
+      contentDescriptors: clearContentDescriptors
+          ? null
+          : (contentDescriptors ?? this.contentDescriptors),
     );
   }
 
@@ -208,6 +247,7 @@ class AdminEpisode {
       isArchived: map['is_archived'] == true,
       contentVersion: _parseInt(map['content_version']),
       totalViews: _parseInt(map['total_views']),
+      qualifiedViewsTotal: _parseInt(map['qualified_views_total']),
       cloudflareStreamStatus: CloudflareStreamStatus.parse(
         map['cloudflare_stream_status'],
       ),
@@ -224,6 +264,12 @@ class AdminEpisode {
       releaseAt: _parseUtcDateTime(map['release_at']),
       createdAt: _parseUtcDateTime(map['created_at']),
       updatedAt: _parseUtcDateTime(map['updated_at']),
+      contentAgeRating: ContentRatingCatalog.parseAgeRating(
+        map['content_age_rating'],
+      ),
+      contentDescriptors: ContentRatingCatalog.parseNullableDescriptors(
+        map['content_descriptors'],
+      ),
     );
   }
 

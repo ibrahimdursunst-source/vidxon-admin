@@ -12,6 +12,9 @@ class UpdateEpisodeInput {
     required this.coinPrice,
     required this.expectedContentVersion,
     this.releaseAtLocal,
+    this.useContentRatingOverride = false,
+    this.contentAgeRating,
+    this.contentDescriptors,
   });
 
   final String episodeId;
@@ -21,6 +24,14 @@ class UpdateEpisodeInput {
   final int coinPrice;
   final int expectedContentVersion;
   final DateTime? releaseAtLocal;
+  final bool useContentRatingOverride;
+  final int? contentAgeRating;
+
+  /// When [useContentRatingOverride] is true:
+  /// - `null` = inherit series descriptors
+  /// - `[]` = explicit empty override
+  /// - non-empty = explicit descriptor list
+  final List<String>? contentDescriptors;
 
   int get normalizedCoinPrice =>
       normalizeCoinPrice(isFree: isFree, coinPrice: coinPrice);
@@ -59,6 +70,24 @@ class UpdateEpisodeInput {
 Map<String, dynamic> buildUpdateEpisodeRpcParams(UpdateEpisodeInput input) {
   input.validate();
 
+  if (input.useContentRatingOverride) {
+    return {
+      'p_episode_id': input.episodeId.trim(),
+      'p_title': input.title.trim(),
+      'p_synopsis': input.synopsis.trim(),
+      'p_is_free': input.isFree,
+      'p_coin_price': input.normalizedCoinPrice,
+      'p_release_at': releaseAtLocalToRpcPayload(input.releaseAtLocal),
+      'p_expected_content_version': input.expectedContentVersion,
+      'p_content_age_rating': input.contentAgeRating,
+      'p_content_descriptors': normalizeEpisodeContentDescriptors(
+        input.contentDescriptors,
+      ),
+      'p_clear_content_rating_override': false,
+      'p_apply_content_rating_override': true,
+    };
+  }
+
   return {
     'p_episode_id': input.episodeId.trim(),
     'p_title': input.title.trim(),
@@ -67,6 +96,10 @@ Map<String, dynamic> buildUpdateEpisodeRpcParams(UpdateEpisodeInput input) {
     'p_coin_price': input.normalizedCoinPrice,
     'p_release_at': releaseAtLocalToRpcPayload(input.releaseAtLocal),
     'p_expected_content_version': input.expectedContentVersion,
+    'p_content_age_rating': null,
+    'p_content_descriptors': null,
+    'p_clear_content_rating_override': true,
+    'p_apply_content_rating_override': false,
   };
 }
 

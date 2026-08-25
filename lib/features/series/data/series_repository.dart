@@ -24,6 +24,9 @@ class SeriesRepository {
     is_featured,
     is_premium,
     total_views,
+    qualified_views_total,
+    content_age_rating,
+    content_descriptors,
     created_at,
     updated_at,
     series_categories (

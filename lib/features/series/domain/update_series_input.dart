@@ -10,6 +10,8 @@ class UpdateSeriesInput {
     required this.expectedContentVersion,
     this.backdropPath,
     this.releaseDate,
+    this.contentAgeRating,
+    this.contentDescriptors = const [],
   });
 
   final String seriesId;
@@ -22,6 +24,8 @@ class UpdateSeriesInput {
   final int expectedContentVersion;
   final String? backdropPath;
   final String? releaseDate;
+  final int? contentAgeRating;
+  final List<String> contentDescriptors;
 
   void validate() {
     if (seriesId.trim().isEmpty) {
@@ -58,6 +62,9 @@ Map<String, dynamic> buildUpdateSeriesRpcParams(UpdateSeriesInput input) {
     'p_backdrop_path': backdrop == null || backdrop.isEmpty ? null : backdrop,
     'p_category_ids': input.categoryIds,
     'p_expected_content_version': input.expectedContentVersion,
+    'p_content_age_rating': input.contentAgeRating,
+    'p_content_descriptors': input.contentDescriptors,
+    'p_update_content_rating': true,
   };
 }
 

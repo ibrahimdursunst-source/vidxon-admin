@@ -29,7 +29,7 @@ class SeriesMutationRepository {
         );
       }
 
-      return SeriesRepository(client: _client).fetchById(seriesId);
+      return await SeriesRepository(client: _client).fetchById(seriesId);
     } on PostgrestException catch (error) {
       throw ContentErrorMapper.fromPostgrest(error);
     } on ContentException {

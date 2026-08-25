@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/utils/slug_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content_rating/domain/content_rating_catalog.dart';
+import '../../content_rating/presentation/content_rating_editor.dart';
 import '../../categories/data/category_repository.dart';
 import '../../categories/domain/admin_category.dart';
 import '../../media/data/image_upload_repository.dart';
@@ -81,6 +83,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   bool _isPremium = false;
   DateTime? _releaseDate;
   final Set<String> _selectedCategoryIds = {};
+  int? _contentAgeRating;
+  List<String> _contentDescriptors = [];
 
   PosterFile? _posterFile;
   String? _uploadedPosterFingerprint;
@@ -290,6 +294,10 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           isPremium: _isPremium,
           releaseDate: releaseDate,
           categoryIds: _selectedCategoryIds.toList(),
+          contentAgeRating: _contentAgeRating,
+          contentDescriptors: ContentRatingCatalog.normalizeDescriptors(
+            _contentDescriptors,
+          ),
         ),
       );
 
@@ -386,6 +394,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                   const SizedBox(height: 16),
                 ],
                 _buildBasicFields(),
+                const SizedBox(height: 24),
+                _buildContentRatingSection(),
                 const SizedBox(height: 24),
                 _buildPosterSection(),
                 const SizedBox(height: 24),
@@ -559,6 +569,24 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContentRatingSection() {
+    return _SectionCard(
+      title: 'İçerik Derecelendirmesi',
+      child: ContentRatingEditor(
+        ageRating: _contentAgeRating,
+        descriptors: _contentDescriptors,
+        enabled: !_isSubmitting,
+        showSectionTitle: false,
+        onAgeChanged: (value) {
+          setState(() => _contentAgeRating = value);
+        },
+        onDescriptorsChanged: (value) {
+          setState(() => _contentDescriptors = value);
+        },
       ),
     );
   }

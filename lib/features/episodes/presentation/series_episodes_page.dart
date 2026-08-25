@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content_rating/presentation/synopsis_preview.dart';
 import '../../series/data/series_mutation_repository.dart';
 import '../../series/domain/admin_series.dart';
 import '../data/episode_preview_repository.dart';
@@ -212,6 +213,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
     required String confirmLabel,
     required Future<AdminEpisode> Function() action,
     required String successMessage,
+    String cancelLabel = 'Vazgeç',
   }) async {
     if (_lifecycleBusy || !contentMutationsEnabled(context)) {
       return;
@@ -222,6 +224,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       title: title,
       message: message,
       confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
     );
     if (!confirmed || !mounted) {
       return;
@@ -303,9 +306,12 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.unpublish:
         await _runLifecycle(
           episode: episode,
-          title: 'Yayından Kaldır',
-          message: 'Bu bölüm yayından kaldırılsın mı?',
+          title: 'Bölümü Yayından Kaldır?',
+          message:
+              'Bu bölüm kullanıcılar tarafından erişilemez hâle gelecektir. '
+              'Daha sonra tekrar yayınlayabilirsiniz.',
           confirmLabel: 'Yayından Kaldır',
+          cancelLabel: 'İptal',
           successMessage: 'Bölüm yayından kaldırıldı.',
           action: () => _repository.unpublishEpisode(
             episodeId: episode.id,
@@ -502,14 +508,23 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
     );
   }
 
-  if (!parentSeriesArchived &&
-      !episode.isArchived &&
-      !episode.isPublished &&
-      episode.canPublish) {
+  if (!episode.isArchived && !episode.isPublished) {
+    final publishEnabled = episode.canPublishFromMenu(
+      parentSeriesArchived: parentSeriesArchived,
+    );
+    final blockReason = publishEnabled
+        ? null
+        : episode.publishMenuBlockReason(
+            parentSeriesArchived: parentSeriesArchived,
+          );
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.publish,
-        child: Text('Yayınla'),
+        enabled: publishEnabled,
+        child: _EpisodePublishMenuLabel(
+          enabled: publishEnabled,
+          reason: blockReason,
+        ),
       ),
     );
   }
@@ -542,7 +557,7 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
   return items;
 }
 
-/// Returns menu labels for lifecycle and action visibility tests.
+/// Returns primary menu labels for lifecycle and action visibility tests.
 List<String> episodeMenuLabels(
   AdminEpisode episode, {
   bool parentSeriesArchived = false,
@@ -550,15 +565,105 @@ List<String> episodeMenuLabels(
   return episodeMenuItems(episode, parentSeriesArchived: parentSeriesArchived)
       .map((entry) {
         if (entry is PopupMenuItem<EpisodeMenuAction>) {
-          final child = entry.child;
-          if (child is Text) {
-            return child.data ?? '';
-          }
+          return _primaryMenuLabel(entry.child);
         }
         return '';
       })
       .where((label) => label.isNotEmpty)
       .toList();
+}
+
+/// Publish menu visibility/enabled state for tests.
+PopupMenuItem<EpisodeMenuAction>? episodeMenuPublishItem(
+  AdminEpisode episode, {
+  bool parentSeriesArchived = false,
+}) {
+  for (final entry in episodeMenuItems(
+    episode,
+    parentSeriesArchived: parentSeriesArchived,
+  )) {
+    if (entry is PopupMenuItem<EpisodeMenuAction> &&
+        entry.value == EpisodeMenuAction.publish) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+String? episodeMenuPublishReason(
+  AdminEpisode episode, {
+  bool parentSeriesArchived = false,
+}) {
+  final item = episodeMenuPublishItem(
+    episode,
+    parentSeriesArchived: parentSeriesArchived,
+  );
+  final child = item?.child;
+  if (child is _EpisodePublishMenuLabel) {
+    return child.reason;
+  }
+  return null;
+}
+
+String _primaryMenuLabel(Widget? child) {
+  if (child is Text) {
+    return child.data ?? '';
+  }
+  if (child is _EpisodePublishMenuLabel) {
+    return _EpisodePublishMenuLabel.label;
+  }
+  return '';
+}
+
+/// Publish row: primary label + optional secondary block reason.
+class _EpisodePublishMenuLabel extends StatelessWidget {
+  const _EpisodePublishMenuLabel({
+    required this.enabled,
+    this.reason,
+  });
+
+  static const label = 'Yayınla';
+
+  final bool enabled;
+  final String? reason;
+
+  @override
+  Widget build(BuildContext context) {
+    // Explicit colors so disabled PopupMenuItem still keeps the reason legible.
+    final titleColor = enabled
+        ? const Color(0xFFF5F5F5)
+        : const Color(0xFFD0D0D0);
+    final reasonColor = const Color(0xFFB3B3B3);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: titleColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (reason != null && reason!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              reason!,
+              style: TextStyle(
+                color: reasonColor,
+                fontSize: 12,
+                height: 1.35,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _PageHeader extends StatelessWidget {
@@ -657,12 +762,13 @@ class _EpisodesDataTable extends StatelessWidget {
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
             dataRowMinHeight: 56,
-            dataRowMaxHeight: 72,
+            dataRowMaxHeight: 110,
             columns: const [
               DataColumn(label: Text('No')),
               DataColumn(label: Text('Başlık')),
               DataColumn(label: Text('Erişim')),
               DataColumn(label: Text('Yayın')),
+              DataColumn(label: Text('Nitelikli')),
               DataColumn(label: Text('Video')),
               DataColumn(label: Text('Bekleyen')),
               DataColumn(label: Text('Yayın Tarihi')),
@@ -674,24 +780,29 @@ class _EpisodesDataTable extends StatelessWidget {
                   cells: [
                     DataCell(Text(episode.episodeNumber.toString())),
                     DataCell(
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(episode.title),
-                          if (archived)
-                            const Text(
-                              'Arşivlenmiş',
-                              style: TextStyle(
-                                color: Color(0xFFE5A000),
-                                fontSize: 12,
+                      SizedBox(
+                        width: 240,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(episode.title),
+                            if (archived)
+                              const Text(
+                                'Arşivlenmiş',
+                                style: TextStyle(
+                                  color: Color(0xFFE5A000),
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                        ],
+                            SynopsisPreview(synopsis: episode.synopsis),
+                          ],
+                        ),
                       ),
                     ),
                     DataCell(Text(episode.priceLabel)),
                     DataCell(Text(episode.publishLabel)),
+                    DataCell(Text('${episode.qualifiedViewsTotal}')),
                     DataCell(Text(episode.videoStatusLabel)),
                     DataCell(Text(episode.pendingVideoStatusLabel)),
                     DataCell(Text(formatEpisodeDateTime(episode.releaseAt))),
@@ -767,6 +878,7 @@ class _EpisodesCardList extends StatelessWidget {
                       ),
                     ],
                   ),
+                  SynopsisPreview(synopsis: episode.synopsis),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -774,6 +886,9 @@ class _EpisodesCardList extends StatelessWidget {
                     children: [
                       _InfoChip(label: episode.priceLabel),
                       _InfoChip(label: episode.publishLabel),
+                      _InfoChip(
+                        label: 'Nitelikli: ${episode.qualifiedViewsTotal}',
+                      ),
                       if (archived) const _InfoChip(label: 'Arşivlenmiş'),
                       _InfoChip(label: episode.videoStatusLabel),
                       if (episode.hasPendingReplacement)

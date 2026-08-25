@@ -160,7 +160,7 @@ class EpisodeVideoUploadRepository {
         ),
       );
 
-      return _fetchEpisode(episodeId);
+      return await _fetchEpisode(episodeId);
     } on PostgrestException catch (error) {
       final mapped = EpisodeVideoUploadErrorMapper.fromPostgrest(error);
       throw EpisodeVideoUploadException(
@@ -197,7 +197,7 @@ class EpisodeVideoUploadRepository {
         ),
       );
 
-      return _fetchEpisode(episodeId);
+      return await _fetchEpisode(episodeId);
     } on PostgrestException catch (error) {
       final mapped = EpisodeVideoUploadErrorMapper.fromPostgrest(error);
       throw EpisodeVideoUploadException(
