@@ -42,10 +42,73 @@ class SeriesMutationRepository {
     }
   }
 
+  /// Atomic Series create + optional Partner assignment (one transaction).
+  Future<AdminSeries> createSeriesWithPartner({
+    required CreateSeriesInput input,
+    String? partnerId,
+  }) async {
+    try {
+      final params = {
+        ...buildCreateSeriesRpcParams(input),
+        'p_partner_id': partnerId?.trim().isEmpty == true
+            ? null
+            : partnerId?.trim(),
+      };
+      final result = await _resolvedClient.rpc(
+        'admin_create_series_with_partner_v1',
+        params: params,
+      );
+      final map = parseRpcRow(result);
+      final seriesId = map?['series_id']?.toString().trim();
+      if (seriesId == null || seriesId.isEmpty) {
+        throw const ContentException(
+          message: 'Dizi kaydedildi ancak yanıt geçersiz.',
+          kind: ContentFailureKind.serverError,
+        );
+      }
+
+      return await SeriesRepository(client: _client).fetchById(seriesId);
+    } on PostgrestException catch (error) {
+      throw ContentErrorMapper.fromPostgrest(error);
+    } on ContentException {
+      rethrow;
+    } on FormatException {
+      throw const ContentException(
+        message: 'Sunucu yanıtı geçersiz.',
+        kind: ContentFailureKind.serverError,
+      );
+    } catch (_) {
+      throw const ContentException(
+        message: 'Dizi kaydedilemedi. Lütfen tekrar deneyin.',
+        kind: ContentFailureKind.unknown,
+      );
+    }
+  }
+
   Future<SeriesUpdateResult> updateSeries(UpdateSeriesInput input) async {
     return _runSeriesRowMutation(
       rpcName: 'admin_update_series',
       params: buildUpdateSeriesRpcParams(input),
+      parser: SeriesUpdateResult.fromMap,
+    );
+  }
+
+  /// Atomic Series content update + optional Partner change (one transaction).
+  /// One Save => one content_version transition (Partner apply does not double-bump).
+  Future<SeriesUpdateResult> updateSeriesWithPartner({
+    required UpdateSeriesInput input,
+    required String? partnerId,
+    required bool applyPartner,
+  }) async {
+    return _runSeriesRowMutation(
+      rpcName: 'admin_update_series_with_partner_v1',
+      params: {
+        ...buildUpdateSeriesRpcParams(input),
+        'p_partner_id': partnerId?.trim().isEmpty == true
+            ? null
+            : partnerId?.trim(),
+        'p_apply_partner': applyPartner,
+      },
       parser: SeriesUpdateResult.fromMap,
     );
   }

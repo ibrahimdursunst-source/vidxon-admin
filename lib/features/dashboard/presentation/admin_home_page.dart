@@ -7,6 +7,7 @@ import '../../audit/presentation/admin_audit_page.dart';
 import '../../categories/data/category_repository.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
+import '../../partners/presentation/partners_page.dart';
 import '../../series/data/series_mutation_repository.dart';
 import '../../series/data/series_repository.dart';
 import '../../series/presentation/series_create_page.dart';
@@ -59,6 +60,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
       GlobalKey<AdminAuditPageState>();
   final GlobalKey<AdminManagementPageState> _managementPageKey =
       GlobalKey<AdminManagementPageState>();
+  final GlobalKey<PartnersPageState> _partnersPageKey =
+      GlobalKey<PartnersPageState>();
 
   late Future<DashboardCounts> _countsFuture;
 
@@ -98,6 +101,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
       const _NavItem(
         label: 'İşlem Kayıtları',
         icon: Icons.receipt_long_outlined,
+        enabled: true,
+      ),
+      const _NavItem(
+        label: 'Partnerler',
+        icon: Icons.handshake_outlined,
         enabled: true,
       ),
       if (showSuperAdminNav)
@@ -144,6 +152,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
         _usersPageKey.currentState?.refresh();
       case 'İşlem Kayıtları':
         _auditPageKey.currentState?.refresh();
+      case 'Partnerler':
+        _partnersPageKey.currentState?.refresh();
       case 'Yöneticiler':
         _managementPageKey.currentState?.refresh();
       default:
@@ -317,6 +327,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       'Diziler' => _buildSeriesContent(),
       'Kullanıcılar' => AdminUsersPage(key: _usersPageKey),
       'İşlem Kayıtları' => AdminAuditPage(key: _auditPageKey),
+      'Partnerler' => PartnersPage(key: _partnersPageKey),
       'Yöneticiler' => AdminManagementPage(key: _managementPageKey),
       _ => const Center(
         child: Text(

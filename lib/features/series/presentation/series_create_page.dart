@@ -9,6 +9,9 @@ import '../../categories/data/category_repository.dart';
 import '../../categories/domain/admin_category.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
+import '../../partners/data/partner_errors.dart';
+import '../../partners/data/partner_repository.dart';
+import '../../partners/presentation/partner_selector.dart';
 import '../data/series_mutation_repository.dart';
 import '../domain/admin_series.dart';
 import '../domain/create_series_input.dart';
@@ -42,6 +45,7 @@ class SeriesCreatePage extends StatefulWidget {
     this.seriesMutationRepository,
     this.imageUploadRepository,
     this.categoryRepository,
+    this.partnerRepository,
     this.initialPosterForTesting,
     super.key,
   });
@@ -51,6 +55,7 @@ class SeriesCreatePage extends StatefulWidget {
   final SeriesMutationRepository? seriesMutationRepository;
   final ImageUploadRepository? imageUploadRepository;
   final CategoryRepository? categoryRepository;
+  final PartnerRepository? partnerRepository;
   final PosterFile? initialPosterForTesting;
 
   @override
@@ -71,12 +76,15 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       widget.imageUploadRepository ?? ImageUploadRepository();
   late final SeriesMutationRepository _seriesMutationRepository =
       widget.seriesMutationRepository ?? SeriesMutationRepository();
+  late final PartnerRepository _partnerRepository =
+      widget.partnerRepository ?? PartnerRepository();
 
   late Future<List<AdminCategory>> _categoriesFuture;
 
   bool _slugEditedManually = false;
   bool _isSubmitting = false;
   _SubmitStage? _submitStage;
+  String? _selectedPartnerId;
 
   SeriesStatusValue _status = SeriesStatusValue.ongoing;
   bool _isFeatured = false;
@@ -283,8 +291,9 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           ? null
           : _formatReleaseDate(_releaseDate!);
 
-      final created = await _seriesMutationRepository.createSeries(
-        CreateSeriesInput(
+      final partnerId = _selectedPartnerId;
+      final created = await _seriesMutationRepository.createSeriesWithPartner(
+        input: CreateSeriesInput(
           title: _titleController.text.trim(),
           slug: _slugController.text.trim(),
           posterPath: posterPath,
@@ -299,6 +308,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             _contentDescriptors,
           ),
         ),
+        partnerId: partnerId != null && partnerId.isNotEmpty ? partnerId : null,
       );
 
       if (!mounted) {
@@ -333,6 +343,19 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
         _errorMessage = error.message;
         _retryHint =
             'Poster zaten yüklendi. Bilgileri düzenleyip tekrar deneyebilirsiniz.';
+        _isSubmitting = false;
+        _submitStage = null;
+      });
+    } on PartnerException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage =
+            'Dizi oluşturuldu ancak Partner ataması başarısız: ${error.message}';
+        _retryHint =
+            'Dizi kaydı oluştu. Partner atamasını dizi detayından yeniden deneyin.';
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -400,6 +423,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                 _buildPosterSection(),
                 const SizedBox(height: 24),
                 _buildStatusSection(),
+                const SizedBox(height: 24),
+                _buildPartnerSection(),
                 const SizedBox(height: 24),
                 _buildCategorySection(),
                 const SizedBox(height: 32),
@@ -713,6 +738,20 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                   },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPartnerSection() {
+    return _SectionCard(
+      title: 'İş Birliği Ortağı',
+      child: PartnerSelector(
+        selectedPartnerId: _selectedPartnerId,
+        enabled: !_isSubmitting,
+        repository: _partnerRepository,
+        onChanged: (value) {
+          setState(() => _selectedPartnerId = value);
+        },
       ),
     );
   }

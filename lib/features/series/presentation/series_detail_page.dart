@@ -12,6 +12,12 @@ import '../../content_rating/presentation/content_rating_editor.dart';
 import '../../episodes/presentation/series_episodes_page.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
+import '../../partners/data/partner_errors.dart';
+import '../../partners/data/partner_repository.dart';
+import '../../partners/domain/partner_metric_copy.dart';
+import '../../partners/domain/partner_series_assignment.dart';
+import '../../partners/presentation/partner_assignment_history_panel.dart';
+import '../../partners/presentation/partner_selector.dart';
 import '../data/series_mutation_repository.dart';
 import '../data/series_repository.dart';
 import '../domain/admin_series.dart';
@@ -26,6 +32,7 @@ class SeriesDetailPage extends StatefulWidget {
     this.mutationRepository,
     this.categoryRepository,
     this.imageUploadRepository,
+    this.partnerRepository,
     this.initialPosterForTesting,
     super.key,
   });
@@ -36,6 +43,7 @@ class SeriesDetailPage extends StatefulWidget {
   final SeriesMutationRepository? mutationRepository;
   final CategoryRepository? categoryRepository;
   final ImageUploadRepository? imageUploadRepository;
+  final PartnerRepository? partnerRepository;
   final PosterFile? initialPosterForTesting;
 
   @override
@@ -57,6 +65,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
       widget.categoryRepository ?? CategoryRepository();
   late final ImageUploadRepository _imageUploadRepository =
       widget.imageUploadRepository ?? ImageUploadRepository();
+  late final PartnerRepository _partnerRepository =
+      widget.partnerRepository ?? PartnerRepository();
 
   AdminSeries? _series;
   AdminSeries? _placeholderSeries;
@@ -68,11 +78,18 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   final Set<String> _selectedCategoryIds = {};
   int? _contentAgeRating;
   List<String> _contentDescriptors = [];
+  String? _selectedPartnerId;
+  String? _loadedPartnerId;
+
+  List<PartnerSeriesAssignment> _assignments = const [];
+  bool _assignmentsLoading = false;
+  String? _assignmentsError;
 
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isPosterUploading = false;
   bool _lifecycleBusy = false;
+
   String? _errorMessage;
 
   PosterFile? _newPosterFile;
@@ -110,6 +127,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         _series = fresh;
         _isLoading = false;
       });
+      await _loadAssignments();
     } catch (_) {
       if (!mounted) {
         return;
@@ -139,6 +157,81 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     _contentDescriptors = List<String>.from(series.contentDescriptors);
   }
 
+  Future<void> _loadAssignments() async {
+    setState(() {
+      _assignmentsLoading = true;
+      _assignmentsError = null;
+    });
+
+    try {
+      final history = await _partnerRepository.fetchAssignmentHistory(
+        widget.seriesId,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      final active = history.where((a) => a.isActive).toList(growable: false);
+      final currentPartnerId = active.isEmpty ? null : active.first.partnerId;
+
+      setState(() {
+        _assignments = history;
+        _selectedPartnerId = currentPartnerId;
+        _loadedPartnerId = currentPartnerId;
+        _assignmentsLoading = false;
+      });
+    } on PartnerException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assignmentsError = error.message;
+        _assignmentsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _assignmentsError = 'Atama geçmişi yüklenemedi.';
+        _assignmentsLoading = false;
+      });
+    }
+  }
+
+  Future<void> _onPartnerSelectionChanged(String? nextPartnerId) async {
+    final series = _series;
+    if (series == null || _lifecycleBusy || _isSaving) {
+      return;
+    }
+
+    if (nextPartnerId == _selectedPartnerId) {
+      return;
+    }
+
+    final previousSelection = _selectedPartnerId;
+    final isUnassign = nextPartnerId == null;
+    final confirmed = await confirmContentAction(
+      context,
+      title: isUnassign ? 'Partner atamasını kaldır' : 'Partner atamasını değiştir',
+      message: isUnassign
+          ? PartnerMetricCopy.unassignWarning
+          : PartnerMetricCopy.partnerChangeWarning,
+      confirmLabel: isUnassign ? 'Atamayı Kaldır' : 'Atamayı Değiştir',
+    );
+
+    if (!confirmed || !mounted) {
+      setState(() => _selectedPartnerId = previousSelection);
+      return;
+    }
+
+    // Deferred until Save — one Admin Save = one atomic content+partner transaction.
+    setState(() {
+      _selectedPartnerId = nextPartnerId;
+      _errorMessage = null;
+    });
+  }
+
   Future<void> _reloadSeries() async {
     final fresh = await _seriesRepository.fetchById(widget.seriesId);
     if (!mounted) {
@@ -165,9 +258,11 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
       _errorMessage = null;
     });
 
+    final partnerChanged = _selectedPartnerId != _loadedPartnerId;
+
     try {
-      final result = await _mutationRepository.updateSeries(
-        UpdateSeriesInput(
+      final result = await _mutationRepository.updateSeriesWithPartner(
+        input: UpdateSeriesInput(
           seriesId: series.id,
           title: _titleController.text.trim(),
           synopsis: _synopsisController.text.trim(),
@@ -181,6 +276,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
             _contentDescriptors,
           ),
         ),
+        partnerId: _selectedPartnerId,
+        applyPartner: partnerChanged,
       );
 
       if (!mounted) {
@@ -189,9 +286,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
       setState(() {
         _series = result.applyTo(series);
+        if (partnerChanged) {
+          _loadedPartnerId = _selectedPartnerId;
+        }
         _isSaving = false;
       });
       showContentSuccessSnackBar(context, 'Dizi güncellendi.');
+      if (partnerChanged) {
+        await _loadAssignments();
+      }
     } on ContentException catch (error) {
       if (!mounted) {
         return;
@@ -206,15 +309,18 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
             setState(() {
               _series = fresh;
               _applySeriesToForm(fresh);
+              _selectedPartnerId = _loadedPartnerId;
               _isSaving = false;
             });
           },
         );
+        await _loadAssignments();
         return;
       }
 
       setState(() {
         _errorMessage = error.message;
+        _selectedPartnerId = _loadedPartnerId;
         _isSaving = false;
       });
     } catch (_) {
@@ -224,6 +330,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
       setState(() {
         _errorMessage = 'Dizi güncellenemedi.';
+        _selectedPartnerId = _loadedPartnerId;
         _isSaving = false;
       });
     }
@@ -571,7 +678,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final series = _series;
     final mutationsEnabled = contentMutationsEnabled(context);
     final busy =
-        _isSaving || _isPosterUploading || _lifecycleBusy || !mutationsEnabled;
+        _isSaving ||
+        _isPosterUploading ||
+        _lifecycleBusy ||
+        !mutationsEnabled;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
@@ -669,6 +779,20 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
+                      _PartnerAssignmentSection(
+                        selectedPartnerId: _selectedPartnerId,
+                        enabled: !busy && !series.isArchived,
+                        repository: _partnerRepository,
+                        onChanged: _onPartnerSelectionChanged,
+                      ),
+                      const SizedBox(height: 24),
+                      PartnerAssignmentHistoryPanel(
+                        assignments: _assignments,
+                        isLoading: _assignmentsLoading,
+                        errorMessage: _assignmentsError,
+                        onRetry: _loadAssignments,
+                      ),
+                      const SizedBox(height: 24),
                       _LifecycleSection(
                         series: series,
                         busy: busy,
@@ -702,6 +826,56 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+class _PartnerAssignmentSection extends StatelessWidget {
+  const _PartnerAssignmentSection({
+    required this.selectedPartnerId,
+    required this.enabled,
+    required this.repository,
+    required this.onChanged,
+  });
+
+  final String? selectedPartnerId;
+  final bool enabled;
+  final PartnerRepository repository;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF111111),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: Color(0xFF2A2A2A)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'İş Birliği Ortağı',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Değişiklik mevcut atamayı şimdi kapatır; geçmiş korunur.',
+              style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            PartnerSelector(
+              selectedPartnerId: selectedPartnerId,
+              enabled: enabled,
+              repository: repository,
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -218,6 +218,14 @@ class FakeSeriesMutationRepository extends SeriesMutationRepository {
   }
 
   @override
+  Future<AdminSeries> createSeriesWithPartner({
+    required CreateSeriesInput input,
+    String? partnerId,
+  }) {
+    return createSeries(input);
+  }
+
+  @override
   Future<SeriesLifecycleResult> publishSeries({
     required String seriesId,
     required int expectedContentVersion,
