@@ -10,7 +10,7 @@ class PartnerAnalyticsReport {
     required this.validatedWatchSeconds,
     required this.qualifiedSessions,
     required this.completedSessions,
-    required this.reportStart,
+    this.reportStart,
     required this.reportEnd,
     required this.asOf,
     required this.metricVersion,
@@ -37,12 +37,28 @@ class PartnerAnalyticsReport {
   /// Null when denominator (qualified_sessions) is 0. UI must show "—", not 0%.
   final double? completionRate;
 
-  final DateTime reportStart;
+  /// Null for TOTAL/lifetime (unbounded start). Never epoch or wall-clock now.
+  final DateTime? reportStart;
   final DateTime reportEnd;
   final DateTime asOf;
   final DateTime generatedAt;
   final String metricVersion;
   final String reportingTimezone;
+
+  bool get isLifetime => reportStart == null;
+
+  String periodCaption({
+    required String formattedAsOf,
+    String? formattedStart,
+    String? formattedEnd,
+  }) {
+    if (isLifetime) {
+      return 'Toplam · as_of $formattedAsOf · $metricVersion';
+    }
+    return 'Dönem: $formattedStart → $formattedEnd · as_of $formattedAsOf · '
+        '$metricVersion';
+  }
+
   final String? preset;
   final PartnerDataIntegrityStatus? dataIntegrityStatus;
   final String? partnerId;
@@ -104,6 +120,13 @@ class PartnerAnalyticsReport {
       json,
       'completion_rate',
     );
+    final preset = PartnerParseHelpers.optionalString(json['preset']);
+    final isTotal = PartnerParseHelpers.isTotalPreset(preset);
+    final asOf = PartnerParseHelpers.requireUtcDateTime(
+      PartnerParseHelpers.requireField(json, 'as_of'),
+      fieldName: 'as_of',
+    );
+    final bounds = _parsePeriodBounds(json, isTotal: isTotal, asOf: asOf);
 
     return PartnerAnalyticsReport(
       qualifiedViews: PartnerParseHelpers.requireInt(
@@ -132,18 +155,9 @@ class PartnerAnalyticsReport {
               completionRaw,
               fieldName: 'completion_rate',
             ),
-      reportStart: PartnerParseHelpers.requireUtcDateTime(
-        _requireAliased(json, const ['resolved_start', 'report_start']),
-        fieldName: 'resolved_start',
-      ),
-      reportEnd: PartnerParseHelpers.requireUtcDateTime(
-        _requireAliased(json, const ['resolved_end', 'report_end']),
-        fieldName: 'resolved_end',
-      ),
-      asOf: PartnerParseHelpers.requireUtcDateTime(
-        PartnerParseHelpers.requireField(json, 'as_of'),
-        fieldName: 'as_of',
-      ),
+      reportStart: bounds.start,
+      reportEnd: bounds.end,
+      asOf: asOf,
       generatedAt: PartnerParseHelpers.requireUtcDateTime(
         PartnerParseHelpers.requireField(json, 'generated_at'),
         fieldName: 'generated_at',
@@ -159,7 +173,7 @@ class PartnerAnalyticsReport {
         PartnerParseHelpers.requireField(json, 'reporting_timezone'),
         fieldName: 'reporting_timezone',
       ),
-      preset: PartnerParseHelpers.optionalString(json['preset']),
+      preset: preset,
       dataIntegrityStatus: PartnerDataIntegrityStatus.tryParse(
         json['data_integrity_status'],
       ),
@@ -206,6 +220,85 @@ class PartnerAnalyticsReport {
       }
     }
     throw FormatException('${keys.first} is required.');
+  }
+
+  static const Object _absent = Object();
+
+  static Object? _lookupAliased(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      if (json.containsKey(key)) {
+        return json[key];
+      }
+    }
+    return _absent;
+  }
+
+  static ({DateTime? start, DateTime end}) _parsePeriodBounds(
+    Map<String, dynamic> json, {
+    required bool isTotal,
+    required DateTime asOf,
+  }) {
+    final startRaw = _lookupAliased(json, const [
+      'resolved_start',
+      'report_start',
+    ]);
+    final endRaw = _lookupAliased(json, const ['resolved_end', 'report_end']);
+
+    final DateTime? start;
+    if (isTotal) {
+      if (identical(startRaw, _absent) ||
+          PartnerParseHelpers.isLifetimeStartSentinel(startRaw)) {
+        start = null;
+      } else {
+        start = PartnerParseHelpers.requireUtcDateTime(
+          startRaw,
+          fieldName: 'resolved_start',
+        );
+      }
+    } else {
+      if (identical(startRaw, _absent)) {
+        throw const FormatException('resolved_start is required.');
+      }
+      if (PartnerParseHelpers.isLifetimeStartSentinel(startRaw)) {
+        throw const FormatException('resolved_start is invalid.');
+      }
+      start = PartnerParseHelpers.requireUtcDateTime(
+        startRaw,
+        fieldName: 'resolved_start',
+      );
+    }
+
+    final DateTime end;
+    if (isTotal) {
+      if (identical(endRaw, _absent) ||
+          PartnerParseHelpers.isLifetimeEndSentinel(endRaw)) {
+        end = asOf;
+      } else {
+        end = PartnerParseHelpers.requireUtcDateTime(
+          endRaw,
+          fieldName: 'resolved_end',
+        );
+      }
+    } else {
+      if (identical(endRaw, _absent)) {
+        throw const FormatException('resolved_end is required.');
+      }
+      if (PartnerParseHelpers.isLifetimeEndSentinel(endRaw)) {
+        throw const FormatException('resolved_end is invalid.');
+      }
+      end = PartnerParseHelpers.requireUtcDateTime(
+        endRaw,
+        fieldName: 'resolved_end',
+      );
+    }
+
+    if (!isTotal && (start == null || !start.isBefore(end))) {
+      throw const FormatException(
+        'resolved_start must be before resolved_end.',
+      );
+    }
+
+    return (start: start, end: end);
   }
 
   static List<PartnerEpisodeAnalyticsRow> _parseEpisodes(

@@ -134,7 +134,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
         return;
       }
       if (page.asOf.toUtc() != report.asOf.toUtc() ||
-          page.reportStart.toUtc() != report.reportStart.toUtc() ||
+          page.reportStart?.toUtc() != report.reportStart?.toUtc() ||
           page.reportEnd.toUtc() != report.reportEnd.toUtc() ||
           page.metricVersion != report.metricVersion) {
         setState(() {
@@ -371,10 +371,11 @@ class _ReportBody extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         Text(
-          'Dönem: ${formatUserDateTime(report.reportStart)} → '
-          '${formatUserDateTime(report.reportEnd)} · '
-          'as_of ${formatUserDateTime(report.asOf)} · '
-          '${report.metricVersion}',
+          report.periodCaption(
+            formattedAsOf: formatUserDateTime(report.asOf),
+            formattedStart: formatUserDateTime(report.reportStart),
+            formattedEnd: formatUserDateTime(report.reportEnd),
+          ),
           style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
         ),
         const SizedBox(height: 16),

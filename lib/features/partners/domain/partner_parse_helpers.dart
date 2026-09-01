@@ -66,4 +66,29 @@ abstract final class PartnerParseHelpers {
     }
     return map[fieldName];
   }
+
+  static bool isTotalPreset(String? preset) {
+    return (preset ?? '').trim().toLowerCase() == 'total';
+  }
+
+  /// TOTAL wire sentinels only. Do not treat arbitrary strings as unbounded.
+  static bool isLifetimeStartSentinel(dynamic value) {
+    if (value == null) {
+      return true;
+    }
+    if (value is String) {
+      return value.trim().toLowerCase() == '-infinity';
+    }
+    return false;
+  }
+
+  static bool isLifetimeEndSentinel(dynamic value) {
+    if (value == null) {
+      return true;
+    }
+    if (value is String) {
+      return value.trim().toLowerCase() == 'infinity';
+    }
+    return false;
+  }
 }
