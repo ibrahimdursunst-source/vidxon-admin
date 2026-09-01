@@ -139,16 +139,21 @@ class SeriesReorderResult {
 }
 
 Map<String, dynamic>? parseRpcRow(dynamic result) {
-  if (result is Map<String, dynamic>) {
-    return result;
-  }
-
-  if (result is List && result.isNotEmpty) {
-    final first = result.first;
-    if (first is Map<String, dynamic>) {
-      return first;
+  if (result is! Map) {
+    if (result is List && result.isNotEmpty && result.first is Map) {
+      result = result.first;
+    } else {
+      return null;
     }
   }
 
-  return null;
+  final map = Map<String, dynamic>.from(result as Map);
+  if (map.containsKey('ok') && map['ok'] != true) {
+    return null;
+  }
+  if (map.containsKey('ok') && map['ok'] == true) {
+    return map;
+  }
+
+  return map;
 }

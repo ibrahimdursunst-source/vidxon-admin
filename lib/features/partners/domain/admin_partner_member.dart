@@ -1,3 +1,4 @@
+import 'admin_partner_detail.dart';
 import 'partner_parse_helpers.dart';
 import 'partner_status.dart';
 
@@ -43,6 +44,21 @@ class AdminPartnerMember {
       updatedAt: PartnerParseHelpers.optionalUtcDateTime(map['updated_at']),
     );
   }
+
+  static AdminPartnerMember requireFromDetail(
+    AdminPartnerDetail detail,
+    String userId,
+  ) {
+    for (final member in detail.members) {
+      if (member.userId == userId) {
+        return member;
+      }
+    }
+
+    throw FormatException(
+      'Member $userId not found in canonical Partner detail.',
+    );
+  }
 }
 
 class PartnerLookupUser {
@@ -62,7 +78,10 @@ class PartnerLookupUser {
         map['user_id'],
         fieldName: 'user_id',
       ),
-      email: PartnerParseHelpers.requireString(map['email'], fieldName: 'email'),
+      email: PartnerParseHelpers.requireString(
+        map['email'],
+        fieldName: 'email',
+      ),
       displayName: PartnerParseHelpers.optionalString(map['display_name']),
     );
   }

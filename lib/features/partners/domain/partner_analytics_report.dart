@@ -221,14 +221,16 @@ class PartnerAnalyticsReport {
       throw const FormatException('episodes is invalid.');
     }
 
-    return raw.map((item) {
-      if (item is! Map) {
-        throw const FormatException('episodes item is invalid.');
-      }
-      return PartnerEpisodeAnalyticsRow.fromJson(
-        Map<String, dynamic>.from(item),
-      );
-    }).toList(growable: false);
+    return raw
+        .map((item) {
+          if (item is! Map) {
+            throw const FormatException('episodes item is invalid.');
+          }
+          return PartnerEpisodeAnalyticsRow.fromJson(
+            Map<String, dynamic>.from(item),
+          );
+        })
+        .toList(growable: false);
   }
 }
 
@@ -266,8 +268,8 @@ class PartnerEpisodeAnalyticsRow {
         PartnerParseHelpers.requireField(json, 'episode_id'),
         fieldName: 'episode_id',
       ),
-      episodeNumber: json.containsKey('episode_number') &&
-              json['episode_number'] != null
+      episodeNumber:
+          json.containsKey('episode_number') && json['episode_number'] != null
           ? PartnerParseHelpers.requireInt(
               json['episode_number'],
               fieldName: 'episode_number',

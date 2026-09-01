@@ -126,9 +126,7 @@ class _AssignmentRow extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  showSeriesTitle
-                      ? (assignment.seriesTitle ?? 'Dizi')
-                      : name,
+                  showSeriesTitle ? (assignment.seriesTitle ?? 'Dizi') : name,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),

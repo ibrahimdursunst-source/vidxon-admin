@@ -87,9 +87,7 @@ abstract final class PartnerErrorMapper {
 
     if (message.contains('invalid') || message.contains('must be')) {
       return PartnerException(
-        message: error.message.isNotEmpty
-            ? error.message
-            : 'Geçersiz istek.',
+        message: error.message.isNotEmpty ? error.message : 'Geçersiz istek.',
         kind: PartnerFailureKind.validation,
       );
     }
@@ -117,49 +115,68 @@ abstract final class PartnerErrorMapper {
   }
 }
 
-List<Map<String, dynamic>> parsePartnerRpcList(dynamic result) {
-  if (result is! List) {
-    throw const PartnerException(
-      message: 'Sunucu yanıtı geçersiz.',
-      kind: PartnerFailureKind.serverError,
-    );
+abstract final class PartnerRpcEnvelope {
+  static Map<String, dynamic> parseSuccessObject(dynamic result) {
+    final envelope = _requireEnvelopeMap(result);
+    _requireOkTrue(envelope);
+    return envelope;
   }
 
-  return result.map((item) {
-    if (item is! Map) {
+  static List<Map<String, dynamic>> parseSuccessList(
+    dynamic result, {
+    required String listKey,
+  }) {
+    final envelope = parseSuccessObject(result);
+    if (!envelope.containsKey(listKey)) {
+      throw PartnerErrorMapper.parseFailure('$listKey is required.');
+    }
+
+    final payload = envelope[listKey];
+    if (payload is! List) {
+      throw PartnerErrorMapper.parseFailure('$listKey is invalid.');
+    }
+
+    return payload
+        .map((item) {
+          if (item is! Map) {
+            throw PartnerErrorMapper.parseFailure('$listKey item is invalid.');
+          }
+          return Map<String, dynamic>.from(item);
+        })
+        .toList(growable: false);
+  }
+
+  static Map<String, dynamic> _requireEnvelopeMap(dynamic result) {
+    if (result is! Map) {
       throw const PartnerException(
         message: 'Sunucu yanıtı geçersiz.',
         kind: PartnerFailureKind.serverError,
       );
     }
-    return Map<String, dynamic>.from(item);
-  }).toList(growable: false);
-}
-
-Map<String, dynamic> parsePartnerRpcMap(dynamic result) {
-  if (result is Map) {
     return Map<String, dynamic>.from(result);
   }
 
-  if (result is List) {
-    if (result.isEmpty) {
-      throw const PartnerException(
-        message: 'Sunucu yanıtı boş.',
-        kind: PartnerFailureKind.serverError,
-      );
+  static void _requireOkTrue(Map<String, dynamic> envelope) {
+    if (!envelope.containsKey('ok')) {
+      throw PartnerErrorMapper.parseFailure('ok is required.');
     }
-    final item = result.first;
-    if (item is! Map) {
+
+    if (envelope['ok'] != true) {
       throw const PartnerException(
         message: 'Sunucu yanıtı geçersiz.',
         kind: PartnerFailureKind.serverError,
       );
     }
-    return Map<String, dynamic>.from(item);
   }
+}
 
-  throw const PartnerException(
-    message: 'Sunucu yanıtı geçersiz.',
-    kind: PartnerFailureKind.serverError,
-  );
+List<Map<String, dynamic>> parsePartnerRpcList(
+  dynamic result, {
+  required String listKey,
+}) {
+  return PartnerRpcEnvelope.parseSuccessList(result, listKey: listKey);
+}
+
+Map<String, dynamic> parsePartnerRpcMap(dynamic result) {
+  return PartnerRpcEnvelope.parseSuccessObject(result);
 }

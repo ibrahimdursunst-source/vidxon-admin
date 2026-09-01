@@ -12,19 +12,13 @@ Future<AdminPartnerSummary?> showPartnerFormDialog({
 }) {
   return showDialog<AdminPartnerSummary>(
     context: context,
-    builder: (context) => PartnerFormDialog(
-      repository: repository,
-      initial: initial,
-    ),
+    builder: (context) =>
+        PartnerFormDialog(repository: repository, initial: initial),
   );
 }
 
 class PartnerFormDialog extends StatefulWidget {
-  const PartnerFormDialog({
-    required this.repository,
-    this.initial,
-    super.key,
-  });
+  const PartnerFormDialog({required this.repository, this.initial, super.key});
 
   final PartnerRepository repository;
   final AdminPartnerSummary? initial;
@@ -48,7 +42,9 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
     _displayNameController = TextEditingController(
       text: initial?.displayName ?? '',
     );
-    _legalNameController = TextEditingController(text: initial?.legalName ?? '');
+    _legalNameController = TextEditingController(
+      text: initial?.legalName ?? '',
+    );
     _status = initial?.status ?? PartnerStatus.active;
   }
 

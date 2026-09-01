@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_partner_detail.dart';
@@ -5,6 +6,7 @@ import '../domain/admin_partner_member.dart';
 import '../domain/admin_partner_summary.dart';
 import '../domain/partner_analytics_health.dart';
 import '../domain/partner_analytics_report.dart';
+import '../domain/partner_parse_helpers.dart';
 import '../domain/partner_rpc_params.dart';
 import '../domain/partner_series_assignment.dart';
 import '../domain/partner_status.dart';
@@ -21,6 +23,7 @@ class PartnerRepository {
     return _runList(
       rpcName: 'admin_partner_list_v1',
       params: const {},
+      responseListKey: 'partners',
       mapper: AdminPartnerSummary.fromMap,
       failureMessage: 'Partner listesi yüklenemedi.',
     );
@@ -30,6 +33,7 @@ class PartnerRepository {
     return _runList(
       rpcName: 'admin_list_active_partners_v1',
       params: const {},
+      responseListKey: 'partners',
       mapper: AdminPartnerActiveOption.fromMap,
       failureMessage: 'Aktif Partner listesi yüklenemedi.',
     );
@@ -48,15 +52,17 @@ class PartnerRepository {
     required String displayName,
     String? legalName,
   }) async {
-    return _runMap(
+    final map = await _runWriteEnvelope(
       rpcName: 'admin_partner_create_v1',
       params: buildPartnerCreateRpcParams(
         displayName: displayName,
         legalName: legalName,
       ),
-      mapper: AdminPartnerSummary.fromMap,
       failureMessage: 'Partner oluşturulamadı.',
     );
+    final partnerId = _requirePartnerIdFromWrite(map);
+    final detail = await fetchPartnerDetail(partnerId);
+    return detail.toSummary();
   }
 
   Future<AdminPartnerSummary> updatePartner({
@@ -65,7 +71,7 @@ class PartnerRepository {
     required PartnerStatus status,
     String? legalName,
   }) async {
-    return _runMap(
+    await _runWriteEnvelope(
       rpcName: 'admin_partner_update_v1',
       params: buildPartnerUpdateRpcParams(
         partnerId: partnerId,
@@ -73,9 +79,10 @@ class PartnerRepository {
         status: status,
         legalName: legalName,
       ),
-      mapper: AdminPartnerSummary.fromMap,
       failureMessage: 'Partner güncellenemedi.',
     );
+    final detail = await fetchPartnerDetail(partnerId);
+    return detail.toSummary();
   }
 
   Future<PartnerLookupUser> lookupUserByEmail(String email) async {
@@ -91,15 +98,21 @@ class PartnerRepository {
     required String partnerId,
     required String userId,
   }) async {
-    return _runMap(
+    final map = await _runWriteEnvelope(
       rpcName: 'admin_partner_add_member_v1',
       params: buildPartnerAddMemberRpcParams(
         partnerId: partnerId,
         userId: userId,
       ),
-      mapper: AdminPartnerMember.fromMap,
       failureMessage: 'Üye eklenemedi.',
     );
+    _assertMemberWriteAck(
+      map: map,
+      expectedPartnerId: partnerId,
+      expectedUserId: userId,
+    );
+    final detail = await fetchPartnerDetail(partnerId);
+    return requireCanonicalPartnerMember(detail, userId);
   }
 
   Future<AdminPartnerMember> setMemberStatus({
@@ -107,16 +120,22 @@ class PartnerRepository {
     required String userId,
     required PartnerMemberStatus status,
   }) async {
-    return _runMap(
+    final map = await _runWriteEnvelope(
       rpcName: 'admin_partner_set_member_status_v1',
       params: buildPartnerSetMemberStatusRpcParams(
         partnerId: partnerId,
         userId: userId,
         status: status,
       ),
-      mapper: AdminPartnerMember.fromMap,
       failureMessage: 'Üye durumu güncellenemedi.',
     );
+    _assertMemberWriteAck(
+      map: map,
+      expectedPartnerId: partnerId,
+      expectedUserId: userId,
+    );
+    final detail = await fetchPartnerDetail(partnerId);
+    return requireCanonicalPartnerMember(detail, userId);
   }
 
   Future<List<PartnerSeriesAssignment>> fetchAssignmentHistory(
@@ -125,6 +144,7 @@ class PartnerRepository {
     return _runList(
       rpcName: 'admin_partner_assignment_history_v1',
       params: buildPartnerAssignmentHistoryRpcParams(seriesId: seriesId),
+      responseListKey: 'assignments',
       mapper: PartnerSeriesAssignment.fromMap,
       failureMessage: 'Atama geçmişi yüklenemedi.',
     );
@@ -214,12 +234,13 @@ class PartnerRepository {
   Future<List<T>> _runList<T>({
     required String rpcName,
     required Map<String, dynamic> params,
+    required String responseListKey,
     required T Function(Map<String, dynamic>) mapper,
     required String failureMessage,
   }) async {
     try {
       final result = await _resolvedClient.rpc(rpcName, params: params);
-      final rows = parsePartnerRpcList(result);
+      final rows = parsePartnerRpcList(result, listKey: responseListKey);
       return rows.map(mapper).toList(growable: false);
     } on PartnerException {
       rethrow;
@@ -242,8 +263,11 @@ class PartnerRepository {
     required String failureMessage,
   }) async {
     try {
-      final result = await _resolvedClient.rpc(rpcName, params: params);
-      final map = parsePartnerRpcMap(result);
+      final map = await _runWriteEnvelope(
+        rpcName: rpcName,
+        params: params,
+        failureMessage: failureMessage,
+      );
       return mapper(map);
     } on PartnerException {
       rethrow;
@@ -258,4 +282,68 @@ class PartnerRepository {
       );
     }
   }
+
+  Future<Map<String, dynamic>> _runWriteEnvelope({
+    required String rpcName,
+    required Map<String, dynamic> params,
+    required String failureMessage,
+  }) async {
+    try {
+      final result = await _resolvedClient.rpc(rpcName, params: params);
+      return parsePartnerRpcMap(result);
+    } on PartnerException {
+      rethrow;
+    } on PostgrestException catch (error) {
+      throw PartnerErrorMapper.fromPostgrest(error);
+    } catch (_) {
+      throw PartnerException(
+        message: failureMessage,
+        kind: PartnerFailureKind.networkError,
+      );
+    }
+  }
+
+  String _requirePartnerIdFromWrite(Map<String, dynamic> map) {
+    return PartnerParseHelpers.requireUuid(
+      map.containsKey('partner_id') ? map['partner_id'] : map['id'],
+      fieldName: 'partner_id',
+    );
+  }
+
+  void _assertMemberWriteAck({
+    required Map<String, dynamic> map,
+    required String expectedPartnerId,
+    required String expectedUserId,
+  }) {
+    final partnerId = PartnerParseHelpers.requireUuid(
+      map['partner_id'],
+      fieldName: 'partner_id',
+    );
+    final userId = PartnerParseHelpers.requireUuid(
+      map['user_id'],
+      fieldName: 'user_id',
+    );
+
+    if (partnerId != expectedPartnerId.trim() || userId != expectedUserId.trim()) {
+      throw PartnerErrorMapper.parseFailure('Write ack mismatch.');
+    }
+  }
 }
+
+AdminPartnerMember requireCanonicalPartnerMember(
+  AdminPartnerDetail detail,
+  String userId,
+) {
+  try {
+    return AdminPartnerMember.requireFromDetail(detail, userId);
+  } on FormatException catch (error) {
+    throw PartnerErrorMapper.parseFailure(error.message);
+  }
+}
+
+@visibleForTesting
+AdminPartnerMember requireCanonicalMemberForTesting(
+  AdminPartnerDetail detail,
+  String userId,
+) =>
+    requireCanonicalPartnerMember(detail, userId);

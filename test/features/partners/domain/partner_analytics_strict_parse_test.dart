@@ -75,7 +75,10 @@ void main() {
       expect(report.uniqueViewers, 0);
       expect(report.validatedWatchSeconds, 0);
       expect(report.completionRate, isNull);
-      expect(PartnerMetricCopy.formatCompletionRate(report.completionRate), '—');
+      expect(
+        PartnerMetricCopy.formatCompletionRate(report.completionRate),
+        '—',
+      );
       expect(report.metricVersion, 'qualified_view_v1');
       expect(report.episodes, hasLength(1));
     });
@@ -171,10 +174,7 @@ void main() {
           displayName: ' Studio X ',
           legalName: ' Studio X LLC ',
         ),
-        {
-          'p_display_name': 'Studio X',
-          'p_legal_name': 'Studio X LLC',
-        },
+        {'p_display_name': 'Studio X', 'p_legal_name': 'Studio X LLC'},
       );
     });
 

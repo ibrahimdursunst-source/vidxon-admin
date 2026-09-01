@@ -25,7 +25,7 @@ class PartnerSeriesAssignment {
 
   factory PartnerSeriesAssignment.fromMap(Map<String, dynamic> map) {
     return PartnerSeriesAssignment(
-      id: PartnerParseHelpers.requireUuid(map['id'], fieldName: 'id'),
+      id: _requireAssignmentId(map),
       seriesId: PartnerParseHelpers.requireUuid(
         map['series_id'],
         fieldName: 'series_id',
@@ -45,6 +45,13 @@ class PartnerSeriesAssignment {
       ),
       createdAt: PartnerParseHelpers.optionalUtcDateTime(map['created_at']),
     );
+  }
+
+  static String _requireAssignmentId(Map<String, dynamic> map) {
+    final value = map.containsKey('assignment_id')
+        ? map['assignment_id']
+        : map['id'];
+    return PartnerParseHelpers.requireUuid(value, fieldName: 'assignment_id');
   }
 }
 
@@ -72,7 +79,7 @@ class SetSeriesPartnerResult {
         fieldName: 'partner_id',
       ),
       assignmentId: PartnerParseHelpers.optionalUuid(
-        map['assignment_id'],
+        map['assignment_id'] ?? map['closed_assignment_id'],
         fieldName: 'assignment_id',
       ),
       contentVersion: PartnerParseHelpers.requireInt(

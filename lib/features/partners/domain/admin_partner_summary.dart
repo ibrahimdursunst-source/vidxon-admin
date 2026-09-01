@@ -24,7 +24,7 @@ class AdminPartnerSummary {
 
   factory AdminPartnerSummary.fromMap(Map<String, dynamic> map) {
     return AdminPartnerSummary(
-      id: PartnerParseHelpers.requireUuid(map['id'], fieldName: 'id'),
+      id: _requirePartnerId(map),
       displayName: PartnerParseHelpers.requireString(
         map['display_name'],
         fieldName: 'display_name',
@@ -36,34 +36,50 @@ class AdminPartnerSummary {
         fieldName: 'created_at',
       ),
       updatedAt: PartnerParseHelpers.optionalUtcDateTime(map['updated_at']),
-      activeMemberCount: map.containsKey('active_member_count')
-          ? PartnerParseHelpers.requireInt(
-              map['active_member_count'],
-              fieldName: 'active_member_count',
-            )
-          : 0,
-      activeAssignmentCount: map.containsKey('active_assignment_count')
-          ? PartnerParseHelpers.requireInt(
-              map['active_assignment_count'],
-              fieldName: 'active_assignment_count',
-            )
-          : 0,
+      activeMemberCount: _requireCountField(
+        map,
+        primaryKey: 'active_member_count',
+      ),
+      activeAssignmentCount: _requireCountField(
+        map,
+        primaryKey: 'open_assignment_count',
+        aliasKey: 'active_assignment_count',
+      ),
     );
+  }
+
+  static String _requirePartnerId(Map<String, dynamic> map) {
+    final value = map.containsKey('partner_id') ? map['partner_id'] : map['id'];
+    return PartnerParseHelpers.requireUuid(value, fieldName: 'partner_id');
+  }
+
+  static int _requireCountField(
+    Map<String, dynamic> map, {
+    required String primaryKey,
+    String? aliasKey,
+  }) {
+    if (map.containsKey(primaryKey)) {
+      return PartnerParseHelpers.requireInt(
+        map[primaryKey],
+        fieldName: primaryKey,
+      );
+    }
+    if (aliasKey != null && map.containsKey(aliasKey)) {
+      return PartnerParseHelpers.requireInt(map[aliasKey], fieldName: aliasKey);
+    }
+    throw FormatException('$primaryKey is required.');
   }
 }
 
 class AdminPartnerActiveOption {
-  const AdminPartnerActiveOption({
-    required this.id,
-    required this.displayName,
-  });
+  const AdminPartnerActiveOption({required this.id, required this.displayName});
 
   final String id;
   final String displayName;
 
   factory AdminPartnerActiveOption.fromMap(Map<String, dynamic> map) {
     return AdminPartnerActiveOption(
-      id: PartnerParseHelpers.requireUuid(map['id'], fieldName: 'id'),
+      id: AdminPartnerSummary._requirePartnerId(map),
       displayName: PartnerParseHelpers.requireString(
         map['display_name'],
         fieldName: 'display_name',

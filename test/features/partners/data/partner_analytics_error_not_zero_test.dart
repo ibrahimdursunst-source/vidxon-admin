@@ -50,10 +50,7 @@ void main() {
     }
 
     expect(caught, isA<PartnerException>());
-    expect(
-      (caught! as PartnerException).kind,
-      PartnerFailureKind.parseError,
-    );
+    expect((caught! as PartnerException).kind, PartnerFailureKind.parseError);
     expect(report, isNull);
     expect(report?.qualifiedViews, isNull);
     expect(report?.uniqueViewers, isNull);

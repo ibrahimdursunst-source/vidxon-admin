@@ -7,8 +7,9 @@ Map<String, dynamic> buildPartnerCreateRpcParams({
   final trimmedLegal = legalName?.trim();
   return {
     'p_display_name': displayName.trim(),
-    'p_legal_name':
-        trimmedLegal == null || trimmedLegal.isEmpty ? null : trimmedLegal,
+    'p_legal_name': trimmedLegal == null || trimmedLegal.isEmpty
+        ? null
+        : trimmedLegal,
   };
 }
 
@@ -22,8 +23,9 @@ Map<String, dynamic> buildPartnerUpdateRpcParams({
   return {
     'p_partner_id': partnerId.trim(),
     'p_display_name': displayName.trim(),
-    'p_legal_name':
-        trimmedLegal == null || trimmedLegal.isEmpty ? null : trimmedLegal,
+    'p_legal_name': trimmedLegal == null || trimmedLegal.isEmpty
+        ? null
+        : trimmedLegal,
     'p_status': status.value,
   };
 }
@@ -36,10 +38,7 @@ Map<String, dynamic> buildPartnerAddMemberRpcParams({
   required String partnerId,
   required String userId,
 }) {
-  return {
-    'p_partner_id': partnerId.trim(),
-    'p_user_id': userId.trim(),
-  };
+  return {'p_partner_id': partnerId.trim(), 'p_user_id': userId.trim()};
 }
 
 Map<String, dynamic> buildPartnerSetMemberStatusRpcParams({

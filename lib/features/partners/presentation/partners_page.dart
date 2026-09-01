@@ -364,7 +364,11 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -419,13 +423,20 @@ class _HealthBanner extends StatelessWidget {
             'Analitik Sağlık: ${health!.status.label}',
             style: TextStyle(color: color, fontWeight: FontWeight.w600),
           ),
-          if (health!.checks.isNotEmpty) ...[
+          if (health!.warnings.isNotEmpty) ...[
             const SizedBox(height: 6),
-            for (final check in health!.checks.take(4))
+            for (final warning in health!.warnings.take(4))
               Text(
-                '• ${check.message}',
+                '• ${warning.displayMessage()}',
                 style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 12),
               ),
+          ],
+          if (health!.status == PartnerDataIntegrityStatus.unavailable) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Analitik bütünlük doğrulaması şu anda kullanılamıyor.',
+              style: TextStyle(color: Color(0xFFFFB4B4), fontSize: 12),
+            ),
           ],
         ],
       ),

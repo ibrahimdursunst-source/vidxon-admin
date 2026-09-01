@@ -256,10 +256,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
                 ),
               )
             else if (_errorMessage != null)
-              _UnavailableBanner(
-                message: _errorMessage!,
-                onRetry: _load,
-              )
+              _UnavailableBanner(message: _errorMessage!, onRetry: _load)
             else if (_report != null)
               _ReportBody(
                 report: _report!,
@@ -364,10 +361,10 @@ class _ReportBody extends StatelessWidget {
             child: Text(
               integrity == PartnerDataIntegrityStatus.unavailable
                   ? 'Veri bütünlüğü: Kullanılamıyor. Metrikler güvenilir sonuç '
-                      'olarak gösterilmiyor.'
+                        'olarak gösterilmiyor.'
                   : 'Veri bütünlüğü: ${integrity.label}. Bu rapordaki sayılar '
-                      'şimdilik yetkili finansal sonuç olarak sunulmaz; Analitik '
-                      'Sağlık kontrolünü inceleyin.',
+                        'şimdilik yetkili finansal sonuç olarak sunulmaz; Analitik '
+                        'Sağlık kontrolünü inceleyin.',
               style: const TextStyle(color: Color(0xFFFFE0B2)),
             ),
           ),

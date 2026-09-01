@@ -43,8 +43,8 @@ class AdminPartnerDetail {
   }
 
   factory AdminPartnerDetail.fromMap(Map<String, dynamic> map) {
-    final membersRaw = map['members'];
-    final assignmentsRaw = map['assignments'] ?? map['series_assignments'];
+    final membersRaw = PartnerParseHelpers.requireField(map, 'members');
+    final assignmentsRaw = PartnerParseHelpers.requireField(map, 'assignments');
 
     return AdminPartnerDetail(
       id: PartnerParseHelpers.requireUuid(map['id'], fieldName: 'id'),
@@ -69,32 +69,32 @@ class AdminPartnerDetail {
   }
 
   static List<AdminPartnerMember> _parseMembers(dynamic raw) {
-    if (raw == null) {
-      return const [];
-    }
     if (raw is! List) {
       throw const FormatException('members is invalid.');
     }
-    return raw.map((item) {
-      if (item is! Map) {
-        throw const FormatException('members item is invalid.');
-      }
-      return AdminPartnerMember.fromMap(Map<String, dynamic>.from(item));
-    }).toList(growable: false);
+    return raw
+        .map((item) {
+          if (item is! Map) {
+            throw const FormatException('members item is invalid.');
+          }
+          return AdminPartnerMember.fromMap(Map<String, dynamic>.from(item));
+        })
+        .toList(growable: false);
   }
 
   static List<PartnerSeriesAssignment> _parseAssignments(dynamic raw) {
-    if (raw == null) {
-      return const [];
-    }
     if (raw is! List) {
       throw const FormatException('assignments is invalid.');
     }
-    return raw.map((item) {
-      if (item is! Map) {
-        throw const FormatException('assignments item is invalid.');
-      }
-      return PartnerSeriesAssignment.fromMap(Map<String, dynamic>.from(item));
-    }).toList(growable: false);
+    return raw
+        .map((item) {
+          if (item is! Map) {
+            throw const FormatException('assignments item is invalid.');
+          }
+          return PartnerSeriesAssignment.fromMap(
+            Map<String, dynamic>.from(item),
+          );
+        })
+        .toList(growable: false);
   }
 }

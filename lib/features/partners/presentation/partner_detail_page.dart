@@ -72,8 +72,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
             !detail.assignments.any(
               (a) => a.seriesId == _selectedSeriesIdForAnalytics,
             )) {
-          _selectedSeriesIdForAnalytics =
-              activeSeries.isNotEmpty
+          _selectedSeriesIdForAnalytics = activeSeries.isNotEmpty
               ? activeSeries.first
               : (detail.assignments.isNotEmpty
                     ? detail.assignments.first.seriesId
@@ -127,10 +126,8 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
 
     final added = await showDialog<bool>(
       context: context,
-      builder: (context) => _AddMemberDialog(
-        repository: _repository,
-        partnerId: detail.id,
-      ),
+      builder: (context) =>
+          _AddMemberDialog(repository: _repository, partnerId: detail.id),
     );
 
     if (added == true && mounted) {
@@ -178,9 +175,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
   Widget build(BuildContext context) {
     final detail = _detail;
     final title =
-        detail?.displayName ??
-        widget.initialSummary?.displayName ??
-        'Partner';
+        detail?.displayName ?? widget.initialSummary?.displayName ?? 'Partner';
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
@@ -450,10 +445,7 @@ class _MemberRow extends StatelessWidget {
             itemBuilder: (context) => [
               for (final status in PartnerMemberStatus.values)
                 if (status != member.status)
-                  PopupMenuItem(
-                    value: status,
-                    child: Text(status.label),
-                  ),
+                  PopupMenuItem(value: status, child: Text(status.label)),
             ],
           ),
         ],
@@ -499,10 +491,7 @@ class _AnalyticsSeriesPicker extends StatelessWidget {
 }
 
 class _AddMemberDialog extends StatefulWidget {
-  const _AddMemberDialog({
-    required this.repository,
-    required this.partnerId,
-  });
+  const _AddMemberDialog({required this.repository, required this.partnerId});
 
   final PartnerRepository repository;
   final String partnerId;
