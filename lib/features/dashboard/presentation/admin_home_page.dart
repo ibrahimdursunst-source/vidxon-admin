@@ -7,6 +7,7 @@ import '../../audit/presentation/admin_audit_page.dart';
 import '../../categories/data/category_repository.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
+import '../../campaigns/presentation/campaigns_page.dart';
 import '../../partners/presentation/partners_page.dart';
 import '../../series/data/series_mutation_repository.dart';
 import '../../series/data/series_repository.dart';
@@ -62,6 +63,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
       GlobalKey<AdminManagementPageState>();
   final GlobalKey<PartnersPageState> _partnersPageKey =
       GlobalKey<PartnersPageState>();
+  final GlobalKey<CampaignsPageState> _campaignsPageKey =
+      GlobalKey<CampaignsPageState>();
 
   late Future<DashboardCounts> _countsFuture;
 
@@ -108,12 +111,18 @@ class _AdminHomePageState extends State<AdminHomePage> {
         icon: Icons.handshake_outlined,
         enabled: true,
       ),
-      if (showSuperAdminNav)
+      if (showSuperAdminNav) ...[
+        const _NavItem(
+          label: 'Kampanyalar',
+          icon: Icons.campaign_outlined,
+          enabled: true,
+        ),
         const _NavItem(
           label: 'Yöneticiler',
           icon: Icons.admin_panel_settings_outlined,
           enabled: true,
         ),
+      ],
       const _NavItem(
         label: 'Bölümler',
         icon: Icons.playlist_play_outlined,
@@ -154,6 +163,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
         _auditPageKey.currentState?.refresh();
       case 'Partnerler':
         _partnersPageKey.currentState?.refresh();
+      case 'Kampanyalar':
+        _campaignsPageKey.currentState?.refresh();
       case 'Yöneticiler':
         _managementPageKey.currentState?.refresh();
       default:
@@ -328,6 +339,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       'Kullanıcılar' => AdminUsersPage(key: _usersPageKey),
       'İşlem Kayıtları' => AdminAuditPage(key: _auditPageKey),
       'Partnerler' => PartnersPage(key: _partnersPageKey),
+      'Kampanyalar' => CampaignsPage(key: _campaignsPageKey),
       'Yöneticiler' => AdminManagementPage(key: _managementPageKey),
       _ => const Center(
         child: Text(

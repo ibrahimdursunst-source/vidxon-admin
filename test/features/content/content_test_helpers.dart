@@ -129,6 +129,8 @@ class FakeImageUploadRepository extends ImageUploadRepository {
 
   int requestCount = 0;
   int uploadCount = 0;
+  String? lastPurpose;
+  Object? requestError;
 
   @override
   Future<ImageUploadResponse> requestPosterUploadUrl({
@@ -137,7 +139,21 @@ class FakeImageUploadRepository extends ImageUploadRepository {
     String purpose = 'series_create',
     String? seriesId,
   }) async {
+    lastPurpose = purpose;
     requestCount += 1;
+    if (requestError != null) {
+      throw requestError!;
+    }
+    if (purpose == 'campaign_image') {
+      return ImageUploadResponse(
+        uploadUrl: 'https://upload.example.com/campaign',
+        objectPath: 'campaigns/2026/09/promo.png',
+        publicUrl: 'https://media.example.com/campaigns/2026/09/promo.png',
+        contentType: contentType,
+        requiredHeaders: const {'Content-Type': 'image/png'},
+        expiresIn: 3600,
+      );
+    }
     return testImageUploadResponse();
   }
 
