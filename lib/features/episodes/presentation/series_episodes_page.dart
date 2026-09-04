@@ -12,6 +12,7 @@ import '../domain/admin_episode.dart';
 import '../domain/cloudflare_stream_status.dart';
 import '../domain/episode_release_at.dart';
 import 'episode_form_page.dart';
+import 'episode_media_tracks_page.dart';
 import 'episode_preview_dialog.dart';
 import 'episode_reorder_page.dart';
 import 'episode_reorder_result.dart';
@@ -140,9 +141,9 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       _reorderNavigationOpen = false;
     }
@@ -192,6 +193,23 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _openMediaTracks(AdminEpisode episode) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EpisodeMediaTracksPage(
+          episode: episode,
+          seriesTitle: widget.seriesTitle,
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    refresh();
   }
 
   Future<void> _openPreview(
@@ -287,6 +305,8 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
         if (confirmed && mounted) {
           await _openVideoUpload(episode, replace: true);
         }
+      case EpisodeMenuAction.mediaTracks:
+        await _openMediaTracks(episode);
       case EpisodeMenuAction.previewActive:
         await _openPreview(episode, source: 'active');
       case EpisodeMenuAction.previewPending:
@@ -384,8 +404,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
                         ? _openCreateForm
                         : () {},
                     onRefresh: refresh,
-                    onReorder:
-                        contentMutationsEnabled(context)
+                    onReorder: contentMutationsEnabled(context)
                         ? _openReorder
                         : null,
                     createEnabled: contentMutationsEnabled(context),
@@ -454,6 +473,7 @@ enum EpisodeMenuAction {
   edit,
   upload,
   replaceVideo,
+  mediaTracks,
   previewActive,
   previewPending,
   publish,
@@ -490,6 +510,12 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
 
   if (episode.hasActiveVideo &&
       episode.cloudflareStreamStatus == CloudflareStreamStatus.ready) {
+    items.add(
+      const PopupMenuItem(
+        value: EpisodeMenuAction.mediaTracks,
+        child: Text('Ses / Altyazı'),
+      ),
+    );
     items.add(
       const PopupMenuItem(
         value: EpisodeMenuAction.previewActive,
@@ -617,10 +643,7 @@ String _primaryMenuLabel(Widget? child) {
 
 /// Publish row: primary label + optional secondary block reason.
 class _EpisodePublishMenuLabel extends StatelessWidget {
-  const _EpisodePublishMenuLabel({
-    required this.enabled,
-    this.reason,
-  });
+  const _EpisodePublishMenuLabel({required this.enabled, this.reason});
 
   static const label = 'Yayınla';
 
@@ -643,10 +666,7 @@ class _EpisodePublishMenuLabel extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              color: titleColor,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: titleColor, fontWeight: FontWeight.w500),
           ),
           if (reason != null && reason!.isNotEmpty) ...[
             const SizedBox(height: 4),

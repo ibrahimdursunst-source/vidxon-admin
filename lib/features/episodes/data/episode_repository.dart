@@ -26,6 +26,7 @@ class EpisodeRepository {
     cloudflare_stream_pending_requested_at,
     cloudflare_stream_last_checked_at,
     duration_seconds,
+    original_audio_locale,
     is_free,
     coin_price,
     is_published,

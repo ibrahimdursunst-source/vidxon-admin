@@ -20,6 +20,7 @@ class AdminEpisode {
     this.thumbnailPath,
     this.cloudflareStreamPendingRequestedAt,
     this.durationSeconds,
+    this.originalAudioLocale = 'tr',
     this.cloudflareStreamLastCheckedAt,
     this.archivedAt,
     this.releaseAt,
@@ -36,6 +37,9 @@ class AdminEpisode {
   final String synopsis;
   final String? thumbnailPath;
   final int? durationSeconds;
+
+  /// Vidxon locale of embedded program audio (`tr`, `pt_BR`, …).
+  final String originalAudioLocale;
   final bool isFree;
   final int coinPrice;
   final bool isPublished;
@@ -164,6 +168,7 @@ class AdminEpisode {
     bool? isPublished,
     bool? isArchived,
     int? contentVersion,
+    String? originalAudioLocale,
     CloudflareStreamStatus? cloudflareStreamStatus,
     CloudflareStreamStatus? cloudflareStreamPendingStatus,
     DateTime? cloudflareStreamPendingRequestedAt,
@@ -197,6 +202,7 @@ class AdminEpisode {
           cloudflareStreamPendingRequestedAt ??
           this.cloudflareStreamPendingRequestedAt,
       durationSeconds: durationSeconds,
+      originalAudioLocale: originalAudioLocale ?? this.originalAudioLocale,
       cloudflareStreamLastCheckedAt: cloudflareStreamLastCheckedAt,
       archivedAt: archivedAt ?? this.archivedAt,
       releaseAt: releaseAt ?? this.releaseAt,
@@ -241,6 +247,9 @@ class AdminEpisode {
       synopsis: map['synopsis']?.toString() ?? '',
       thumbnailPath: _nullableString(map['thumbnail_path']),
       durationSeconds: _parseNullableInt(map['duration_seconds']),
+      originalAudioLocale: _parseOriginalAudioLocale(
+        map['original_audio_locale'],
+      ),
       isFree: map['is_free'] == true,
       coinPrice: _parseInt(map['coin_price']),
       isPublished: map['is_published'] == true,
@@ -280,6 +289,14 @@ class AdminEpisode {
 
     final trimmed = value.toString().trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String _parseOriginalAudioLocale(dynamic value) {
+    final trimmed = value?.toString().trim() ?? '';
+    if (trimmed.isEmpty) {
+      return 'tr';
+    }
+    return trimmed;
   }
 
   static int _parseInt(dynamic value) {

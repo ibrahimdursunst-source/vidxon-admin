@@ -41,11 +41,19 @@ void main() {
       }
 
       expect(EpisodeRepository.adminEpisodeSelect, contains('id'));
-      expect(EpisodeRepository.adminEpisodeSelect, contains('content_age_rating'));
+      expect(
+        EpisodeRepository.adminEpisodeSelect,
+        contains('content_age_rating'),
+      );
       expect(
         EpisodeRepository.adminEpisodeSelect,
         contains('content_descriptors'),
       );
+      expect(
+        EpisodeRepository.adminEpisodeSelect,
+        contains('original_audio_locale'),
+      );
+      expect(EpisodeRepository.adminEpisodeSelect, contains('content_version'));
       expect(EpisodeRepository.adminEpisodeSelect, isNot(contains('*')));
     });
 

@@ -33,6 +33,27 @@ void main() {
       expect(episode.cloudflareStreamLastCheckedAt?.isUtc, isTrue);
       expect(episode.coinPrice, 5);
       expect(episode.releaseAt?.isUtc, isTrue);
+      expect(episode.originalAudioLocale, 'tr');
+    });
+
+    test('parses original_audio_locale when present', () {
+      final episode = AdminEpisode.fromMap({
+        'id': '11111111-1111-1111-1111-111111111111',
+        'series_id': '22222222-2222-2222-2222-222222222222',
+        'episode_number': 1,
+        'title': 'Bölüm 1',
+        'synopsis': '',
+        'cloudflare_stream_status': 'ready',
+        'original_audio_locale': 'pt_BR',
+        'is_free': true,
+        'coin_price': 0,
+        'is_published': false,
+        'total_views': 0,
+        'content_version': 3,
+      });
+
+      expect(episode.originalAudioLocale, 'pt_BR');
+      expect(episode.contentVersion, 3);
     });
 
     test('parses nullable release_at as null', () {
