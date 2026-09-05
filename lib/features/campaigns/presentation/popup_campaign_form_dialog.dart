@@ -4,10 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/locale/vidxon_product_locales.dart';
+import '../../episodes/data/episode_repository.dart';
 import '../../media/data/image_upload_repository.dart';
+import '../../series/data/series_repository.dart';
+import '../application/campaign_destination_controller.dart';
 import '../application/campaign_image_controller.dart';
 import '../data/campaign_repository.dart';
 import '../domain/admin_campaign.dart';
+import '../domain/campaign_destination.dart';
+import 'campaign_destination_fields.dart';
 import 'locale_translation_fields.dart';
 
 /// Supported Vidxon app locales for campaign targeting.
@@ -21,6 +26,8 @@ class PopupCampaignFormDialog extends StatefulWidget {
     this.imageUploadRepository,
     this.imageController,
     this.filePicker,
+    this.seriesRepository,
+    this.episodeRepository,
   });
 
   final CampaignRepository repository;
@@ -28,6 +35,8 @@ class PopupCampaignFormDialog extends StatefulWidget {
   final ImageUploadRepository? imageUploadRepository;
   final CampaignImageController? imageController;
   final Future<({Uint8List bytes, String fileName})?> Function()? filePicker;
+  final SeriesRepository? seriesRepository;
+  final EpisodeRepository? episodeRepository;
 
   @override
   State<PopupCampaignFormDialog> createState() =>
@@ -39,8 +48,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
 
   final _formKey = GlobalKey<FormState>();
   late final CampaignImageController _imageController;
-  late final TextEditingController _seriesIdController;
-  late final TextEditingController _episodeIdController;
+  late final CampaignDestinationController _destinationController;
   late final TextEditingController _priorityController;
 
   late String _destinationType;
@@ -69,16 +77,18 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
           imageUploadRepository: widget.imageUploadRepository,
           initialObjectPath: e?.imagePath,
         );
-    _seriesIdController = TextEditingController(
-      text: e?.destinationSeriesId ?? '',
-    );
-    _episodeIdController = TextEditingController(
-      text: e?.destinationEpisodeId ?? '',
-    );
     _priorityController = TextEditingController(
-      text: (e?.priority ?? 0).toString(),
+      text: (e?.priority ?? CampaignPriority.defaultValue).toString(),
     );
-    _destinationType = e?.destinationType ?? 'none';
+    _destinationType = e?.destinationType ?? CampaignDestinationType.none;
+    _destinationController = CampaignDestinationController(
+      seriesRepository: widget.seriesRepository ?? SeriesRepository(),
+      episodeRepository: widget.episodeRepository ?? EpisodeRepository(),
+      destinationType: _destinationType,
+      initialSeriesId: e?.destinationSeriesId,
+      initialEpisodeId: e?.destinationEpisodeId,
+    );
+    _destinationController.initialize();
     _isActive = e?.isActive ?? false;
     _startsAt = e?.startsAt ?? DateTime.now();
     _endsAt = e?.endsAt;
@@ -104,8 +114,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
 
   @override
   void dispose() {
-    _seriesIdController.dispose();
-    _episodeIdController.dispose();
+    _destinationController.dispose();
     _priorityController.dispose();
     for (final c in _titleControllers.values) {
       c.dispose();
@@ -152,15 +161,11 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         id: widget.existing?.id,
         imagePath: _imageController.objectPath?.trim() ?? '',
         destinationType: _destinationType,
-        destinationSeriesId: _destinationType == 'series'
-            ? _seriesIdController.text.trim()
-            : null,
-        destinationEpisodeId: _destinationType == 'episode'
-            ? _episodeIdController.text.trim()
-            : null,
+        destinationSeriesId: _destinationController.seriesIdForSave,
+        destinationEpisodeId: _destinationController.episodeIdForSave,
         targetLocales: _selectedLocales.toList(),
         isActive: _isActive,
-        priority: int.tryParse(_priorityController.text) ?? 0,
+        priority: CampaignPriority.parseOrDefault(_priorityController.text),
         startsAt: _startsAt,
         endsAt: _endsAt,
         translations: translations,
@@ -250,65 +255,24 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 ],
                 const SizedBox(height: 12),
 
-                DropdownButtonFormField<String>(
-                  initialValue: _destinationType,
-                  decoration: const InputDecoration(labelText: 'Hedef Türü'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'none',
-                      child: Text('Bilgilendirme'),
-                    ),
-                    DropdownMenuItem(value: 'series', child: Text('Dizi')),
-                    DropdownMenuItem(value: 'episode', child: Text('Bölüm')),
-                    DropdownMenuItem(
-                      value: 'coin_purchase',
-                      child: Text('Jeton Satın Al'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'membership',
-                      child: Text('Üyelik'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _destinationType = v ?? 'none'),
+                CampaignDestinationFields(
+                  controller: _destinationController,
+                  destinationType: _destinationType,
+                  onDestinationTypeChanged: (type) {
+                    setState(() => _destinationType = type);
+                    _destinationController.setDestinationType(type);
+                  },
                 ),
                 const SizedBox(height: 12),
 
-                if (_destinationType == 'series') ...[
-                  TextFormField(
-                    controller: _seriesIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dizi ID *',
-                      hintText: 'UUID',
-                    ),
-                    validator: (v) =>
-                        _destinationType == 'series' &&
-                            (v == null || v.trim().isEmpty)
-                        ? 'Dizi ID zorunlu'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                if (_destinationType == 'episode') ...[
-                  TextFormField(
-                    controller: _episodeIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Bölüm ID *',
-                      hintText: 'UUID',
-                    ),
-                    validator: (v) =>
-                        _destinationType == 'episode' &&
-                            (v == null || v.trim().isEmpty)
-                        ? 'Bölüm ID zorunlu'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
                 TextFormField(
+                  key: const Key('campaign-priority-field'),
                   controller: _priorityController,
-                  decoration: const InputDecoration(labelText: 'Öncelik'),
+                  decoration: const InputDecoration(
+                    labelText: CampaignPriority.label,
+                    helperText: CampaignPriority.helperText,
+                    helperMaxLines: 4,
+                  ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/locale/vidxon_product_locales.dart';
+import '../../episodes/data/episode_repository.dart';
+import '../../series/data/series_repository.dart';
+import '../application/campaign_destination_controller.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
+import '../domain/campaign_destination.dart';
+import 'campaign_destination_fields.dart';
 import 'locale_translation_fields.dart';
 import 'popup_campaign_form_dialog.dart' show kSupportedLocales;
 
@@ -11,10 +16,14 @@ class PushCampaignFormDialog extends StatefulWidget {
     super.key,
     required this.repository,
     this.existing,
+    this.seriesRepository,
+    this.episodeRepository,
   });
 
   final PushCampaignRepository repository;
   final AdminPushCampaign? existing;
+  final SeriesRepository? seriesRepository;
+  final EpisodeRepository? episodeRepository;
 
   @override
   State<PushCampaignFormDialog> createState() => _PushCampaignFormDialogState();
@@ -24,8 +33,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
   static const _primaryColor = Color(0xFFE50914);
 
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _seriesIdController;
-  late final TextEditingController _episodeIdController;
+  late final CampaignDestinationController _destinationController;
 
   late String _destinationType;
   late Set<String> _selectedLocales;
@@ -43,13 +51,15 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _seriesIdController = TextEditingController(
-      text: e?.destinationSeriesId ?? '',
+    _destinationType = e?.destinationType ?? CampaignDestinationType.none;
+    _destinationController = CampaignDestinationController(
+      seriesRepository: widget.seriesRepository ?? SeriesRepository(),
+      episodeRepository: widget.episodeRepository ?? EpisodeRepository(),
+      destinationType: _destinationType,
+      initialSeriesId: e?.destinationSeriesId,
+      initialEpisodeId: e?.destinationEpisodeId,
     );
-    _episodeIdController = TextEditingController(
-      text: e?.destinationEpisodeId ?? '',
-    );
-    _destinationType = e?.destinationType ?? 'none';
+    _destinationController.initialize();
     _scheduledAt = e?.scheduledAt;
 
     _selectedLocales = e != null ? Set<String>.from(e.targetLocales) : {'tr'};
@@ -69,8 +79,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
 
   @override
   void dispose() {
-    _seriesIdController.dispose();
-    _episodeIdController.dispose();
+    _destinationController.dispose();
     for (final c in _titleControllers.values) {
       c.dispose();
     }
@@ -101,12 +110,8 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
         id: widget.existing?.id,
         status: status,
         destinationType: _destinationType,
-        destinationSeriesId: _destinationType == 'series'
-            ? _seriesIdController.text.trim()
-            : null,
-        destinationEpisodeId: _destinationType == 'episode'
-            ? _episodeIdController.text.trim()
-            : null,
+        destinationSeriesId: _destinationController.seriesIdForSave,
+        destinationEpisodeId: _destinationController.episodeIdForSave,
         targetLocales: _selectedLocales.toList(),
         scheduledAt: status == 'scheduled' ? _scheduledAt : null,
         translations: translations,
@@ -175,61 +180,14 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
 
                 // === Hedef ===
                 _sectionLabel('Hedef'),
-                DropdownButtonFormField<String>(
-                  initialValue: _destinationType,
-                  decoration: const InputDecoration(labelText: 'Hedef Türü'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'none',
-                      child: Text('Bilgilendirme'),
-                    ),
-                    DropdownMenuItem(value: 'series', child: Text('Dizi')),
-                    DropdownMenuItem(value: 'episode', child: Text('Bölüm')),
-                    DropdownMenuItem(
-                      value: 'coin_purchase',
-                      child: Text('Jeton Satın Al'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'membership',
-                      child: Text('Üyelik'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _destinationType = v ?? 'none'),
+                CampaignDestinationFields(
+                  controller: _destinationController,
+                  destinationType: _destinationType,
+                  onDestinationTypeChanged: (type) {
+                    setState(() => _destinationType = type);
+                    _destinationController.setDestinationType(type);
+                  },
                 ),
-                const SizedBox(height: 12),
-
-                if (_destinationType == 'series') ...[
-                  TextFormField(
-                    controller: _seriesIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dizi ID *',
-                      hintText: 'UUID',
-                    ),
-                    validator: (v) =>
-                        _destinationType == 'series' &&
-                            (v == null || v.trim().isEmpty)
-                        ? 'Dizi ID zorunlu'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                if (_destinationType == 'episode') ...[
-                  TextFormField(
-                    controller: _episodeIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Bölüm ID *',
-                      hintText: 'UUID',
-                    ),
-                    validator: (v) =>
-                        _destinationType == 'episode' &&
-                            (v == null || v.trim().isEmpty)
-                        ? 'Bölüm ID zorunlu'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                ],
 
                 // === Diller ===
                 _sectionLabel('Hedef Diller'),

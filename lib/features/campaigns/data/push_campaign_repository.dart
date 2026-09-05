@@ -10,13 +10,14 @@ class PushCampaignException implements Exception {
 }
 
 class PushCampaignRepository {
-  PushCampaignRepository({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  PushCampaignRepository({this._client});
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
+
+  SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
 
   Future<List<AdminPushCampaign>> fetchAll() async {
-    final response = await _client.rpc('admin_list_push_campaigns_v1');
+    final response = await _resolvedClient.rpc('admin_list_push_campaigns_v1');
     final data = response as Map<String, dynamic>;
 
     if (data['ok'] != true) {
@@ -56,7 +57,7 @@ class PushCampaignRepository {
       params['p_id'] = id;
     }
 
-    final response = await _client.rpc(
+    final response = await _resolvedClient.rpc(
       'admin_upsert_push_campaign_v1',
       params: params,
     );
@@ -72,7 +73,7 @@ class PushCampaignRepository {
   }
 
   Future<void> sendNow(String campaignId) async {
-    final response = await _client.rpc(
+    final response = await _resolvedClient.rpc(
       'admin_send_push_campaign_v1',
       params: {'p_campaign_id': campaignId},
     );
@@ -89,7 +90,7 @@ class PushCampaignRepository {
     required String campaignId,
     required String testUserId,
   }) async {
-    final response = await _client.rpc(
+    final response = await _resolvedClient.rpc(
       'admin_send_push_campaign_v1',
       params: {
         'p_campaign_id': campaignId,
@@ -106,7 +107,7 @@ class PushCampaignRepository {
   }
 
   Future<void> cancel(String campaignId) async {
-    final response = await _client.rpc(
+    final response = await _resolvedClient.rpc(
       'admin_cancel_push_campaign_v1',
       params: {'p_campaign_id': campaignId},
     );
@@ -117,7 +118,7 @@ class PushCampaignRepository {
   }
 
   Future<void> _invokeFcmDelivery(String campaignId) async {
-    final response = await _client.functions.invoke(
+    final response = await _resolvedClient.functions.invoke(
       'send-push-campaign',
       body: {'campaign_id': campaignId},
     );
