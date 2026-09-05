@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/partner_errors.dart';
 import '../data/partner_repository.dart';
 import '../domain/admin_partner_summary.dart';
@@ -98,7 +99,7 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
         return;
       }
       setState(() {
-        _errorMessage = 'İşlem başarısız oldu.';
+        _errorMessage = context.l10n.actionFailed;
         _isSaving = false;
       });
     }
@@ -110,7 +111,9 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
 
     return AlertDialog(
       backgroundColor: const Color(0xFF181818),
-      title: Text(isEdit ? 'Partner Düzenle' : 'Partner Oluştur'),
+      title: Text(
+        isEdit ? context.l10n.editPartner : context.l10n.createPartner,
+      ),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -128,10 +131,12 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
               TextFormField(
                 controller: _displayNameController,
                 enabled: !_isSaving,
-                decoration: const InputDecoration(labelText: 'Görünen Ad *'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.displayNameStar,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Görünen ad zorunludur.';
+                    return context.l10n.displayNameRequired;
                   }
                   return null;
                 },
@@ -140,12 +145,12 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
               TextFormField(
                 controller: _legalNameController,
                 enabled: !_isSaving,
-                decoration: const InputDecoration(labelText: 'Yasal Ad'),
+                decoration: InputDecoration(labelText: context.l10n.legalName),
               ),
               if (isEdit) ...[
                 const SizedBox(height: 12),
                 InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Durum'),
+                  decoration: InputDecoration(labelText: context.l10n.status),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<PartnerStatus>(
                       value: _status,
@@ -154,7 +159,12 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
                         for (final status in PartnerStatus.values)
                           DropdownMenuItem(
                             value: status,
-                            child: Text(status.label),
+                            child: Text(
+                              adminPartnerStatusLabel(
+                                context.l10n,
+                                status.value,
+                              ),
+                            ),
                           ),
                       ],
                       onChanged: _isSaving
@@ -175,7 +185,7 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
       actions: [
         TextButton(
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Vazgeç'),
+          child: Text(context.l10n.dismiss),
         ),
         FilledButton(
           onPressed: _isSaving ? null : _submit,
@@ -188,7 +198,7 @@ class _PartnerFormDialogState extends State<PartnerFormDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(isEdit ? 'Kaydet' : 'Oluştur'),
+              : Text(isEdit ? context.l10n.save : context.l10n.create),
         ),
       ],
     );

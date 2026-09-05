@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../admin_context/presentation/admin_context_scope.dart';
 import '../../users/domain/user_parse_helpers.dart';
 import '../../users/domain/wallet_ledger_display.dart';
 import '../data/admin_audit_repository.dart';
 import '../domain/admin_audit_entry.dart';
+
+String _auditSummaryLabel(AppLocalizations l10n, AdminAuditEntry entry) {
+  final actionLabel = adminAuditActionLabel(l10n, entry.actionType);
+  final metadata = entry.metadata;
+  if (metadata == null || metadata.isEmpty) {
+    return actionLabel;
+  }
+
+  final title = AdminAuditActionType.metadataTitle(metadata);
+  if (title != null) {
+    return '$actionLabel · $title';
+  }
+
+  return actionLabel;
+}
 
 class AdminAuditPage extends StatefulWidget {
   const AdminAuditPage({this.repository, super.key});
@@ -52,51 +68,53 @@ class AdminAuditPageState extends State<AdminAuditPage> {
     final isSuperAdmin =
         AdminContextScope.maybeOf(context)?.isSuperAdmin ?? false;
 
+    final l10n = context.l10n;
+
     return [
-      const _AuditFilterOption(label: 'Tümü', value: null),
-      const _AuditFilterOption(
-        label: 'Jeton Yükleme',
+      _AuditFilterOption(label: l10n.all, value: null),
+      _AuditFilterOption(
+        label: l10n.filterWalletCredit,
         value: AdminAuditActionType.walletCredit,
       ),
-      const _AuditFilterOption(
-        label: 'Jeton Eksiltme',
+      _AuditFilterOption(
+        label: l10n.filterWalletDebitExact,
         value: AdminAuditActionType.walletDebit,
       ),
-      const _AuditFilterOption(
-        label: 'Dizi Güncellendi',
+      _AuditFilterOption(
+        label: l10n.filterSeriesUpdated,
         value: AdminAuditActionType.seriesUpdated,
       ),
-      const _AuditFilterOption(
-        label: 'Poster Değiştirildi',
+      _AuditFilterOption(
+        label: l10n.filterPosterReplaced,
         value: AdminAuditActionType.seriesPosterReplaced,
       ),
-      const _AuditFilterOption(
-        label: 'Dizi Yayınlandı',
+      _AuditFilterOption(
+        label: l10n.filterSeriesPublished,
         value: AdminAuditActionType.seriesPublished,
       ),
-      const _AuditFilterOption(
-        label: 'Dizi Arşivlendi',
+      _AuditFilterOption(
+        label: l10n.filterSeriesArchived,
         value: AdminAuditActionType.seriesArchived,
       ),
-      const _AuditFilterOption(
-        label: 'Bölüm Güncellendi',
+      _AuditFilterOption(
+        label: l10n.filterEpisodeUpdated,
         value: AdminAuditActionType.episodeUpdated,
       ),
-      const _AuditFilterOption(
-        label: 'Bölüm Sıralaması',
+      _AuditFilterOption(
+        label: l10n.filterEpisodeReorder,
         value: AdminAuditActionType.episodesReordered,
       ),
-      const _AuditFilterOption(
-        label: 'Video Değişimi',
+      _AuditFilterOption(
+        label: l10n.filterVideoReplacement,
         value: AdminAuditActionType.episodeStreamReplacementRequested,
       ),
       if (isSuperAdmin) ...[
-        const _AuditFilterOption(
-          label: 'Admin Rolü Değişikliği',
+        _AuditFilterOption(
+          label: l10n.filterAdminRoleChange,
           value: AdminAuditActionType.roleSet,
         ),
-        const _AuditFilterOption(
-          label: 'Admin Erişimi Kaldırma',
+        _AuditFilterOption(
+          label: l10n.filterAdminAccessRevoke,
           value: AdminAuditActionType.accessRevoke,
         ),
       ],
@@ -186,15 +204,15 @@ class AdminAuditPageState extends State<AdminAuditPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'İşlem Kayıtları',
+                context.l10n.auditTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Admin paneli işlem geçmişi',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.auditSubtitle,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
               const SizedBox(height: 24),
               LayoutBuilder(
@@ -221,7 +239,7 @@ class AdminAuditPageState extends State<AdminAuditPage> {
                   onRetry: () => _load(reset: true),
                 )
               else if (_entries.isEmpty)
-                const _EmptyState()
+                _EmptyState()
               else
                 LayoutBuilder(
                   builder: (context, constraints) {
@@ -245,7 +263,7 @@ class AdminAuditPageState extends State<AdminAuditPage> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Daha Fazla Yükle'),
+                        : Text(context.l10n.loadMore),
                   ),
                 ),
               ],
@@ -309,7 +327,7 @@ class _AuditFilterBar extends StatelessWidget {
           child: DropdownButtonFormField<String?>(
             initialValue: selectedActionType,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'İşlem türü'),
+            decoration: InputDecoration(labelText: context.l10n.actionType),
             items: [
               for (final option in filterOptions)
                 DropdownMenuItem(
@@ -324,12 +342,12 @@ class _AuditFilterBar extends StatelessWidget {
           width: _fieldWidth(_targetUserFieldWidth),
           child: TextField(
             controller: targetUserIdController,
-            decoration: const InputDecoration(labelText: 'Hedef kullanıcı ID'),
+            decoration: InputDecoration(labelText: context.l10n.targetUserId),
           ),
         ),
         FilledButton(
           onPressed: isLoading ? null : onRefresh,
-          child: const Text('Yenile'),
+          child: Text(context.l10n.refresh),
         ),
       ],
     );
@@ -343,6 +361,8 @@ class _AuditDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -355,30 +375,30 @@ class _AuditDataTable extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
-            columns: const [
-              DataColumn(label: Text('İşlem')),
-              DataColumn(label: Text('Admin')),
-              DataColumn(label: Text('Hedef')),
-              DataColumn(label: Text('Miktar')),
-              DataColumn(label: Text('Önceki')),
-              DataColumn(label: Text('Sonraki')),
-              DataColumn(label: Text('Sebep')),
-              DataColumn(label: Text('Açıklama')),
-              DataColumn(label: Text('Referans')),
-              DataColumn(label: Text('Tarih')),
+            columns: [
+              DataColumn(label: Text(l10n.action)),
+              DataColumn(label: Text(l10n.admin)),
+              DataColumn(label: Text(l10n.target)),
+              DataColumn(label: Text(l10n.amount)),
+              DataColumn(label: Text(l10n.previous)),
+              DataColumn(label: Text(l10n.next)),
+              DataColumn(label: Text(l10n.reasonAlt)),
+              DataColumn(label: Text(l10n.description)),
+              DataColumn(label: Text(l10n.reference)),
+              DataColumn(label: Text(l10n.date)),
             ],
             rows: [
               for (final entry in entries)
                 DataRow(
                   cells: [
-                    DataCell(Text(entry.summaryLabel)),
+                    DataCell(Text(_auditSummaryLabel(l10n, entry))),
                     DataCell(Text(entry.actorLabel)),
                     DataCell(Text(entry.targetLabel)),
                     DataCell(Text(_amountLabel(entry))),
                     DataCell(Text(_balanceLabel(entry.balanceBefore))),
                     DataCell(Text(_balanceLabel(entry.balanceAfter))),
                     DataCell(
-                      Text(WalletLedgerDisplay.reasonLabel(entry.reasonCode)),
+                      Text(adminWalletReasonLabel(l10n, entry.reasonCode)),
                     ),
                     DataCell(
                       Text(WalletLedgerDisplay.optionalText(entry.description)),
@@ -421,26 +441,36 @@ class _AuditCardList extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.actionTypeLabel,
+                    adminAuditActionLabel(context.l10n, entry.actionType),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('Admin: ${entry.actorLabel}'),
-                  Text('Hedef: ${entry.targetLabel}'),
+                  Text('${context.l10n.admin}: ${entry.actorLabel}'),
+                  Text(context.l10n.targetNamed(entry.targetLabel)),
                   if (entry.amount != null)
-                    Text('Miktar: ${_amountLabel(entry)}'),
+                    Text(context.l10n.amountPrefixed(_amountLabel(entry))),
                   if (entry.balanceBefore != null)
-                    Text('Önceki bakiye: ${entry.balanceBefore}'),
+                    Text(
+                      context.l10n.previousBalance('${entry.balanceBefore}'),
+                    ),
                   if (entry.balanceAfter != null)
-                    Text('Sonraki bakiye: ${entry.balanceAfter}'),
+                    Text(
+                      context.l10n.nextBalancePrefixed('${entry.balanceAfter}'),
+                    ),
                   if (entry.reasonCode != null)
                     Text(
-                      'Sebep: ${WalletLedgerDisplay.reasonLabel(entry.reasonCode)}',
+                      context.l10n.reasonPrefixed(
+                        adminWalletReasonLabel(context.l10n, entry.reasonCode),
+                      ),
                     ),
-                  Text('Tarih: ${formatUserDateTime(entry.createdAt)}'),
+                  Text(
+                    context.l10n.datePrefixed(
+                      formatUserDateTime(entry.createdAt),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -477,18 +507,18 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
+    return DecoratedBox(
+      decoration: const BoxDecoration(
         color: Color(0xFF111111),
         borderRadius: BorderRadius.all(Radius.circular(14)),
         border: Border.fromBorderSide(BorderSide(color: Color(0xFF2A2A2A))),
       ),
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'İşlem kaydı bulunamadı.',
-            style: TextStyle(color: Color(0xFFB3B3B3)),
+            context.l10n.noAuditRecords,
+            style: const TextStyle(color: Color(0xFFB3B3B3)),
           ),
         ),
       ),
@@ -512,7 +542,7 @@ class _ErrorState extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Tekrar Dene')),
+            FilledButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),

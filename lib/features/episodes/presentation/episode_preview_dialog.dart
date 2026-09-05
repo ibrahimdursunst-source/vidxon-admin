@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/data/content_errors.dart';
 import '../data/episode_preview_repository.dart';
 import '../domain/admin_episode.dart';
@@ -54,6 +55,7 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
     final blockReason = _previewBlockReason(
       episode: widget.episode,
       videoSource: widget.videoSource,
+      l10n: lookupAppLocalizations(const Locale('tr')),
     );
     if (blockReason != null) {
       if (!mounted) {
@@ -103,7 +105,7 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
       }
 
       setState(() {
-        _errorMessage = 'Önizleme yüklenemedi.';
+        _errorMessage = context.l10n.previewLoadFailed;
         _isLoading = false;
       });
     }
@@ -117,17 +119,19 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final blockReason = _previewBlockReason(
       episode: widget.episode,
       videoSource: widget.videoSource,
+      l10n: l10n,
     );
 
     return AlertDialog(
       backgroundColor: const Color(0xFF181818),
       title: Text(
         widget.videoSource == 'pending'
-            ? 'Bekleyen Video Önizleme'
-            : 'Aktif Video Önizleme',
+            ? l10n.pendingVideoPreview
+            : l10n.activeVideoPreview,
       ),
       content: SizedBox(
         width: 720,
@@ -151,10 +155,7 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
                 style: const TextStyle(color: Color(0xFFFFB4B4)),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: _loadPreview,
-                child: const Text('Yeniden Dene'),
-              ),
+              OutlinedButton(onPressed: _loadPreview, child: Text(l10n.retry)),
             ] else if (_previewUrl != null)
               SizedBox(
                 height: 360,
@@ -169,7 +170,7 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Kapat'),
+          child: Text(context.l10n.close),
         ),
       ],
     );
@@ -179,24 +180,25 @@ class _EpisodePreviewDialogState extends State<_EpisodePreviewDialog> {
 String? _previewBlockReason({
   required AdminEpisode episode,
   required String videoSource,
+  required AppLocalizations l10n,
 }) {
   if (videoSource == 'active') {
     if (!episode.hasActiveVideo) {
-      return 'Aktif video bulunmuyor.';
+      return l10n.noActiveVideo;
     }
 
     if (episode.cloudflareStreamStatus != CloudflareStreamStatus.ready) {
-      return 'Aktif video henüz önizlemeye hazır değil.';
+      return l10n.activeVideoNotReady;
     }
   }
 
   if (videoSource == 'pending') {
     if (!episode.hasPendingReplacement) {
-      return 'Bekleyen video bulunmuyor.';
+      return l10n.noPendingVideo;
     }
 
     if (episode.cloudflareStreamPendingStatus != CloudflareStreamStatus.ready) {
-      return 'Bekleyen video henüz önizlemeye hazır değil.';
+      return l10n.pendingVideoNotReady;
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
@@ -182,14 +183,13 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       return;
     }
 
+    final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           replace
-              ? 'Yeni video yüklendi. Mevcut video yayında kalmaya devam eder; '
-                    'hazır olduğunda otomatik devreye alınır.'
-              : 'Video yüklendi ve bölüme bağlandı. Cloudflare Stream videoyu '
-                    'işlemeye devam ediyor.',
+              ? l10n.videoReplacementUploaded
+              : l10n.videoAttachedProcessing,
         ),
       ),
     );
@@ -231,7 +231,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
     required String confirmLabel,
     required Future<AdminEpisode> Function() action,
     required String successMessage,
-    String cancelLabel = 'Vazgeç',
+    String? cancelLabel,
   }) async {
     if (_lifecycleBusy || !contentMutationsEnabled(context)) {
       return;
@@ -242,7 +242,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       title: title,
       message: message,
       confirmLabel: confirmLabel,
-      cancelLabel: cancelLabel,
+      cancelLabel: cancelLabel ?? context.l10n.dismiss,
     );
     if (!confirmed || !mounted) {
       return;
@@ -276,7 +276,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       }
     } catch (_) {
       if (mounted) {
-        showContentErrorSnackBar(context, 'İşlem tamamlanamadı.');
+        showContentErrorSnackBar(context, context.l10n.actionIncomplete);
       }
     } finally {
       if (mounted) {
@@ -289,6 +289,7 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
     EpisodeMenuAction action,
     AdminEpisode episode,
   ) async {
+    final l10n = context.l10n;
     switch (action) {
       case EpisodeMenuAction.edit:
         await _openEditForm(episode);
@@ -297,10 +298,9 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.replaceVideo:
         final confirmed = await confirmContentAction(
           context,
-          title: 'Videoyu Değiştir',
-          message:
-              'Yeni video hazır olana kadar mevcut video yayında kalmaya devam eder.',
-          confirmLabel: 'Devam Et',
+          title: l10n.replaceVideo,
+          message: l10n.replaceVideoConfirm,
+          confirmLabel: l10n.continueAction,
         );
         if (confirmed && mounted) {
           await _openVideoUpload(episode, replace: true);
@@ -314,10 +314,10 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.publish:
         await _runLifecycle(
           episode: episode,
-          title: 'Yayınla',
-          message: 'Bu bölüm yayına alınsın mı?',
-          confirmLabel: 'Yayınla',
-          successMessage: 'Bölüm yayınlandı.',
+          title: l10n.publishSeries,
+          message: l10n.publishEpisodeConfirm,
+          confirmLabel: l10n.publishSeries,
+          successMessage: l10n.episodePublished,
           action: () => _repository.publishEpisode(
             episodeId: episode.id,
             expectedContentVersion: episode.contentVersion,
@@ -326,13 +326,11 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.unpublish:
         await _runLifecycle(
           episode: episode,
-          title: 'Bölümü Yayından Kaldır?',
-          message:
-              'Bu bölüm kullanıcılar tarafından erişilemez hâle gelecektir. '
-              'Daha sonra tekrar yayınlayabilirsiniz.',
-          confirmLabel: 'Yayından Kaldır',
-          cancelLabel: 'İptal',
-          successMessage: 'Bölüm yayından kaldırıldı.',
+          title: l10n.unpublishEpisodeTitle,
+          message: l10n.unpublishEpisodeConfirm,
+          confirmLabel: l10n.unpublish,
+          cancelLabel: l10n.cancel,
+          successMessage: l10n.episodeUnpublished,
           action: () => _repository.unpublishEpisode(
             episodeId: episode.id,
             expectedContentVersion: episode.contentVersion,
@@ -341,10 +339,10 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.archive:
         await _runLifecycle(
           episode: episode,
-          title: 'Arşivle',
-          message: 'Bu bölüm arşivlenecek.',
-          confirmLabel: 'Arşivle',
-          successMessage: 'Bölüm arşivlendi.',
+          title: l10n.archiveAction,
+          message: l10n.archiveEpisodeConfirm,
+          confirmLabel: l10n.archiveAction,
+          successMessage: l10n.episodeArchived,
           action: () => _repository.archiveEpisode(
             episodeId: episode.id,
             expectedContentVersion: episode.contentVersion,
@@ -353,10 +351,10 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
       case EpisodeMenuAction.restore:
         await _runLifecycle(
           episode: episode,
-          title: 'Geri Yükle',
-          message: 'Bu bölüm arşivden geri yüklensin mi?',
-          confirmLabel: 'Geri Yükle',
-          successMessage: 'Bölüm geri yüklendi.',
+          title: l10n.restore,
+          message: l10n.restoreEpisodeConfirm,
+          confirmLabel: l10n.restore,
+          successMessage: l10n.episodeRestored,
           action: () => _repository.restoreEpisode(
             episodeId: episode.id,
             expectedContentVersion: episode.contentVersion,
@@ -432,9 +430,9 @@ class _SeriesEpisodesPageState extends State<SeriesEpisodesPage> {
                     ),
                     if (archived.isNotEmpty) ...[
                       const SizedBox(height: 32),
-                      const Text(
-                        'Arşivlenmiş Bölümler',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.archivedEpisodes,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -485,25 +483,27 @@ enum EpisodeMenuAction {
 List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
   AdminEpisode episode, {
   bool parentSeriesArchived = false,
+  AppLocalizations? l10n,
 }) {
+  final copy = l10n ?? lookupAppLocalizations(const Locale('tr'));
   final items = <PopupMenuEntry<EpisodeMenuAction>>[
-    const PopupMenuItem(value: EpisodeMenuAction.edit, child: Text('Düzenle')),
+    PopupMenuItem(value: EpisodeMenuAction.edit, child: Text(copy.edit)),
   ];
 
   if (episode.allowsInitialVideoUpload) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.upload,
-        child: Text('Video Yükle'),
+        child: Text(copy.uploadVideo),
       ),
     );
   }
 
   if (episode.allowsReplacementRequest || episode.allowsReplacementRetry) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.replaceVideo,
-        child: Text('Videoyu Değiştir'),
+        child: Text(copy.replaceVideo),
       ),
     );
   }
@@ -511,15 +511,15 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
   if (episode.hasActiveVideo &&
       episode.cloudflareStreamStatus == CloudflareStreamStatus.ready) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.mediaTracks,
-        child: Text('Ses / Altyazı'),
+        child: Text(copy.audioSubtitles),
       ),
     );
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.previewActive,
-        child: Text('Aktif Videoyu Önizle'),
+        child: Text(copy.previewActiveVideo),
       ),
     );
   }
@@ -527,9 +527,9 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
   if (episode.hasPendingReplacement &&
       episode.cloudflareStreamPendingStatus == CloudflareStreamStatus.ready) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.previewPending,
-        child: Text('Bekleyen Videoyu Önizle'),
+        child: Text(copy.previewPendingVideo),
       ),
     );
   }
@@ -557,25 +557,25 @@ List<PopupMenuEntry<EpisodeMenuAction>> episodeMenuItems(
 
   if (!episode.isArchived && episode.isPublished) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.unpublish,
-        child: Text('Yayından Kaldır'),
+        child: Text(copy.unpublish),
       ),
     );
   }
 
   if (!episode.isArchived) {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.archive,
-        child: Text('Arşivle'),
+        child: Text(copy.archiveAction),
       ),
     );
   } else {
     items.add(
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EpisodeMenuAction.restore,
-        child: Text('Geri Yükle'),
+        child: Text(copy.restore),
       ),
     );
   }
@@ -665,13 +665,13 @@ class _EpisodePublishMenuLabel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            label,
+            context.l10n.publishSeries,
             style: TextStyle(color: titleColor, fontWeight: FontWeight.w500),
           ),
           if (reason != null && reason!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              reason!,
+              adminPublishBlockReasonLabel(context.l10n, reason),
               style: TextStyle(
                 color: reasonColor,
                 fontSize: 12,
@@ -709,15 +709,15 @@ class _PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bölümler',
+                context.l10n.navEpisodes,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Seçili dizinin bölümlerini yönetin',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.manageSeriesEpisodes,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
             ],
           ),
@@ -730,12 +730,12 @@ class _PageHeader extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onReorder,
                 icon: const Icon(Icons.swap_vert, size: 18),
-                label: const Text('Sıralamayı Düzenle'),
+                label: Text(context.l10n.editOrder),
               ),
             FilledButton.icon(
               onPressed: createEnabled ? onCreate : null,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Yeni Bölüm'),
+              label: Text(context.l10n.newEpisode),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFE50914),
                 foregroundColor: Colors.white,
@@ -744,7 +744,7 @@ class _PageHeader extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Yenile'),
+              label: Text(context.l10n.refresh),
             ),
           ],
         ),
@@ -769,6 +769,7 @@ class _EpisodesDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -783,16 +784,16 @@ class _EpisodesDataTable extends StatelessWidget {
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
             dataRowMinHeight: 56,
             dataRowMaxHeight: 110,
-            columns: const [
-              DataColumn(label: Text('No')),
-              DataColumn(label: Text('Başlık')),
-              DataColumn(label: Text('Erişim')),
-              DataColumn(label: Text('Yayın')),
-              DataColumn(label: Text('Nitelikli')),
-              DataColumn(label: Text('Video')),
-              DataColumn(label: Text('Bekleyen')),
-              DataColumn(label: Text('Yayın Tarihi')),
-              DataColumn(label: Text('İşlemler')),
+            columns: [
+              const DataColumn(label: Text('No')),
+              DataColumn(label: Text(l10n.title)),
+              DataColumn(label: Text(l10n.access)),
+              DataColumn(label: Text(l10n.publish)),
+              DataColumn(label: Text(l10n.qualified)),
+              DataColumn(label: Text(l10n.video)),
+              DataColumn(label: Text(l10n.pending)),
+              DataColumn(label: Text(l10n.releaseDate)),
+              DataColumn(label: Text(l10n.actions)),
             ],
             rows: [
               for (final episode in episodes)
@@ -808,9 +809,12 @@ class _EpisodesDataTable extends StatelessWidget {
                           children: [
                             Text(episode.title),
                             if (archived)
-                              const Text(
-                                'Arşivlenmiş',
-                                style: TextStyle(
+                              Text(
+                                adminArchiveDisplayLabel(
+                                  l10n,
+                                  episode.archiveLabel,
+                                ),
+                                style: const TextStyle(
                                   color: Color(0xFFE5A000),
                                   fontSize: 12,
                                 ),
@@ -820,19 +824,41 @@ class _EpisodesDataTable extends StatelessWidget {
                         ),
                       ),
                     ),
-                    DataCell(Text(episode.priceLabel)),
-                    DataCell(Text(episode.publishLabel)),
+                    DataCell(
+                      Text(
+                        episode.isFree
+                            ? l10n.free
+                            : l10n.coinsAmount(episode.coinPrice),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        adminPublishDisplayLabel(l10n, episode.publishLabel),
+                      ),
+                    ),
                     DataCell(Text('${episode.qualifiedViewsTotal}')),
-                    DataCell(Text(episode.videoStatusLabel)),
-                    DataCell(Text(episode.pendingVideoStatusLabel)),
+                    DataCell(
+                      Text(
+                        adminVideoStatusLabel(l10n, episode.videoStatusLabel),
+                      ),
+                    ),
+                    DataCell(
+                      Text(
+                        adminVideoStatusLabel(
+                          l10n,
+                          episode.pendingVideoStatusLabel,
+                        ),
+                      ),
+                    ),
                     DataCell(Text(formatEpisodeDateTime(episode.releaseAt))),
                     DataCell(
                       PopupMenuButton<EpisodeMenuAction>(
-                        tooltip: 'İşlemler',
+                        tooltip: l10n.actions,
                         onSelected: (action) => onAction(action, episode),
                         itemBuilder: (context) => episodeMenuItems(
                           episode,
                           parentSeriesArchived: parentSeriesArchived,
+                          l10n: context.l10n,
                         ),
                         child: const Icon(Icons.more_vert),
                       ),
@@ -863,6 +889,7 @@ class _EpisodesCardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       children: [
         for (final episode in episodes) ...[
@@ -893,6 +920,7 @@ class _EpisodesCardList extends StatelessWidget {
                         itemBuilder: (context) => episodeMenuItems(
                           episode,
                           parentSeriesArchived: parentSeriesArchived,
+                          l10n: context.l10n,
                         ),
                         icon: const Icon(Icons.more_vert),
                       ),
@@ -904,20 +932,49 @@ class _EpisodesCardList extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _InfoChip(label: episode.priceLabel),
-                      _InfoChip(label: episode.publishLabel),
                       _InfoChip(
-                        label: 'Nitelikli: ${episode.qualifiedViewsTotal}',
+                        label: episode.isFree
+                            ? l10n.free
+                            : l10n.coinsAmount(episode.coinPrice),
                       ),
-                      if (archived) const _InfoChip(label: 'Arşivlenmiş'),
-                      _InfoChip(label: episode.videoStatusLabel),
+                      _InfoChip(
+                        label: adminPublishDisplayLabel(
+                          l10n,
+                          episode.publishLabel,
+                        ),
+                      ),
+                      _InfoChip(
+                        label: l10n.qualifiedViewsCount(
+                          episode.qualifiedViewsTotal,
+                        ),
+                      ),
+                      if (archived)
+                        _InfoChip(
+                          label: adminArchiveDisplayLabel(
+                            l10n,
+                            episode.archiveLabel,
+                          ),
+                        ),
+                      _InfoChip(
+                        label: adminVideoStatusLabel(
+                          l10n,
+                          episode.videoStatusLabel,
+                        ),
+                      ),
                       if (episode.hasPendingReplacement)
-                        _InfoChip(label: episode.pendingVideoStatusLabel),
+                        _InfoChip(
+                          label: adminVideoStatusLabel(
+                            l10n,
+                            episode.pendingVideoStatusLabel,
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Yayın: ${formatEpisodeDateTime(episode.releaseAt)}',
+                    l10n.releaseAtLabel(
+                      formatEpisodeDateTime(episode.releaseAt),
+                    ),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   if (episode.publishBlockReason != null &&
@@ -926,7 +983,10 @@ class _EpisodesCardList extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        episode.publishBlockReason!,
+                        adminPublishBlockReasonLabel(
+                          l10n,
+                          episode.publishBlockReason,
+                        ),
                         style: const TextStyle(
                           color: Color(0xFF777777),
                           fontSize: 12,
@@ -968,22 +1028,22 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
+        padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            Icon(
+            const Icon(
               Icons.playlist_play_outlined,
               size: 56,
               color: Color(0xFF555555),
             ),
-            SizedBox(height: 16),
-            Text('Henüz bölüm yok'),
-            SizedBox(height: 8),
+            const SizedBox(height: 16),
+            Text(context.l10n.noEpisodesYet),
+            const SizedBox(height: 8),
             Text(
-              'Bu dizi için ilk bölümü oluşturabilirsiniz.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+              context.l10n.createFirstEpisode,
+              style: const TextStyle(color: Color(0xFFB3B3B3)),
             ),
           ],
         ),
@@ -1014,7 +1074,7 @@ class _ErrorState extends StatelessWidget {
                 color: Color(0xFFE50914),
               ),
               const SizedBox(height: 16),
-              const Text('Bölümler yüklenemedi'),
+              Text(context.l10n.episodesLoadFailedTitle),
               const SizedBox(height: 8),
               SelectableText(
                 message,
@@ -1027,7 +1087,7 @@ class _ErrorState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Color(0xFFE50914),
                 ),
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),

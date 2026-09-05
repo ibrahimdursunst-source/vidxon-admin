@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/content_errors.dart';
 
 /// Handles optimistic concurrency conflicts: reloads fresh data and shows
-/// the canonical Turkish message without auto-retrying the mutation.
+/// the localized conflict message without auto-retrying the mutation.
 Future<T?> handleContentConflict<T>({
   required BuildContext context,
   required ContentException error,
@@ -16,9 +17,9 @@ Future<T?> handleContentConflict<T>({
 
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(ContentErrorMapper.conflictMessage),
-        duration: Duration(seconds: 6),
+      SnackBar(
+        content: Text(context.l10n.contentConflictReloaded),
+        duration: const Duration(seconds: 6),
       ),
     );
   }
@@ -43,7 +44,7 @@ Future<bool> confirmContentAction(
   required String title,
   required String message,
   required String confirmLabel,
-  String cancelLabel = 'Vazgeç',
+  String? cancelLabel,
 }) async {
   final result = await showDialog<bool>(
     context: context,
@@ -55,7 +56,7 @@ Future<bool> confirmContentAction(
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(cancelLabel),
+            child: Text(cancelLabel ?? context.l10n.dismiss),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),

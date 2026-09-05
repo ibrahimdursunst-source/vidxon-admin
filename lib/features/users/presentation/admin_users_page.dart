@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_user_summary.dart';
 import '../domain/user_parse_helpers.dart';
@@ -10,6 +11,18 @@ import 'admin_role_badge.dart';
 import 'admin_user_details_page.dart';
 import 'user_search_request_guard.dart';
 import 'user_list_search_logic.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
+
+String _localizedRoleLabel(AppLocalizations l10n, String label) {
+  return switch (label) {
+    'Admin' => l10n.adminRole,
+    'Super Admin' => l10n.superAdminRole,
+    _ => label,
+  };
+}
 
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({this.repository, super.key});
@@ -234,7 +247,7 @@ class AdminUsersPageState extends State<AdminUsersPage> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Kullanıcı ID kopyalandı.')));
+    ).showSnackBar(SnackBar(content: Text(context.l10n.userIdCopied)));
   }
 
   @override
@@ -262,7 +275,7 @@ class AdminUsersPageState extends State<AdminUsersPage> {
           else if (_errorMessage != null)
             _ErrorState(message: _errorMessage!, onRetry: refresh)
           else if (_users.isEmpty)
-            const _EmptyState()
+            _EmptyState()
           else ...[
             LayoutBuilder(
               builder: (context, constraints) {
@@ -294,7 +307,7 @@ class AdminUsersPageState extends State<AdminUsersPage> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Daha Fazla Yükle'),
+                      : Text(context.l10n.loadMore),
                 ),
               ),
             ],
@@ -320,15 +333,15 @@ class _PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Kullanıcılar',
+                context.l10n.users,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Kullanıcıları arayın, detaylarını görüntüleyin ve jeton yükleyin',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.usersSubtitle,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
             ],
           ),
@@ -336,7 +349,7 @@ class _PageHeader extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('Yenile'),
+          label: Text(context.l10n.refresh),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
             side: const BorderSide(color: Color(0xFF333333)),
@@ -388,12 +401,12 @@ class _SearchBarState extends State<_SearchBar> {
             controller: widget.controller,
             onSubmitted: (_) => widget.onSubmitted(),
             decoration: InputDecoration(
-              hintText: 'Kullanıcı ID, e-posta veya görünen ad ile ara',
+              hintText: context.l10n.searchUsersHint,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: widget.controller.text.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Aramayı temizle',
+                      tooltip: context.l10n.clearSearch,
                       onPressed: widget.onClear,
                       icon: const Icon(Icons.clear),
                     ),
@@ -418,7 +431,7 @@ class _SearchBarState extends State<_SearchBar> {
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
-          child: const Text('Ara'),
+          child: Text(context.l10n.search),
         ),
       ],
     );
@@ -438,6 +451,8 @@ class _UsersDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -450,14 +465,14 @@ class _UsersDataTable extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
-            columns: const [
-              DataColumn(label: Text('Görünen Ad')),
-              DataColumn(label: Text('E-posta')),
-              DataColumn(label: Text('Kullanıcı ID')),
-              DataColumn(label: Text('Durum')),
-              DataColumn(label: Text('Jeton')),
-              DataColumn(label: Text('Kayıt')),
-              DataColumn(label: Text('İşlemler')),
+            columns: [
+              DataColumn(label: Text(l10n.displayName)),
+              DataColumn(label: Text(l10n.email)),
+              DataColumn(label: Text(l10n.userId)),
+              DataColumn(label: Text(l10n.status)),
+              DataColumn(label: Text(l10n.coins)),
+              DataColumn(label: Text(l10n.registration)),
+              DataColumn(label: Text(l10n.actions)),
             ],
             rows: [
               for (final user in users)
@@ -467,35 +482,51 @@ class _UsersDataTable extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(user.resolvedDisplayName),
+                          Text(
+                            _localizedDisplayName(
+                              l10n,
+                              user.resolvedDisplayName,
+                            ),
+                          ),
                           if (user.adminRoleLabel != null) ...[
                             const SizedBox(width: 8),
-                            AdminRoleBadge(label: user.adminRoleLabel!),
+                            AdminRoleBadge(
+                              label: _localizedRoleLabel(
+                                l10n,
+                                user.adminRoleLabel!,
+                              ),
+                            ),
                           ],
                         ],
                       ),
                     ),
-                    DataCell(Text(user.resolvedEmailLabel)),
+                    DataCell(
+                      Text(
+                        adminResolvedEmailLabel(l10n, user.resolvedEmailLabel),
+                      ),
+                    ),
                     DataCell(
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(shortenUserId(user.userId)),
                           IconButton(
-                            tooltip: 'Kullanıcı ID kopyala',
+                            tooltip: l10n.copyUserId,
                             onPressed: () => onCopyUserId(user.userId),
                             icon: const Icon(Icons.copy, size: 18),
                           ),
                         ],
                       ),
                     ),
-                    DataCell(Text(user.accountStatusLabel)),
+                    DataCell(
+                      Text(adminUserStatusLabel(l10n, user.accountStatusLabel)),
+                    ),
                     DataCell(Text(user.coinBalance.toString())),
                     DataCell(Text(formatUserDateTime(user.accountCreatedAt))),
                     DataCell(
                       TextButton(
                         onPressed: () => onOpenDetails(user),
-                        child: const Text('Detay'),
+                        child: Text(l10n.detail),
                       ),
                     ),
                   ],
@@ -521,6 +552,8 @@ class _UsersCardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       children: [
         for (final user in users) ...[
@@ -539,7 +572,7 @@ class _UsersCardList extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          user.resolvedDisplayName,
+                          _localizedDisplayName(l10n, user.resolvedDisplayName),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -547,12 +580,17 @@ class _UsersCardList extends StatelessWidget {
                         ),
                       ),
                       if (user.adminRoleLabel != null)
-                        AdminRoleBadge(label: user.adminRoleLabel!),
+                        AdminRoleBadge(
+                          label: _localizedRoleLabel(
+                            l10n,
+                            user.adminRoleLabel!,
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.resolvedEmailLabel,
+                    adminResolvedEmailLabel(l10n, user.resolvedEmailLabel),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   const SizedBox(height: 8),
@@ -560,11 +598,17 @@ class _UsersCardList extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _InfoChip(label: user.accountStatusLabel),
-                      _InfoChip(label: '${user.coinBalance} jeton'),
                       _InfoChip(
-                        label:
-                            'Kayıt: ${formatUserDateTime(user.accountCreatedAt)}',
+                        label: adminUserStatusLabel(
+                          l10n,
+                          user.accountStatusLabel,
+                        ),
+                      ),
+                      _InfoChip(label: l10n.coinsAmount(user.coinBalance)),
+                      _InfoChip(
+                        label: l10n.registeredAt(
+                          formatUserDateTime(user.accountCreatedAt),
+                        ),
                       ),
                     ],
                   ),
@@ -576,14 +620,14 @@ class _UsersCardList extends StatelessWidget {
                         style: const TextStyle(color: Color(0xFFB3B3B3)),
                       ),
                       IconButton(
-                        tooltip: 'Kullanıcı ID kopyala',
+                        tooltip: l10n.copyUserId,
                         onPressed: () => onCopyUserId(user.userId),
                         icon: const Icon(Icons.copy, size: 18),
                       ),
                       const Spacer(),
                       TextButton(
                         onPressed: () => onOpenDetails(user),
-                        child: const Text('Detay'),
+                        child: Text(l10n.detail),
                       ),
                     ],
                   ),
@@ -622,18 +666,24 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final l10n = context.l10n;
+
+    return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
+        padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            Icon(Icons.people_outline, size: 56, color: Color(0xFF555555)),
-            SizedBox(height: 16),
-            Text('Kullanıcı bulunamadı'),
-            SizedBox(height: 8),
+            const Icon(
+              Icons.people_outline,
+              size: 56,
+              color: Color(0xFF555555),
+            ),
+            const SizedBox(height: 16),
+            Text(l10n.userNotFound),
+            const SizedBox(height: 8),
             Text(
-              'Arama kriterlerinize uygun kullanıcı yok.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+              l10n.noUsersMatch,
+              style: const TextStyle(color: Color(0xFFB3B3B3)),
             ),
           ],
         ),
@@ -663,7 +713,7 @@ class _ErrorState extends StatelessWidget {
                 color: Color(0xFFE50914),
               ),
               const SizedBox(height: 16),
-              const Text('Kullanıcılar yüklenemedi'),
+              Text(context.l10n.usersLoadFailed),
               const SizedBox(height: 8),
               SelectableText(
                 message,
@@ -676,7 +726,7 @@ class _ErrorState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Color(0xFFE50914),
                 ),
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),

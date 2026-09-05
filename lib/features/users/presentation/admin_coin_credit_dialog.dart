@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/admin_user_wallet_errors.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_coin_credit_input.dart';
 import '../domain/admin_coin_credit_reason.dart';
 import '../domain/admin_user_details.dart';
 import '../domain/coin_credit_idempotency.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
 
 Future<String?> showAdminCoinCreditDialog({
   required BuildContext context,
@@ -190,8 +195,8 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
       widget.idempotencyManager.clear();
 
       final message = result.wasReplayed
-          ? 'Bu işlem daha önce tamamlanmıştı. Güncel bakiye yenilendi.'
-          : 'Jetonlar başarıyla yüklendi.';
+          ? context.l10n.idempotentCredit
+          : context.l10n.coinsCredited;
 
       if (!mounted) {
         return;
@@ -218,13 +223,14 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
 
       setState(() {
         _step = _CoinCreditStep.confirm;
-        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.unexpectedRetry;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final user = widget.user;
     final input = _pendingInput;
     final isSubmitting = _step == _CoinCreditStep.submitting;
@@ -234,7 +240,9 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
       child: AlertDialog(
         backgroundColor: const Color(0xFF181818),
         title: Text(
-          _step == _CoinCreditStep.confirm ? 'İşlemi Onayla' : 'Jeton Yükle',
+          _step == _CoinCreditStep.confirm
+              ? l10n.confirmTransaction
+              : l10n.creditCoins,
         ),
         content: SizedBox(
           width: 480,
@@ -247,19 +255,23 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '${user.resolvedDisplayName} (${user.resolvedEmailLabel})',
+                      '${_localizedDisplayName(l10n, user.resolvedDisplayName)} (${adminResolvedEmailLabel(l10n, user.resolvedEmailLabel)})',
                       style: const TextStyle(color: Color(0xFFB3B3B3)),
                     ),
                     const SizedBox(height: 8),
-                    Text('Mevcut bakiye: ${user.coinBalance} jeton'),
+                    Text(
+                      l10n.currentBalancePrefixed(
+                        l10n.coinsAmount(user.coinBalance),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _amountController,
                       enabled: !isSubmitting,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Jeton miktarı',
+                      decoration: InputDecoration(
+                        labelText: l10n.coinAmount,
                         hintText: '1 – 1.000.000',
                       ),
                       validator: (value) => validateCoinAmountText(value),
@@ -269,12 +281,17 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
                     DropdownButtonFormField<AdminCoinCreditReason>(
                       initialValue: _selectedReason,
                       isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Neden'),
+                      decoration: InputDecoration(labelText: l10n.reason),
                       items: [
                         for (final reason in AdminCoinCreditReason.values)
                           DropdownMenuItem(
                             value: reason,
-                            child: Text(reason.labelTurkish),
+                            child: Text(
+                              adminCoinCreditReasonLabel(
+                                l10n,
+                                reason.storageValue,
+                              ),
+                            ),
                           ),
                       ],
                       onChanged: isSubmitting
@@ -290,8 +307,8 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
                       controller: _descriptionController,
                       enabled: !isSubmitting,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Açıklama',
+                      decoration: InputDecoration(
+                        labelText: l10n.description,
                         hintText: '5–500 karakter',
                       ),
                       validator: (value) =>
@@ -301,15 +318,17 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
                     TextFormField(
                       controller: _caseReferenceController,
                       enabled: !isSubmitting,
-                      decoration: const InputDecoration(
-                        labelText: 'Destek / işlem referansı (opsiyonel)',
+                      decoration: InputDecoration(
+                        labelText: l10n.supportReferenceOptional,
                       ),
                       validator: (value) => validateCaseReference(value),
                     ),
                     if (_projectedBalance != null) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'Tahmini yeni bakiye: $_projectedBalance jeton',
+                        l10n.estimatedNewBalance(
+                          l10n.coinsAmount(_projectedBalance!),
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -329,30 +348,37 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _ConfirmRow(
-                  label: 'Kullanıcı',
-                  value: user.resolvedDisplayName,
+                  label: l10n.user,
+                  value: _localizedDisplayName(l10n, user.resolvedDisplayName),
                 ),
                 _ConfirmRow(
-                  label: 'Mevcut bakiye',
-                  value: '${user.coinBalance} jeton',
+                  label: l10n.currentBalance,
+                  value: l10n.coinsAmount(user.coinBalance),
                 ),
                 _ConfirmRow(
-                  label: 'Yüklenecek',
-                  value: '${input?.amount ?? 0} jeton',
+                  label: l10n.toCredit,
+                  value: l10n.coinsAmount(input?.amount ?? 0),
                 ),
                 _ConfirmRow(
-                  label: 'Yeni bakiye',
-                  value:
-                      '${input?.projectedBalance(user.coinBalance) ?? user.coinBalance} jeton',
+                  label: l10n.newBalance,
+                  value: l10n.coinsAmount(
+                    input?.projectedBalance(user.coinBalance) ??
+                        user.coinBalance,
+                  ),
                 ),
                 _ConfirmRow(
-                  label: 'Neden',
-                  value: input?.reason.labelTurkish ?? '—',
+                  label: l10n.reason,
+                  value: input == null
+                      ? '—'
+                      : adminCoinCreditReasonLabel(
+                          l10n,
+                          input.reason.storageValue,
+                        ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Bu işlem kullanıcı bakiyesini değiştirecek.',
-                  style: TextStyle(color: Color(0xFFB3B3B3)),
+                Text(
+                  l10n.thisChangesBalance,
+                  style: const TextStyle(color: Color(0xFFB3B3B3)),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
@@ -370,17 +396,17 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
               _step == _CoinCreditStep.submitting)
             TextButton(
               onPressed: isSubmitting ? null : _goBackToForm,
-              child: const Text('Geri'),
+              child: Text(l10n.back),
             ),
           TextButton(
             onPressed: isSubmitting ? null : _closeDialog,
-            child: const Text('İptal'),
+            child: Text(l10n.cancel),
           ),
           if (_step == _CoinCreditStep.form)
             FilledButton(
               onPressed: isSubmitting ? null : _goToConfirm,
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Devam'),
+              child: Text(l10n.continueShort),
             )
           else
             FilledButton(
@@ -395,7 +421,7 @@ class _AdminCoinCreditDialogState extends State<_AdminCoinCreditDialog> {
                         color: Colors.white,
                       ),
                     )
-                  : Text('${input?.amount ?? 0} Jeton Yükle'),
+                  : Text(l10n.creditCoinsAmount(input?.amount ?? 0)),
             ),
         ],
       ),

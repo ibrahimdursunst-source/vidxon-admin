@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
+
 class StreamPreviewPlayer extends StatelessWidget {
   const StreamPreviewPlayer({required this.previewUrl, super.key});
 
@@ -7,11 +9,11 @@ class StreamPreviewPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Text(
-        'Video önizleme yalnızca web ortamında desteklenir.',
+        context.l10n.previewWebOnly,
         textAlign: TextAlign.center,
-        style: TextStyle(color: Color(0xFFB3B3B3)),
+        style: const TextStyle(color: Color(0xFFB3B3B3)),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../admin_context/domain/admin_role.dart';
 import '../../admin_context/presentation/admin_context_scope.dart';
 import '../../users/data/admin_user_wallet_repository.dart';
@@ -11,6 +12,17 @@ import '../../users/presentation/admin_role_badge.dart';
 import '../data/admin_management_repository.dart';
 import '../domain/admin_account_summary.dart';
 import 'admin_add_admin_dialog.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
+
+String _localizedRoleLabel(AppLocalizations l10n, AdminRole role) {
+  return switch (role) {
+    AdminRole.admin => l10n.adminRole,
+    AdminRole.superAdmin => l10n.superAdminRole,
+  };
+}
 
 class AdminManagementPage extends StatefulWidget {
   const AdminManagementPage({
@@ -150,34 +162,43 @@ class AdminManagementPageState extends State<AdminManagementPage> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181818),
-        title: const Text('Rol Değişikliğini Onayla'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Hedef: ${admin.resolvedDisplayName}'),
-            Text('Mevcut rol: ${admin.roleLabel}'),
-            Text('Yeni rol: ${newRole.labelTurkish}'),
-            const SizedBox(height: 12),
-            const Text(
-              'Bu işlem kullanıcının admin paneli yetkilerini değiştirir.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+      builder: (context) {
+        final l10n = context.l10n;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF181818),
+          title: Text(l10n.confirmRoleChange),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.targetNamed(
+                  _localizedDisplayName(l10n, admin.resolvedDisplayName),
+                ),
+              ),
+              Text(
+                l10n.currentRolePrefixed(_localizedRoleLabel(l10n, admin.role)),
+              ),
+              Text(l10n.newRole(_localizedRoleLabel(l10n, newRole))),
+              const SizedBox(height: 12),
+              Text(
+                l10n.roleChangeAffectsPermissions,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.confirm),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('İptal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Onayla'),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed != true || !mounted) {
@@ -192,7 +213,7 @@ class AdminManagementPageState extends State<AdminManagementPage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Rol güncellendi.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.roleUpdated)));
       await _load(reset: true);
     } catch (error) {
       if (!mounted) {
@@ -212,34 +233,42 @@ class AdminManagementPageState extends State<AdminManagementPage> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181818),
-        title: const Text('Admin Erişimini Kaldır'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Hedef: ${admin.resolvedDisplayName}'),
-            Text('Mevcut rol: ${admin.roleLabel}'),
-            const SizedBox(height: 12),
-            const Text(
-              'Bu işlem kullanıcının giriş hesabını, profilini, cüzdanını '
-              'veya geçmişini silmez. Yalnızca admin paneli erişimini kaldırır.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+      builder: (context) {
+        final l10n = context.l10n;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF181818),
+          title: Text(l10n.revokeAdminAccess),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.targetNamed(
+                  _localizedDisplayName(l10n, admin.resolvedDisplayName),
+                ),
+              ),
+              Text(
+                l10n.currentRolePrefixed(_localizedRoleLabel(l10n, admin.role)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.revokeAccessDoesNotDelete,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.revokeAccess),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('İptal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Erişimi Kaldır'),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed != true || !mounted) {
@@ -252,9 +281,9 @@ class AdminManagementPageState extends State<AdminManagementPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin erişimi kaldırıldı.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.adminAccessRevoked)));
       await _load(reset: true);
     } catch (error) {
       if (!mounted) {
@@ -275,7 +304,7 @@ class AdminManagementPageState extends State<AdminManagementPage> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Kullanıcı ID kopyalandı.')));
+    ).showSnackBar(SnackBar(content: Text(context.l10n.userIdCopied)));
   }
 
   Future<void> _openAddAdminDialog() async {
@@ -340,14 +369,14 @@ class AdminManagementPageState extends State<AdminManagementPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Yöneticiler',
+                            context.l10n.adminsTitle,
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Admin paneli erişimi olan hesaplar',
-                            style: TextStyle(color: Color(0xFFB3B3B3)),
+                          Text(
+                            context.l10n.adminsSubtitle,
+                            style: const TextStyle(color: Color(0xFFB3B3B3)),
                           ),
                         ],
                       ),
@@ -357,13 +386,13 @@ class AdminManagementPageState extends State<AdminManagementPage> {
                           ? _openAddAdminDialog
                           : null,
                       icon: const Icon(Icons.person_add_outlined),
-                      label: const Text('Yönetici Ekle'),
+                      label: Text(context.l10n.addAdmin),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 if (_admins.isEmpty)
-                  const _EmptyState()
+                  _EmptyState()
                 else
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -399,7 +428,7 @@ class AdminManagementPageState extends State<AdminManagementPage> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Daha Fazla Yükle'),
+                          : Text(context.l10n.loadMore),
                     ),
                   ),
                 ],
@@ -417,13 +446,13 @@ class _AccessDeniedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Text(
-          'Bu sayfaya erişim için Super Admin yetkisi gerekiyor.',
+          context.l10n.superAdminRequired,
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       ),
     );
@@ -448,6 +477,8 @@ class _AdminDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -462,14 +493,14 @@ class _AdminDataTable extends StatelessWidget {
             columnSpacing: 24,
             horizontalMargin: 16,
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
-            columns: const [
-              DataColumn(label: Text('Yönetici')),
-              DataColumn(label: Text('Rol')),
-              DataColumn(label: Text('Yönetici olma')),
-              DataColumn(label: Text('Hesap oluşturma')),
-              DataColumn(label: Text('Son giriş')),
-              DataColumn(label: Text('Kullanıcı ID')),
-              DataColumn(label: Text('Aksiyonlar')),
+            columns: [
+              DataColumn(label: Text(l10n.manager)),
+              DataColumn(label: Text(l10n.role)),
+              DataColumn(label: Text(l10n.becameAdmin)),
+              DataColumn(label: Text(l10n.accountCreated)),
+              DataColumn(label: Text(l10n.lastSignIn)),
+              DataColumn(label: Text(l10n.userId)),
+              DataColumn(label: Text(l10n.actionsColumn)),
             ],
             rows: [
               for (final admin in admins)
@@ -479,13 +510,17 @@ class _AdminDataTable extends StatelessWidget {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 220),
                         child: Text(
-                          '${admin.resolvedDisplayName}\n'
-                          '${admin.resolvedEmailLabel}',
+                          '${_localizedDisplayName(l10n, admin.resolvedDisplayName)}\n'
+                          '${adminResolvedEmailLabel(l10n, admin.resolvedEmailLabel)}',
                           style: const TextStyle(height: 1.3),
                         ),
                       ),
                     ),
-                    DataCell(AdminRoleBadge(label: admin.roleLabel)),
+                    DataCell(
+                      AdminRoleBadge(
+                        label: _localizedRoleLabel(l10n, admin.role),
+                      ),
+                    ),
                     DataCell(Text(formatUserDateTime(admin.adminCreatedAt))),
                     DataCell(Text(formatUserDateTime(admin.accountCreatedAt))),
                     DataCell(Text(formatUserDateTime(admin.lastSignInAt))),
@@ -495,7 +530,7 @@ class _AdminDataTable extends StatelessWidget {
                         children: [
                           Text(shortenUserId(admin.userId)),
                           IconButton(
-                            tooltip: 'Kullanıcı ID kopyala',
+                            tooltip: l10n.copyUserId,
                             onPressed: () => onCopyUserId(admin.userId),
                             icon: const Icon(Icons.copy, size: 18),
                           ),
@@ -541,6 +576,8 @@ class _AdminCardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       children: [
         for (final admin in admins) ...[
@@ -559,25 +596,34 @@ class _AdminCardList extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          admin.resolvedDisplayName,
+                          _localizedDisplayName(
+                            l10n,
+                            admin.resolvedDisplayName,
+                          ),
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
                           ),
                         ),
                       ),
-                      AdminRoleBadge(label: admin.roleLabel),
+                      AdminRoleBadge(
+                        label: _localizedRoleLabel(l10n, admin.role),
+                      ),
                     ],
                   ),
                   Text(
-                    admin.resolvedEmailLabel,
+                    adminResolvedEmailLabel(l10n, admin.resolvedEmailLabel),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Yönetici olma: ${formatUserDateTime(admin.adminCreatedAt)}',
+                    l10n.becameAdminAt(
+                      formatUserDateTime(admin.adminCreatedAt),
+                    ),
                   ),
-                  Text('Son giriş: ${formatUserDateTime(admin.lastSignInAt)}'),
+                  Text(
+                    l10n.lastSignInAt(formatUserDateTime(admin.lastSignInAt)),
+                  ),
                   Row(
                     children: [
                       Text(
@@ -626,14 +672,14 @@ class _AdminActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isSelf) {
-      return const Text(
-        'Kendi hesabınız',
-        style: TextStyle(color: Color(0xFFB3B3B3)),
+      return Text(
+        context.l10n.yourAccount,
+        style: const TextStyle(color: Color(0xFFB3B3B3)),
       );
     }
 
     return PopupMenuButton<_AdminAction>(
-      tooltip: 'İşlemler',
+      tooltip: context.l10n.actions,
       icon: const Icon(Icons.more_vert),
       onSelected: (action) {
         switch (action) {
@@ -646,20 +692,21 @@ class _AdminActions extends StatelessWidget {
         }
       },
       itemBuilder: (context) {
+        final l10n = context.l10n;
         return [
           if (admin.role != AdminRole.admin)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: _AdminAction.setAdmin,
-              child: Text('Admin Yap'),
+              child: Text(l10n.makeAdminAction),
             ),
           if (admin.role != AdminRole.superAdmin)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: _AdminAction.setSuperAdmin,
-              child: Text('Super Admin Yap'),
+              child: Text(l10n.makeSuperAdmin),
             ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: _AdminAction.revoke,
-            child: Text('Erişimi Kaldır'),
+            child: Text(l10n.revokeAccess),
           ),
         ];
       },
@@ -672,18 +719,18 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
+    return DecoratedBox(
+      decoration: const BoxDecoration(
         color: Color(0xFF111111),
         borderRadius: BorderRadius.all(Radius.circular(14)),
         border: Border.fromBorderSide(BorderSide(color: Color(0xFF2A2A2A))),
       ),
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'Kayıtlı yönetici bulunamadı.',
-            style: TextStyle(color: Color(0xFFB3B3B3)),
+            context.l10n.noAdminsFound,
+            style: const TextStyle(color: Color(0xFFB3B3B3)),
           ),
         ),
       ),
@@ -707,7 +754,7 @@ class _ErrorState extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Tekrar Dene')),
+            FilledButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),

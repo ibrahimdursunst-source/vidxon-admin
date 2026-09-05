@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/locale/vidxon_product_locales.dart';
+import '../../../l10n/admin_l10n.dart';
 import '../../episodes/data/episode_repository.dart';
 import '../../series/data/series_repository.dart';
 import '../application/campaign_destination_controller.dart';
@@ -171,7 +172,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _isEditing ? 'Push Düzenle' : 'Yeni Push Bildirimi',
+                  _isEditing ? context.l10n.editPush : context.l10n.newPush,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -179,7 +180,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                 const SizedBox(height: 20),
 
                 // === Hedef ===
-                _sectionLabel('Hedef'),
+                _sectionLabel(context.l10n.target),
                 CampaignDestinationFields(
                   controller: _destinationController,
                   destinationType: _destinationType,
@@ -190,7 +191,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                 ),
 
                 // === Diller ===
-                _sectionLabel('Hedef Diller'),
+                _sectionLabel(context.l10n.targetLanguages),
                 Wrap(
                   spacing: 8,
                   children: kSupportedLocales.map((locale) {
@@ -223,7 +224,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                 }),
 
                 // === Gönderim ===
-                _sectionLabel('Gönderim'),
+                _sectionLabel(context.l10n.delivery),
                 if (_scheduledAt != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -240,7 +241,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                 TextButton.icon(
                   onPressed: _pickSchedule,
                   icon: const Icon(Icons.schedule),
-                  label: const Text('Zamanlama Seç'),
+                  label: Text(context.l10n.chooseSchedule),
                 ),
 
                 if (_errorMessage != null) ...[
@@ -260,14 +261,14 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                       onPressed: _isSaving
                           ? null
                           : () => Navigator.of(context).pop(false),
-                      child: const Text('İptal'),
+                      child: Text(context.l10n.cancel),
                     ),
                     const SizedBox(width: 8),
                     OutlinedButton(
                       onPressed: _isSaving
                           ? null
                           : () => _save(status: 'draft'),
-                      child: const Text('Taslak Kaydet'),
+                      child: Text(context.l10n.saveDraft),
                     ),
                     if (_scheduledAt != null) ...[
                       const SizedBox(width: 8),
@@ -278,7 +279,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                         style: FilledButton.styleFrom(
                           backgroundColor: Colors.orange,
                         ),
-                        child: const Text('Zamanla'),
+                        child: Text(context.l10n.schedule),
                       ),
                     ],
                   ],

@@ -1,0 +1,896 @@
+{
+  "@@locale": "tr",
+  "appTitle": "Vidxon Admin",
+  "appBrand": "VIDXON",
+  "appBrandAdmin": "VIDXON ADMIN",
+  "adminPanel": "Admin Panel",
+  "missingSupabaseConfig": "Supabase bağlantı bilgileri eksik.\n\nUygulamayı SUPABASE_URL ve SUPABASE_PUBLISHABLE_KEY değerleriyle çalıştır.",
+  "loginUnexpectedError": "Giriş sırasında beklenmeyen bir hata oluştu.",
+  "email": "E-posta",
+  "emailRequired": "E-posta adresini gir.",
+  "emailInvalid": "Geçerli bir e-posta adresi gir.",
+  "password": "Şifre",
+  "passwordRequired": "Şifreni gir.",
+  "signIn": "Giriş Yap",
+  "signOut": "Çıkış Yap",
+  "authorizationFailed": "Yetki kontrolü başarısız",
+  "retry": "Tekrar Dene",
+  "accessDenied": "Erişim reddedildi",
+  "accessDeniedMessage": "Bu hesap Vidxon admin kullanıcıları arasında bulunmuyor.",
+  "adminContextLoadFailed": "Admin oturum bilgisi yüklenemedi.",
+  "navOverview": "Genel Bakış",
+  "navSeries": "Diziler",
+  "navUsers": "Kullanıcılar",
+  "navAudit": "İşlem Kayıtları",
+  "navPartners": "Partnerler",
+  "navCampaigns": "Kampanyalar",
+  "navAdmins": "Yöneticiler",
+  "navEpisodes": "Bölümler",
+  "navCategories": "Kategoriler",
+  "navMedia": "Medya",
+  "refresh": "Yenile",
+  "comingSoonSection": "Bu bölüm yakında eklenecek.",
+  "dataLoadFailed": "Veriler yüklenemedi",
+  "overviewSubtitle": "İçerik istatistiklerinin özeti",
+  "cancel": "İptal",
+  "dismiss": "Vazgeç",
+  "save": "Kaydet",
+  "create": "Oluştur",
+  "update": "Güncelle",
+  "edit": "Düzenle",
+  "delete": "Sil",
+  "close": "Kapat",
+  "search": "Ara",
+  "clear": "Temizle",
+  "add": "Ekle",
+  "remove": "Kaldır",
+  "confirm": "Onayla",
+  "loadMore": "Daha Fazla Yükle",
+  "published": "Yayında",
+  "notPublished": "Yayında Değil",
+  "draft": "Taslak",
+  "archived": "Arşivlenmiş",
+  "archive": "Arşiv",
+  "active": "Aktif",
+  "inactive": "Pasif",
+  "scheduled": "Planlanmış",
+  "expired": "Süresi Dolmuş",
+  "statusOngoing": "Devam Ediyor",
+  "statusCompleted": "Tamamlandı",
+  "statusComingSoon": "Yakında",
+  "all": "Tümü",
+  "allStatuses": "Tüm Durumlar",
+  "free": "Ücretsiz",
+  "destinationType": "Hedef Türü",
+  "destinationNone": "Bilgilendirme",
+  "destinationSeries": "Dizi",
+  "destinationEpisode": "Bölüm",
+  "destinationCoinPurchase": "Jeton Satın Al",
+  "destinationMembership": "Üyelik",
+  "priority": "Öncelik",
+  "priorityHelper": "Aynı anda birden fazla uygun kampanya varsa, daha yüksek öncelikli kampanya önce gösterilir. Eşit öncelikte daha yeni başlangıç tarihi kazanır. Varsayılan: 0.",
+  "changeSeries": "Dizi Değiştir",
+  "changeEpisode": "Bölüm Değiştir",
+  "searchSeries": "Dizi ara",
+  "titleOrSlug": "Başlık veya slug",
+  "noMatchingSeries": "Eşleşen dizi yok",
+  "seriesUnavailableBanner": "Kayıtlı dizi artık kullanılamıyor. Mevcut hedef korunur; yeni bir dizi seçmezseniz önceki hedef değişmez.",
+  "episodeUnavailableBanner": "Kayıtlı bölüm artık kullanılamıyor. Mevcut hedef korunur; yeni bir bölüm seçmezseniz önceki hedef değişmez.",
+  "selectSeriesFirst": "Önce bir dizi seçin.",
+  "episodesLoading": "Bölümler yükleniyor...",
+  "episodesLoadFailed": "Bölümler yüklenemedi.",
+  "episodesEmptyForSeries": "Bu dizide henüz bölüm bulunmuyor.",
+  "selectEpisode": "Bölüm seçin",
+  "episodePickerLabel": "Bölüm {number} · {title}",
+  "@episodePickerLabel": {
+    "placeholders": {
+      "number": {"type": "int"},
+      "title": {"type": "String"}
+    }
+  },
+  "episodePickerNumberOnly": "Bölüm {number}",
+  "@episodePickerNumberOnly": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "selectSeries": "Dizi seçin",
+  "campaigns": "Kampanyalar",
+  "popupTab": "Pop-up'lar",
+  "pushTab": "Push Bildirimleri",
+  "editPopup": "Pop-up Düzenle",
+  "createPopup": "Pop-up Oluştur",
+  "newPopup": "Yeni Pop-up",
+  "newPush": "Yeni Push Bildirimi",
+  "schedule": "Zamanlama",
+  "messageForLocaleRequired": "Mesaj ({locale}) *",
+  "@messageForLocaleRequired": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "messageRequired": "Mesaj zorunlu",
+  "ctaRequired": "CTA zorunlu",
+  "ctaButtonForLocale": "CTA Butonu ({locale})",
+  "@ctaButtonForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "ctaButtonForLocaleRequired": "CTA Butonu ({locale}) *",
+  "@ctaButtonForLocaleRequired": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "image": "Görsel",
+  "targetLanguages": "Hedef Diller",
+  "startsAt": "Başlangıç",
+  "endsAtOptional": "Bitiş (opsiyonel)",
+  "endsAt": "Bitiş",
+  "imageUploadingWait": "Görsel yükleniyor, lütfen bekleyin.",
+  "imageUploadMustFinish": "Görsel yüklemesi tamamlanmadan kaydedilemez.",
+  "imageFileUnreadable": "Görsel dosyası okunamadı.",
+  "imageUploadFailed": "Görsel yüklenemedi.",
+  "imageUploaded": "Görsel yüklendi",
+  "imageNotSelectedOptional": "Görsel seçilmedi (opsiyonel)",
+  "changeImage": "Görseli Değiştir",
+  "uploadImage": "Görsel Yükle",
+  "removeImage": "Görseli Kaldır",
+  "noPopupCampaigns": "Henüz pop-up kampanyası oluşturulmadı.",
+  "title": "Başlık",
+  "titleRequiredStar": "Başlık *",
+  "titleRequired": "Başlık zorunludur.",
+  "titleRequiredShort": "Başlık zorunlu",
+  "titleForLocaleRequired": "Başlık ({locale}) *",
+  "@titleForLocaleRequired": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "descriptionForLocale": "Açıklama ({locale})",
+  "@descriptionForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "description": "Açıklama",
+  "languages": "Diller",
+  "target": "Hedef",
+  "editPush": "Push Düzenle",
+  "createPush": "Push Oluştur",
+  "delivery": "Gönderim",
+  "chooseSchedule": "Zamanlama Seç",
+  "saveDraft": "Taslak Kaydet",
+  "sendPush": "Push Gönder",
+  "sendPushConfirm": "\"{title}\" kampanyasını şimdi göndermek istiyor musunuz?",
+  "@sendPushConfirm": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "send": "Gönder",
+  "pushSendStarted": "Push gönderimi başlatıldı.",
+  "noPushCampaigns": "Henüz push bildirimi oluşturulmadı.",
+  "planOrDelivery": "Plan/Gönderim",
+  "sent": "Gönderildi",
+  "failed": "Başarısız",
+  "sendNow": "Şimdi Gönder",
+  "cancelAction": "İptal Et",
+  "contentRating": "İçerik Derecelendirmesi",
+  "contentRatingDisclaimer": "Bunlar Vidxon uygulama içi uygunluk etiketleridir; App Store / Google Play derecelendirmelerinin yerine geçmez.",
+  "ageRating": "Yaş Derecesi",
+  "contentDescriptors": "İçerik Tanımlayıcıları",
+  "validCoinPrice": "Geçerli bir coin fiyatı girin.",
+  "validEpisodeNumber": "Geçerli bir bölüm numarası girin.",
+  "episodeUpdated": "Bölüm başarıyla güncellendi.",
+  "episodeCreated": "Bölüm başarıyla oluşturuldu.",
+  "unexpectedRetry": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+  "editEpisode": "Bölümü Düzenle",
+  "newEpisode": "Yeni Bölüm",
+  "episodeNumberStar": "Bölüm Numarası *",
+  "episodeNumberReorderHint": "Bölüm numarası sıralama ekranından değiştirilir.",
+  "episodeNumberMustBePositive": "Bölüm numarası 0'dan büyük olmalıdır.",
+  "useDifferentRatingForEpisode": "Bu bölüm için farklı derecelendirme kullan",
+  "episodeSpecificRating": "Bölüme özel derecelendirme",
+  "useSeriesRating": "Dizi derecelendirmesini kullan",
+  "inheritDescriptorsFromSeries": "Tanımlayıcıları diziden miras al",
+  "seriesDescriptorsUsed": "Dizi tanımlayıcıları kullanılır",
+  "episodeNoDescriptors": "Bu bölümde tanımlayıcı yok (açık boş liste)",
+  "episodeSpecificDescriptors": "Bölüme özel tanımlayıcı listesi",
+  "freeEpisode": "Ücretsiz Bölüm",
+  "coinPrice": "Coin Fiyatı",
+  "coinPriceNotNegative": "Coin fiyatı negatif olamaz.",
+  "coinPriceMax": "Coin fiyatı en fazla {max} olabilir.",
+  "@coinPriceMax": {
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+  "freeEpisodeCoinMustBeZero": "Ücretsiz bölümlerde coin fiyatı 0 olmalıdır.",
+  "releaseDate": "Yayın Tarihi",
+  "notSelected": "Seçilmedi",
+  "publishStatus": "Yayın Durumu",
+  "status": "Durum",
+  "video": "Video",
+  "pendingVideo": "Bekleyen Video",
+  "qualifiedViews": "Nitelikli İzlenme",
+  "legacyCounterSeed": "Eski Sayaç (seed)",
+  "mediaTracksLoadFailed": "Medya parçaları yüklenemedi. Lütfen tekrar deneyin.",
+  "invalidLocaleExample": "Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.",
+  "originalAudioUpdated": "Orijinal ses dili güncellendi.",
+  "audioUploadAccepted": "Ses parçası yükleme isteği alındı.",
+  "audioReplaceAccepted": "Ses parçası değiştirme isteği alındı.",
+  "subtitleUploaded": "Altyazı yüklendi.",
+  "subtitleReplaced": "Altyazı değiştirildi.",
+  "removeAudioTrack": "Ses parçasını kaldır",
+  "removeAudioTrackConfirm": "{locale} dilindeki dublaj kaldırılsın mı?",
+  "@removeAudioTrackConfirm": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "audioTrackRemoved": "Ses parçası kaldırıldı.",
+  "audioTrackRemoveFailed": "Ses parçası kaldırılamadı.",
+  "removeSubtitle": "Altyazıyı kaldır",
+  "removeSubtitleConfirm": "{locale} dilindeki altyazı kaldırılsın mı?",
+  "@removeSubtitleConfirm": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "subtitleRemoved": "Altyazı kaldırıldı.",
+  "subtitleRemoveFailed": "Altyazı kaldırılamadı.",
+  "statusUpdateFailed": "Durum güncellenemedi.",
+  "audioSubtitles": "Ses / Altyazı",
+  "originalAudioHelp": "Videonun gömülü program sesinin dili. Dublaj dilleri bu değerden farklı olmalıdır.",
+  "noDubsYet": "Henüz dublaj yok.",
+  "subtitles": "Altyazılar",
+  "noSubtitlesYet": "Henüz altyazı yok.",
+  "episodeDurationSeconds": "Bölüm süresi: {seconds}s",
+  "@episodeDurationSeconds": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "localeCode": "Dil kodu",
+  "updateStatus": "Durumu Güncelle",
+  "replace": "Değiştir",
+  "dubCannotMatchOriginal": "Dublaj dili orijinal ses diliyle aynı olamaz.",
+  "severeDurationNeedsConfirm": "Ciddi süre farkı için onay kutusu işaretlenmeden yükleme yapılamaz.",
+  "uploadFailedRetry": "Yükleme başarısız oldu. Lütfen tekrar deneyin.",
+  "replaceAudioTrack": "Ses parçasını değiştir",
+  "addAudioTrack": "Ses parçası ekle",
+  "audioDurationSeconds": "Ses süresi (saniye)",
+  "audioDurationHint": "Bölüm süresiyle karşılaştırmak için girin",
+  "severeDurationConfirm": "Süre farkının ciddi olduğunu ve yine de yüklemek istediğimi onaylıyorum.",
+  "selectAudioFile": "Ses dosyası seç (MP3 / M4A / AAC)",
+  "upload": "Yükle",
+  "replaceSubtitle": "Altyazıyı değiştir",
+  "addSubtitle": "Altyazı ekle",
+  "selectWebvtt": "WebVTT (.vtt) seç",
+  "previewLoadFailed": "Önizleme yüklenemedi.",
+  "pendingVideoPreview": "Bekleyen Video Önizleme",
+  "activeVideoPreview": "Aktif Video Önizleme",
+  "noActiveVideo": "Aktif video bulunmuyor.",
+  "activeVideoNotReady": "Aktif video henüz önizlemeye hazır değil.",
+  "pendingVideoNotReady": "Bekleyen video henüz önizlemeye hazır değil.",
+  "previewWebOnly": "Video önizleme yalnızca web ortamında desteklenir.",
+  "reorderSaveFailed": "Sıralama kaydedilemedi.",
+  "reorderLoadFailed": "Güncel sıralama yüklenemedi. Lütfen sayfayı kapatıp tekrar deneyin.",
+  "unsavedReorder": "Kaydedilmemiş sıralama",
+  "unsavedReorderMessage": "Sıralama değişiklikleri kaydedilmedi. Çıkmak istiyor musunuz?",
+  "leave": "Çık",
+  "episodeOrder": "Bölüm Sıralaması",
+  "saveOrder": "Sıralamayı Kaydet",
+  "manageSeriesEpisodes": "Seçili dizinin bölümlerini yönetin",
+  "editOrder": "Sıralamayı Düzenle",
+  "access": "Erişim",
+  "publish": "Yayın",
+  "actions": "İşlemler",
+  "releaseAtLabel": "Yayın: {value}",
+  "@releaseAtLabel": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "noEpisodesYet": "Henüz bölüm yok",
+  "createFirstEpisode": "Bu dizi için ilk bölümü oluşturabilirsiniz.",
+  "episodesLoadFailedTitle": "Bölümler yüklenemedi",
+  "validatingForm": "Form doğrulanıyor",
+  "preparingUploadLink": "Yükleme bağlantısı hazırlanıyor",
+  "uploadingPoster": "Poster yükleniyor",
+  "savingSeries": "Dizi kaydediliyor",
+  "posterUnreadable": "Poster dosyası okunamadı.",
+  "posterRequired": "Poster seçimi zorunludur.",
+  "posterPathFailed": "Poster yolu oluşturulamadı.",
+  "seriesCreated": "Dizi başarıyla oluşturuldu.",
+  "posterAlreadyUploadedRetry": "Poster zaten yüklendi. Bilgileri düzenleyip tekrar deneyebilirsiniz.",
+  "seriesCreatedPartnerFailed": "Dizi oluşturuldu ancak Partner ataması başarısız: {message}",
+  "@seriesCreatedPartnerFailed": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "seriesCreatedRetryPartner": "Dizi kaydı oluştu. Partner atamasını dizi detayından yeniden deneyin.",
+  "posterAlreadyUploaded": "Poster zaten yüklendi. Tekrar deneyebilirsiniz.",
+  "newSeries": "Yeni Dizi",
+  "slugHint": "Küçük harf, rakam ve tire",
+  "validSlug": "Geçerli bir slug girin.",
+  "selectDate": "Tarih Seç",
+  "selectPoster": "Poster Seç",
+  "publishSettings": "Yayın Ayarları",
+  "featured": "Öne Çıkan",
+  "collaborationPartner": "İş Birliği Ortağı",
+  "categories": "Kategoriler",
+  "categoriesLoadFailed": "Kategoriler yüklenemedi.",
+  "noCategoriesYet": "Henüz kategori bulunmuyor.",
+  "createSeries": "Diziyi Oluştur",
+  "seriesLoadFailed": "Dizi yüklenemedi.",
+  "assignmentHistoryLoadFailed": "Atama geçmişi yüklenemedi.",
+  "removePartnerAssignment": "Partner atamasını kaldır",
+  "changePartnerAssignment": "Partner atamasını değiştir",
+  "removeAssignment": "Atamayı Kaldır",
+  "changeAssignment": "Atamayı Değiştir",
+  "seriesUpdated": "Dizi güncellendi.",
+  "seriesUpdateFailed": "Dizi güncellenemedi.",
+  "posterUpdated": "Poster güncellendi.",
+  "posterUpdateFailed": "Poster güncellenemedi.",
+  "actionIncomplete": "İşlem tamamlanamadı.",
+  "publishSeries": "Yayınla",
+  "publishSeriesConfirm": "Bu dizi yayına alınsın mı?",
+  "seriesPublished": "Dizi yayınlandı.",
+  "unpublish": "Yayından Kaldır",
+  "unpublishSeriesConfirm": "Bu dizi yayından kaldırılsın mı?",
+  "seriesUnpublished": "Dizi yayından kaldırıldı.",
+  "archiveAction": "Arşivle",
+  "archiveSeriesConfirm": "Bu dizi arşivlenecek. Arşivlenmiş içerik yayından kaldırılır ve düzenleme kısıtlanabilir.",
+  "seriesArchived": "Dizi arşivlendi.",
+  "restore": "Geri Yükle",
+  "restoreSeriesConfirm": "Bu dizi arşivden geri yüklensin mi?",
+  "seriesRestored": "Dizi geri yüklendi.",
+  "seriesDetail": "Dizi Detayı",
+  "seriesNotFound": "Dizi bulunamadı.",
+  "saveChanges": "Değişiklikleri Kaydet",
+  "partnerChangeClosesAssignment": "Değişiklik mevcut atamayı şimdi kapatır; geçmiş korunur.",
+  "episodeCountLabel": "{count} bölüm",
+  "@episodeCountLabel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectNewPoster": "Yeni Poster Seç",
+  "changePoster": "Posteri Değiştir",
+  "seriesInfo": "Dizi Bilgileri",
+  "publishAndArchive": "Yayın ve Arşiv",
+  "noSeriesYet": "Henüz dizi yok",
+  "noResults": "Sonuç bulunamadı",
+  "noSeriesMatchFilters": "Arama veya filtre kriterlerinize uygun dizi bulunamadı.",
+  "seriesCatalogSubtitle": "Vidxon içerik kataloğundaki dizileri yönetin",
+  "searchSeriesNameOrSlug": "Dizi adı veya slug ara...",
+  "seriesName": "Dizi Adı",
+  "category": "Kategori",
+  "lastUpdate": "Son Güncelleme",
+  "editOrDetail": "Düzenle / Detay",
+  "updatedAtLabel": "Güncelleme: {value}",
+  "@updatedAtLabel": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "seriesLoadFailedTitle": "Diziler yüklenemedi",
+  "seriesCatalogLoadFailed": "Diziler yüklenemedi. Lütfen tekrar deneyin.",
+  "noSeriesInCatalog": "Katalogda listelenecek dizi bulunmuyor.",
+  "newSeriesSubtitle": "Kataloga yeni bir dizi ekleyin",
+  "basicInfo": "Temel Bilgiler",
+  "slugRequiredStar": "Slug *",
+  "poster": "Poster",
+  "posterRequiredStar": "Poster *",
+  "posterFormatsHint": "JPG, PNG veya WEBP · En fazla 10 MiB",
+  "premium": "Premium",
+  "detail": "Detay",
+  "qualifiedViewsCount": "Nitelikli: {count}",
+  "@qualifiedViewsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "users": "Kullanıcılar",
+  "usersSubtitle": "Kullanıcıları arayın, detaylarını görüntüleyin ve jeton yükleyin",
+  "searchUsersHint": "Kullanıcı ID, e-posta veya görünen ad ile ara",
+  "clearSearch": "Aramayı temizle",
+  "displayName": "Görünen Ad",
+  "userId": "Kullanıcı ID",
+  "coins": "Jeton",
+  "registration": "Kayıt",
+  "copyUserId": "Kullanıcı ID kopyala",
+  "userIdCopied": "Kullanıcı ID kopyalandı.",
+  "registeredAt": "Kayıt: {value}",
+  "@registeredAt": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "userNotFound": "Kullanıcı bulunamadı",
+  "noUsersMatch": "Arama kriterlerinize uygun kullanıcı yok.",
+  "usersLoadFailed": "Kullanıcılar yüklenemedi",
+  "userDetail": "Kullanıcı Detayı",
+  "creditCoins": "Jeton Yükle",
+  "debitCoins": "Jeton Eksilt",
+  "coinLedger": "Jeton Hareket Geçmişi",
+  "registeredDate": "Kayıt tarihi",
+  "lastSignIn": "Son giriş",
+  "currentCoinBalance": "Güncel jeton bakiyesi",
+  "walletLastUpdate": "Wallet son güncelleme",
+  "totalLedgerRecords": "Toplam ledger kaydı",
+  "adminCreditTotal": "Admin yüklemesi toplamı",
+  "coinsAmount": "{count} jeton",
+  "@coinsAmount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "type": "Tür",
+  "previous": "Önceki",
+  "admin": "Admin",
+  "noCoinMovements": "Henüz jeton hareketi yok.",
+  "userDetailLoadFailed": "Kullanıcı detayı yüklenemedi",
+  "adminAccountsNoManualCoins": "Admin hesaplarında manuel jeton işlemleri yapılamaz.",
+  "coinsSuperAdminOnly": "Jeton işlemleri yalnızca Super Admin tarafından yapılabilir.",
+  "confirmTransaction": "İşlemi Onayla",
+  "coinAmount": "Jeton miktarı",
+  "supportReferenceOptional": "Destek / işlem referansı (opsiyonel)",
+  "user": "Kullanıcı",
+  "toCredit": "Yüklenecek",
+  "thisChangesBalance": "Bu işlem kullanıcı bakiyesini değiştirecek.",
+  "creditCoinsAmount": "{amount} Jeton Yükle",
+  "@creditCoinsAmount": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "coinsCredited": "Jetonlar başarıyla yüklendi.",
+  "idempotentCredit": "Bu işlem daha önce tamamlanmıştı. Güncel bakiye yenilendi.",
+  "insufficientBalance": "Kullanıcının bakiyesi bu işlem için yetersiz.",
+  "idempotentDebit": "İşlem daha önce tamamlanmıştı. Güncel bakiye: {balance}",
+  "@idempotentDebit": {
+    "placeholders": {
+      "balance": {"type": "String"}
+    }
+  },
+  "caseReferenceOptional": "Vaka / Referans (isteğe bağlı)",
+  "debitDoesNotDeleteLedger": "Bu işlem mevcut ledger kayıtlarını silmez. Kullanıcının bakiyesine yeni bir negatif işlem kaydı eklenir.",
+  "auditTitle": "İşlem Kayıtları",
+  "auditSubtitle": "Admin paneli işlem geçmişi",
+  "actionType": "İşlem türü",
+  "targetUserId": "Hedef kullanıcı ID",
+  "action": "İşlem",
+  "noAuditRecords": "İşlem kaydı bulunamadı.",
+  "filterWalletCredit": "Jeton Yükleme",
+  "filterWalletDebit": "Jeton Eksiltme",
+  "filterSeriesUpdated": "Dizi Güncellendi",
+  "filterPosterReplaced": "Poster Değiştirildi",
+  "filterSeriesPublished": "Dizi Yayınlandı",
+  "filterSeriesArchived": "Dizi Arşivlendi",
+  "filterEpisodeUpdated": "Bölüm Güncellendi",
+  "filterEpisodeReorder": "Bölüm Sıralaması",
+  "filterVideoReplacement": "Video Değişimi",
+  "filterAdminRoleChange": "Admin Rolü Değişikliği",
+  "filterAdminAccessRevoke": "Admin Erişimi Kaldırma",
+  "adminsTitle": "Yöneticiler",
+  "adminsSubtitle": "Admin paneli erişimi olan hesaplar",
+  "addAdmin": "Yönetici Ekle",
+  "selectRole": "Rol Seç",
+  "searchByIdEmailName": "Kullanıcı ID, e-posta veya görünen ad ile arayın.",
+  "searchQuery": "Arama sorgusu",
+  "makeAdmin": "Yönetici Yap",
+  "adminRole": "Admin",
+  "superAdminRole": "Super Admin",
+  "thisGrantsAdminAccess": "Bu işlem kullanıcının mevcut hesabını, profilini, cüzdanını veya geçmişini değiştirmez. Kullanıcıya admin paneli erişimi verir.",
+  "confirmRoleChange": "Rol Değişikliğini Onayla",
+  "newRole": "Yeni rol: {role}",
+  "@newRole": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "roleChangeAffectsPermissions": "Bu işlem kullanıcının admin paneli yetkilerini değiştirir.",
+  "roleUpdated": "Rol güncellendi.",
+  "revokeAdminAccess": "Admin Erişimini Kaldır",
+  "revokeAccessDoesNotDelete": "Bu işlem kullanıcının giriş hesabını, profilini, cüzdanını veya geçmişini silmez. Yalnızca admin paneli erişimini kaldırır.",
+  "revokeAccess": "Erişimi Kaldır",
+  "adminAccessRevoked": "Admin erişimi kaldırıldı.",
+  "superAdminRequired": "Bu sayfaya erişim için Super Admin yetkisi gerekiyor.",
+  "manager": "Yönetici",
+  "role": "Rol",
+  "becameAdmin": "Yönetici olma",
+  "accountCreated": "Hesap oluşturma",
+  "yourAccount": "Kendi hesabınız",
+  "makeAdminAction": "Admin Yap",
+  "makeSuperAdmin": "Super Admin Yap",
+  "noAdminsFound": "Kayıtlı yönetici bulunamadı.",
+  "partners": "Partnerler",
+  "partnersSubtitle": "İş birliği ortakları, üyeler ve analitikleri yönetin",
+  "createPartner": "Partner Oluştur",
+  "editPartner": "Partner Düzenle",
+  "partnerListLoadFailed": "Partner listesi yüklenemedi.",
+  "analyticsHealthLoadFailed": "Analitik sağlık durumu yüklenemedi.",
+  "partnerCreated": "Partner oluşturuldu.",
+  "noPartnersYet": "Henüz Partner yok.",
+  "members": "Üyeler",
+  "activeAssignment": "Aktif Atama",
+  "createdAt": "Oluşturulma",
+  "unassigned": "Atanmamış",
+  "partnerNamed": "Partner ({name})",
+  "@partnerNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "displayNameStar": "Görünen Ad *",
+  "displayNameRequired": "Görünen ad zorunludur.",
+  "actionFailed": "İşlem başarısız oldu.",
+  "partnerDetailLoadFailed": "Partner detayı yüklenemedi.",
+  "partnerUpdated": "Partner güncellendi.",
+  "memberAdded": "Üye eklendi.",
+  "changeMemberStatus": "Üye durumunu değiştir",
+  "memberStatusUpdated": "Üye durumu güncellendi.",
+  "partner": "Partner",
+  "analyticsNeedsAssignment": "Analitik için önce bir dizi ataması gerekir.",
+  "addMember": "Üye Ekle",
+  "noMembersYet": "Henüz üye yok.",
+  "analyticsSeries": "Analitik Dizisi",
+  "emailRequiredShort": "E-posta zorunludur.",
+  "userSearchFailed": "Kullanıcı aranamadı.",
+  "memberAddFailed": "Üye eklenemedi.",
+  "findExistingAccount": "Mevcut bir Vidxon hesabını tam e-posta ile bulun.",
+  "findUser": "Kullanıcıyı Bul",
+  "addAsMember": "Üye Olarak Ekle",
+  "assignmentHistory": "Partner Atama Geçmişi",
+  "assignmentHistoryHint": "Geçmiş aralıklar değiştirilemez. Atamalar [başlangıç, bitiş) ile kaydedilir.",
+  "noPartnerAssignments": "Henüz Partner ataması yok.",
+  "analyticsReportLoadFailed": "Analitik raporu yüklenemedi.",
+  "pageSnapshotMismatch": "Sayfa anlık görüntüsü uyuşmuyor. Yenileyin.",
+  "episodePageLoadFailed": "Bölüm sayfası yüklenemedi.",
+  "startDateUtc": "Başlangıç tarihi (UTC günü)",
+  "endDateExclusiveUtc": "Bitiş tarihi (hariç, UTC)",
+  "seriesAnalytics": "Dizi Analitiği",
+  "analyticsReadonlyHint": "Salt okunur · UTC dönem · Kazanç/ödeme yok",
+  "reportUnavailable": "Rapor kullanılamıyor",
+  "errorNotShownAsZero": "Hata durumu sıfır aktivite olarak gösterilmez.",
+  "reportNotReliable": "Rapor şu an güvenilir sayısal sonuç üretmiyor.",
+  "episodeDistribution": "Bölüm Dağılımı",
+  "episodeDistributionHidden": "Bölüm dağılımı, bütünlük uyarısı nedeniyle yetkili sonuç olarak gösterilmiyor.",
+  "noEpisodeRecordsInPeriod": "Bu dönemde bölüme ait kayıt yok.",
+  "loadMoreEpisodes": "Daha fazla bölüm yükle",
+  "statusSuspended": "Askıda",
+  "statusEnded": "Sonlandırılmış",
+  "contentConflictReloaded": "Bu içerik başka bir yönetici tarafından değiştirildi. Güncel veriler yeniden yüklendi; lütfen değişikliğinizi tekrar kontrol edin.",
+  "reorderConflictReloaded": "İçerik düzenleme sırasında değişti. En güncel sıralama yüklendi.",
+  "videoReplacementUploaded": "Yeni video yüklendi. Mevcut video yayında kalmaya devam eder; hazır olduğunda otomatik devreye alınır.",
+  "videoAttachedProcessing": "Video yüklendi ve bölüme bağlandı. Cloudflare Stream videoyu işlemeye devam ediyor.",
+  "replaceVideo": "Videoyu Değiştir",
+  "replaceVideoConfirm": "Yeni video hazır olana kadar mevcut video yayında kalmaya devam eder.",
+  "publishEpisodeConfirm": "Bu bölüm yayına alınsın mı?",
+  "episodePublished": "Bölüm yayınlandı.",
+  "unpublishEpisodeTitle": "Bölümü Yayından Kaldır?",
+  "unpublishEpisodeConfirm": "Bu bölüm kullanıcılar tarafından erişilemez hâle gelecektir. Daha sonra tekrar yayınlayabilirsiniz.",
+  "episodeUnpublished": "Bölüm yayından kaldırıldı.",
+  "archiveEpisodeConfirm": "Bu bölüm arşivlenecek.",
+  "episodeArchived": "Bölüm arşivlendi.",
+  "episodeRestored": "Bölüm geri yüklendi.",
+  "archivedEpisodes": "Arşivlenmiş Bölümler",
+  "uploadVideo": "Video Yükle",
+  "previewActiveVideo": "Aktif Videoyu Önizle",
+  "previewPendingVideo": "Bekleyen Videoyu Önizle",
+  "videoNone": "Video Yok",
+  "videoProcessing": "İşleniyor",
+  "videoReady": "Video Hazır",
+  "videoError": "Video Hatası",
+  "pendingProcessing": "Değişim: İşleniyor",
+  "pendingReady": "Değişim: Hazır",
+  "pendingError": "Değişim: Hata",
+  "pendingWaiting": "Değişim: Bekliyor",
+  "originalAudioLanguage": "Orijinal ses dili",
+  "dubs": "Dublajlar",
+  "videoNotSelected": "Video seçilmedi",
+  "uploadingVideo": "Video Cloudflare'a yükleniyor",
+  "attachingVideo": "Video bölüme bağlanıyor",
+  "uploadCompleted": "Yükleme tamamlandı",
+  "uploadFailedShort": "Yükleme başarısız",
+  "videoUploadedAttachFailed": "Video yüklendi fakat bölüme bağlanamadı. Videoyu yeniden yüklemeyin; bağlama işlemini tekrar deneyin.",
+  "uploadInProgress": "Yükleme devam ediyor",
+  "uploadInProgressLeave": "Video yüklemesi sürerken sayfadan ayrılırsanız işlem yarıda kalabilir. Yine de çıkmak istiyor musunuz?",
+  "videoFile": "Video Dosyası",
+  "selectMp4": "MP4 Seç",
+  "noVideoSelectedYet": "Henüz video seçilmedi.",
+  "retryAttach": "Bağlamayı Tekrar Dene",
+  "videoProcessingContinues": "Video Cloudflare Stream tarafından işlenmeye devam edecek. İşlem tamamlandığında bölüm listesinde durum güncellenecektir.",
+  "networkDisconnected": "Ağ bağlantısı kesildi. Lütfen tekrar deneyin.",
+  "adminRoleDescription": "Admin; kullanıcıları ve cüzdan işlemlerini yönetebilir, işlem kayıtlarını görüntüleyebilir.",
+  "superAdminRoleDescription": "Super Admin; yönetici rollerini değiştirebilir, admin erişimini kaldırabilir ve tüm işlem kayıtlarını görüntüleyebilir.",
+  "addedAsAdmin": "{name} Admin olarak eklendi.",
+  "@addedAsAdmin": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "addedAsSuperAdmin": "{name} Super Admin olarak eklendi.",
+  "@addedAsSuperAdmin": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "userNamed": "Kullanıcı: {name}",
+  "@userNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "emailNamed": "E-posta: {email}",
+  "@emailNamed": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "userIdNamed": "Kullanıcı ID: {id}",
+  "@userIdNamed": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "targetNamed": "Hedef: {name}",
+  "@targetNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "becameAdminAt": "Yönetici olma: {value}",
+  "@becameAdminAt": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "lastSignInAt": "Son giriş: {value}",
+  "@lastSignInAt": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "previousBalance": "Önceki bakiye: {value}",
+  "@previousBalance": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "createdAtPrefixed": "Oluşturulma {value}",
+  "@createdAtPrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "qualifiedViewsHelp": "Bir kullanıcının bir bölümü ilk kez doğrulanmış izleme süresinde gerekli eşiğe ulaştırmasıyla oluşur. Aynı kullanıcının aynı bölümü tekrar izlemesi sayıyı artırmaz. Geçersiz veya manipülatif trafik hariç tutulur.",
+  "uniqueViewersTitle": "Tekil İzleyici",
+  "uniqueViewersHelp": "Seçilen dönemde ilgili içerikte en az bir doğrulanmış nitelikli izleme oluşturan farklı izleyici sayısı.",
+  "watchTimeTitle": "İzlenme Süresi",
+  "watchTimeHelp": "Seçilen dönemde sunucu tarafından doğrulanmış toplam izleme süresi. Tekrar izlemeler bu etkileşim metriğine dahil olabilir.",
+  "completionRateTitle": "Tamamlama Oranı",
+  "completionRateHelp": "Seçilen dönemde nitelikli oynatma oturumlarının ne kadarının %95 doğrulanmış izlemeye ulaştığını gösterir.",
+  "partnerChangeWarning": "Partner atamasını değiştirmek mevcut atamayı şimdi kapatır ve (yeni Partner seçildiyse) yeni atamayı şimdi başlatır. Geçmiş atama aralıkları ve tarihsel metrikler korunur; geriye dönük tarihleme yapılamaz.",
+  "unassignWarning": "Partner atamasını kaldırmak mevcut atamayı şimdi kapatır. Geçmiş atama aralıkları ve tarihsel metrikler korunur.",
+  "integrityUnavailable": "Veri bütünlüğü: Kullanılamıyor. Metrikler güvenilir sonuç olarak gösterilmiyor.",
+  "integrityWarning": "Veri bütünlüğü: {label}. Bu rapordaki sayılar şimdilik yetkili finansal sonuç olarak sunulmaz; Analitik Sağlık kontrolünü inceleyin.",
+  "@integrityWarning": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "presetTotal": "Toplam",
+  "presetToday": "Bugün",
+  "presetYesterday": "Dün",
+  "presetLast7Days": "Son 7 Gün",
+  "presetThisWeek": "Bu Hafta",
+  "presetPreviousWeek": "Geçen Hafta",
+  "presetLast30Days": "Son 30 Gün",
+  "presetThisMonth": "Bu Ay",
+  "presetPreviousMonth": "Geçen Ay",
+  "presetCustom": "Özel Aralık",
+  "integrityHealthy": "Sağlıklı",
+  "integrityWarningLabel": "Uyarı",
+  "integrityUnavailableLabel": "Kullanılamıyor",
+  "reasonEventReward": "Etkinlik Ödülü",
+  "reasonCustomerSupport": "Müşteri Desteği",
+  "reasonTechnicalIssue": "Teknik Sorun",
+  "reasonPromotional": "Promosyon",
+  "reasonPaymentResolution": "Ödeme Çözümü",
+  "reasonTestCredit": "Test Jetonu",
+  "reasonOther": "Diğer",
+  "reasonIncorrectCreditReversal": "Yanlış Jeton Yüklemesini Geri Alma",
+  "reasonRewardCorrection": "Hatalı Ödül Düzeltmesi",
+  "reasonAbuseCorrection": "Kötüye Kullanım Düzeltmesi",
+  "reasonPaymentIssueResolution": "Ödeme Sorunu Çözümü",
+  "reasonTestDebit": "Test Jetonu Eksiltme",
+  "txnEpisodeUnlock": "Bölüm Açma",
+  "txnRewardedAd": "Reklam Ödülü",
+  "txnAdminCoinCredit": "Admin Jeton Yükleme",
+  "txnAdminCoinDebit": "Admin Jeton Eksiltme",
+  "txnAdminTestCredit": "Eski Test Kredisi",
+  "systemActor": "Sistem",
+  "anonymousUser": "Anonim Kullanıcı",
+  "unconfirmed": "Onaylanmamış",
+  "banned": "Yasaklı",
+  "disabled": "Devre Dışı",
+  "filterWalletDebitExact": "Jeton Eksiltme",
+  "memberCountAssignment": "Üye {count} · Atama",
+  "@memberCountAssignment": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "restoreEpisodeConfirm": "Bu bölüm arşivden geri yüklensin mi?",
+  "ageNotSpecified": "Belirtilmedi",
+  "descriptorViolence": "Şiddet",
+  "descriptorStrongViolence": "Yoğun Şiddet",
+  "descriptorProfanity": "Kaba Dil",
+  "descriptorMatureThemes": "Olgun Temalar",
+  "descriptorSexualContent": "Cinsel İçerik",
+  "descriptorSubstance": "Alkol / Tütün / Uyuşturucu Referansları",
+  "descriptorFearHorror": "Korku / Gerilim",
+  "auditSeriesCreated": "Dizi Oluşturuldu",
+  "auditSeriesUnpublished": "Dizi Yayından Kaldırıldı",
+  "auditSeriesRestored": "Dizi Geri Yüklendi",
+  "auditEpisodesReordered": "Bölüm Sıralaması Değiştirildi",
+  "auditEpisodeCreated": "Bölüm Oluşturuldu",
+  "auditEpisodePublished": "Bölüm Yayınlandı",
+  "auditEpisodeUnpublished": "Bölüm Yayından Kaldırıldı",
+  "auditEpisodeArchived": "Bölüm Arşivlendi",
+  "auditEpisodeRestored": "Bölüm Geri Yüklendi",
+  "auditVideoAttached": "Video Bağlandı",
+  "auditVideoReplacementRequested": "Video Değişimi İstendi",
+  "auditVideoPromoted": "Video Aktif Edildi",
+  "analyticsHealthFetchFailed": "Analitik sağlık durumu alınamadı: {message}",
+  "@analyticsHealthFetchFailed": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "analyticsHealthTitle": "Analitik Sağlık: {label}",
+  "@analyticsHealthTitle": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "analyticsIntegrityUnavailable": "Analitik bütünlük doğrulaması şu anda kullanılamıyor.",
+  "memberStatusConfirm": "{name} durumu “{status}” olarak ayarlansın mı?",
+  "@memberStatusConfirm": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "noResultsPeriod": "Sonuç bulunamadı.",
+  "ready": "Hazır",
+  "publishBlockedSeriesArchived": "Arşivlenmiş bir dizinin bölümü yayınlanamaz.",
+  "publishBlockedEpisodeArchived": "Arşivlenmiş bölüm yayınlanamaz.",
+  "publishBlockedNeedsVideo": "Yayınlamak için aktif video gerekir.",
+  "publishBlockedVideoProcessing": "Video işleniyor.",
+  "publishBlockedVideoError": "Video hatası giderilmelidir.",
+  "publishBlockedVideoNotReady": "Video henüz hazır değil.",
+  "publishBlockedPaidCoinPrice": "Ücretli bölümde coin fiyatı 0'dan büyük olmalıdır.",
+  "continueAction": "Devam Et",
+  "stay": "Kal",
+  "clearDate": "Tarihi Temizle",
+  "coinPriceHelper": "En fazla {max} jeton",
+  "@coinPriceHelper": {
+    "placeholders": {
+      "max": {"type": "int"}
+    }
+  },
+  "qualified": "Nitelikli",
+  "pending": "Bekleyen",
+  "originalAudioSaveFailed": "Orijinal ses dili kaydedilemedi.",
+  "maxFileSize200Mb": "Maksimum dosya boyutu: 200 MB",
+  "supportedFormatMp4": "Desteklenen format: MP4 (video/mp4)",
+  "currentVideoStatus": "Mevcut video durumu: {status}",
+  "@currentVideoStatus": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "noPendingVideo": "Bekleyen video bulunmuyor.",
+  "durationMismatch": "Süre bölümle uyuşmuyor; yayınlamadan önce senkronizasyonu doğrulayın.",
+  "date": "Tarih",
+  "amount": "Miktar",
+  "reason": "Neden",
+  "reasonAlt": "Sebep",
+  "reference": "Referans",
+  "next": "Sonraki",
+  "accountStatus": "Hesap durumu",
+  "currentBalance": "Mevcut bakiye",
+  "currentBalancePrefixed": "Mevcut bakiye: {value}",
+  "@currentBalancePrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "newBalance": "Yeni bakiye",
+  "estimatedNewBalance": "Tahmini yeni bakiye: {value}",
+  "@estimatedNewBalance": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "toDebit": "Eksiltilecek",
+  "back": "Geri",
+  "continueShort": "Devam",
+  "legalName": "Yasal Ad",
+  "ongoingAssignment": "devam ediyor",
+  "errorPrefixed": "Hata: {message}",
+  "@errorPrefixed": {
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+  "currentRolePrefixed": "Mevcut rol: {role}",
+  "@currentRolePrefixed": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "actionsColumn": "Aksiyonlar",
+  "confirmTitle": "Onay",
+  "roleToGrantPrefixed": "Verilecek rol: {role}",
+  "@roleToGrantPrefixed": {
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "amountPrefixed": "Miktar: {value}",
+  "@amountPrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "nextBalancePrefixed": "Sonraki bakiye: {value}",
+  "@nextBalancePrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "reasonPrefixed": "Sebep: {value}",
+  "@reasonPrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "datePrefixed": "Tarih: {value}",
+  "@datePrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "referencePrefixed": "Referans: {value}",
+  "@referencePrefixed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "noEmail": "E-posta yok",
+  "unknownStatus": "Bilinmiyor",
+  "pushSending": "Gönderiliyor",
+  "pushCancelled": "İptal Edildi",
+  "coinsDebited": "{amount} jeton eksiltildi. Yeni bakiye: {balance}",
+  "@coinsDebited": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "balance": {"type": "String"}
+    }
+  },
+  "balanceArrow": "Bakiye: {before} → {after}",
+  "@balanceArrow": {
+    "placeholders": {
+      "before": {"type": "String"},
+      "after": {"type": "String"}
+    }
+  }
+}

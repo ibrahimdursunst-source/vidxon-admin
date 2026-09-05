@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
 import 'push_campaign_form_dialog.dart';
@@ -59,10 +60,8 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
   Future<void> _openForm({AdminPushCampaign? existing}) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => PushCampaignFormDialog(
-        repository: _repository,
-        existing: existing,
-      ),
+      builder: (_) =>
+          PushCampaignFormDialog(repository: _repository, existing: existing),
     );
     if (result == true) {
       _load();
@@ -73,19 +72,17 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Push Gönder'),
-        content: Text(
-          '"${campaign.displayTitle}" kampanyasını şimdi göndermek istiyor musunuz?',
-        ),
+        title: Text(context.l10n.sendPush),
+        content: Text(context.l10n.sendPushConfirm(campaign.displayTitle)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('İptal'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-            child: const Text('Gönder'),
+            child: Text(context.l10n.send),
           ),
         ],
       ),
@@ -95,15 +92,15 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     try {
       await _repository.sendNow(campaign.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Push gönderimi başlatıldı.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.pushSendStarted)));
       }
       _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text(context.l10n.errorPrefixed('$e'))),
         );
       }
     }
@@ -116,7 +113,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text(context.l10n.errorPrefixed('$e'))),
         );
       }
     }
@@ -136,7 +133,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
               FilledButton.icon(
                 onPressed: () => _openForm(),
                 icon: const Icon(Icons.add),
-                label: const Text('Yeni Push'),
+                label: Text(context.l10n.newPush),
                 style: FilledButton.styleFrom(backgroundColor: _primaryColor),
               ),
             ],
@@ -164,7 +161,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             FilledButton(
               onPressed: _load,
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Tekrar Dene'),
+              child: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -173,10 +170,10 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
 
     final campaigns = _campaigns ?? [];
     if (campaigns.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Henüz push bildirimi oluşturulmadı.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+          context.l10n.noPushCampaigns,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       );
     }
@@ -184,15 +181,15 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Durum')),
-          DataColumn(label: Text('Başlık')),
-          DataColumn(label: Text('Diller')),
-          DataColumn(label: Text('Hedef')),
-          DataColumn(label: Text('Plan/Gönderim')),
-          DataColumn(label: Text('Gönderildi')),
-          DataColumn(label: Text('Başarısız')),
-          DataColumn(label: Text('')),
+        columns: [
+          DataColumn(label: Text(context.l10n.status)),
+          DataColumn(label: Text(context.l10n.title)),
+          DataColumn(label: Text(context.l10n.languages)),
+          DataColumn(label: Text(context.l10n.target)),
+          DataColumn(label: Text(context.l10n.planOrDelivery)),
+          DataColumn(label: Text(context.l10n.sent)),
+          DataColumn(label: Text(context.l10n.failed)),
+          const DataColumn(label: Text('')),
         ],
         rows: campaigns.map((c) => _buildRow(c)).toList(),
       ),
@@ -220,7 +217,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              campaign.statusLabel,
+              adminCampaignStatusLabel(context.l10n, campaign.statusLabel),
               style: TextStyle(color: statusColor, fontSize: 12),
             ),
           ),
@@ -233,14 +230,20 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
           ),
         ),
         DataCell(Text(campaign.targetLocales.join(', '))),
-        DataCell(Text(campaign.destinationLabel)),
-        DataCell(Text(
-          campaign.sentAt != null
-              ? _formatDate(campaign.sentAt!)
-              : campaign.scheduledAt != null
-                  ? _formatDate(campaign.scheduledAt!)
-                  : '—',
-        )),
+        DataCell(
+          Text(
+            adminDestinationTypeLabel(context.l10n, campaign.destinationType),
+          ),
+        ),
+        DataCell(
+          Text(
+            campaign.sentAt != null
+                ? _formatDate(campaign.sentAt!)
+                : campaign.scheduledAt != null
+                ? _formatDate(campaign.scheduledAt!)
+                : '—',
+          ),
+        ),
         DataCell(Text(campaign.sentCount.toString())),
         DataCell(Text(campaign.failedCount.toString())),
         DataCell(
@@ -251,19 +254,19 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   onPressed: () => _openForm(existing: campaign),
-                  tooltip: 'Düzenle',
+                  tooltip: context.l10n.edit,
                 ),
               if (campaign.canSend)
                 IconButton(
                   icon: const Icon(Icons.send_outlined, size: 18),
                   onPressed: () => _sendNow(campaign),
-                  tooltip: 'Şimdi Gönder',
+                  tooltip: context.l10n.sendNow,
                 ),
               if (campaign.canCancel)
                 IconButton(
                   icon: const Icon(Icons.cancel_outlined, size: 18),
                   onPressed: () => _cancel(campaign),
-                  tooltip: 'İptal Et',
+                  tooltip: context.l10n.cancelAction,
                 ),
             ],
           ),

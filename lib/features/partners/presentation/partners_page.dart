@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../users/domain/user_parse_helpers.dart';
 import '../data/partner_errors.dart';
 import '../data/partner_repository.dart';
@@ -73,7 +74,7 @@ class PartnersPageState extends State<PartnersPage> {
         return;
       }
       setState(() {
-        _errorMessage = 'Partner listesi yüklenemedi.';
+        _errorMessage = context.l10n.partnerListLoadFailed;
         _isLoading = false;
       });
     }
@@ -105,7 +106,7 @@ class PartnersPageState extends State<PartnersPage> {
       }
       setState(() {
         _health = null;
-        _healthError = 'Analitik sağlık durumu yüklenemedi.';
+        _healthError = context.l10n.analyticsHealthLoadFailed;
       });
     }
   }
@@ -121,9 +122,9 @@ class PartnersPageState extends State<PartnersPage> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Partner oluşturuldu.'),
-        backgroundColor: Color(0xFF35C46A),
+      SnackBar(
+        content: Text(context.l10n.partnerCreated),
+        backgroundColor: const Color(0xFF35C46A),
       ),
     );
     await _load();
@@ -162,14 +163,14 @@ class PartnersPageState extends State<PartnersPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Partnerler',
+                          context.l10n.partners,
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'İş birliği ortakları, üyeler ve analitikleri yönetin',
-                          style: TextStyle(color: Color(0xFFB3B3B3)),
+                        Text(
+                          context.l10n.partnersSubtitle,
+                          style: const TextStyle(color: Color(0xFFB3B3B3)),
                         ),
                       ],
                     ),
@@ -180,7 +181,7 @@ class PartnersPageState extends State<PartnersPage> {
                       backgroundColor: _primaryColor,
                     ),
                     icon: const Icon(Icons.add),
-                    label: const Text('Partner Oluştur'),
+                    label: Text(context.l10n.createPartner),
                   ),
                 ],
               ),
@@ -218,7 +219,7 @@ class PartnersPageState extends State<PartnersPage> {
               FilledButton(
                 onPressed: _load,
                 style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -227,10 +228,10 @@ class PartnersPageState extends State<PartnersPage> {
     }
 
     if (_partners.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Henüz Partner yok.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+          context.l10n.noPartnersYet,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       );
     }
@@ -239,12 +240,12 @@ class PartnersPageState extends State<PartnersPage> {
       return SingleChildScrollView(
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
-          columns: const [
-            DataColumn(label: Text('Partner')),
-            DataColumn(label: Text('Durum')),
-            DataColumn(label: Text('Üyeler')),
-            DataColumn(label: Text('Aktif Atama')),
-            DataColumn(label: Text('Oluşturulma')),
+          columns: [
+            DataColumn(label: Text(context.l10n.partner)),
+            DataColumn(label: Text(context.l10n.status)),
+            DataColumn(label: Text(context.l10n.members)),
+            DataColumn(label: Text(context.l10n.activeAssignment)),
+            DataColumn(label: Text(context.l10n.createdAt)),
           ],
           rows: [
             for (final partner in _partners)
@@ -324,7 +325,7 @@ class PartnersPageState extends State<PartnersPage> {
                   ],
                   const SizedBox(height: 8),
                   Text(
-                    'Üye ${partner.activeMemberCount} · Atama '
+                    '${context.l10n.memberCountAssignment(partner.activeMemberCount)} '
                     '${partner.activeAssignmentCount} · '
                     '${formatUserDateTime(partner.createdAt)}',
                     style: const TextStyle(
@@ -363,7 +364,7 @@ class _StatusChip extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
-        status.label,
+        adminPartnerStatusLabel(context.l10n, status.value),
         style: TextStyle(
           color: color,
           fontSize: 12,
@@ -393,7 +394,7 @@ class _HealthBanner extends StatelessWidget {
           ),
         ),
         child: Text(
-          'Analitik sağlık durumu alınamadı: $errorMessage',
+          context.l10n.analyticsHealthFetchFailed(errorMessage!),
           style: const TextStyle(color: Color(0xFFFFB4B4)),
         ),
       );
@@ -420,7 +421,9 @@ class _HealthBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Analitik Sağlık: ${health!.status.label}',
+            context.l10n.analyticsHealthTitle(
+              adminIntegrityStatusLabel(context.l10n, health!.status.value),
+            ),
             style: TextStyle(color: color, fontWeight: FontWeight.w600),
           ),
           if (health!.warnings.isNotEmpty) ...[
@@ -433,9 +436,9 @@ class _HealthBanner extends StatelessWidget {
           ],
           if (health!.status == PartnerDataIntegrityStatus.unavailable) ...[
             const SizedBox(height: 6),
-            const Text(
-              'Analitik bütünlük doğrulaması şu anda kullanılamıyor.',
-              style: TextStyle(color: Color(0xFFFFB4B4), fontSize: 12),
+            Text(
+              context.l10n.analyticsIntegrityUnavailable,
+              style: const TextStyle(color: Color(0xFFFFB4B4), fontSize: 12),
             ),
           ],
         ],

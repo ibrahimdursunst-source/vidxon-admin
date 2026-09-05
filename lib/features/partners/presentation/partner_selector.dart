@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/partner_repository.dart';
 import '../domain/admin_partner_summary.dart';
 
 /// Dropdown for assigning an active Partner to a series.
-/// [selectedPartnerId] null means "Atanmamış".
+/// [selectedPartnerId] null means unassigned.
 class PartnerSelector extends StatefulWidget {
   const PartnerSelector({
     required this.selectedPartnerId,
     required this.onChanged,
     this.repository,
     this.enabled = true,
-    this.label = 'İş Birliği Ortağı',
+    this.label,
     this.initialOptions,
     super.key,
   });
@@ -20,7 +21,7 @@ class PartnerSelector extends StatefulWidget {
   final ValueChanged<String?> onChanged;
   final PartnerRepository? repository;
   final bool enabled;
-  final String label;
+  final String? label;
   final List<AdminPartnerActiveOption>? initialOptions;
 
   @override
@@ -48,12 +49,14 @@ class _PartnerSelectorState extends State<PartnerSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final label = widget.label ?? context.l10n.collaborationPartner;
+
     return FutureBuilder<List<AdminPartnerActiveOption>>(
       future: _optionsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return InputDecorator(
-            decoration: InputDecoration(labelText: widget.label),
+            decoration: InputDecoration(labelText: label),
             child: const SizedBox(
               height: 24,
               child: Align(
@@ -73,7 +76,7 @@ class _PartnerSelectorState extends State<PartnerSelector> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Partner listesi yüklenemedi.',
+                context.l10n.partnerListLoadFailed,
                 style: TextStyle(
                   color: const Color(0xFFFFB4B4).withValues(alpha: 1),
                 ),
@@ -81,7 +84,7 @@ class _PartnerSelectorState extends State<PartnerSelector> {
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: widget.enabled ? _reload : null,
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           );
@@ -93,16 +96,16 @@ class _PartnerSelectorState extends State<PartnerSelector> {
             selected != null && options.any((o) => o.id == selected);
 
         return InputDecorator(
-          decoration: InputDecoration(labelText: widget.label),
+          decoration: InputDecoration(labelText: label),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
               value: hasSelected ? selected : null,
               isExpanded: true,
-              hint: const Text('Atanmamış'),
+              hint: Text(context.l10n.unassigned),
               items: [
-                const DropdownMenuItem<String?>(
+                DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('Atanmamış'),
+                  child: Text(context.l10n.unassigned),
                 ),
                 for (final option in options)
                   DropdownMenuItem<String?>(
@@ -112,7 +115,7 @@ class _PartnerSelectorState extends State<PartnerSelector> {
                 if (selected != null && !hasSelected)
                   DropdownMenuItem<String?>(
                     value: selected,
-                    child: Text('Partner ($selected)'),
+                    child: Text(context.l10n.partnerNamed(selected)),
                   ),
               ],
               onChanged: widget.enabled

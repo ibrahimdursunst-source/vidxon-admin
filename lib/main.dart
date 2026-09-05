@@ -1,12 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vidxon_admin/features/admin_context/presentation/admin_context_scope.dart';
 import 'package:vidxon_admin/features/admin_context/presentation/admin_root_navigator.dart';
+import 'package:vidxon_admin/features/admin_locale/application/admin_locale_controller.dart';
+import 'package:vidxon_admin/features/admin_locale/domain/admin_ui_locales.dart';
+import 'package:vidxon_admin/features/admin_locale/presentation/admin_locale_scope.dart';
+import 'package:vidxon_admin/l10n/admin_l10n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final localeController = AdminLocaleController();
+  await localeController.load();
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabasePublishableKey = String.fromEnvironment(
@@ -14,7 +22,7 @@ Future<void> main() async {
   );
 
   if (supabaseUrl.isEmpty || supabasePublishableKey.isEmpty) {
-    runApp(const MissingConfigurationApp());
+    runApp(MissingConfigurationApp(localeController: localeController));
     return;
   }
 
@@ -23,66 +31,105 @@ Future<void> main() async {
     publishableKey: supabasePublishableKey,
   );
 
-  runApp(const VidxonAdminApp());
+  runApp(VidxonAdminApp(localeController: localeController));
 }
 
 class MissingConfigurationApp extends StatelessWidget {
-  const MissingConfigurationApp({super.key});
+  const MissingConfigurationApp({required this.localeController, super.key});
+
+  final AdminLocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: const Scaffold(
-        body: Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Supabase bağlantı bilgileri eksik.\n\n'
-              'Uygulamayı SUPABASE_URL ve '
-              'SUPABASE_PUBLISHABLE_KEY değerleriyle çalıştır.',
-              textAlign: TextAlign.center,
-            ),
+    return ListenableBuilder(
+      listenable: localeController,
+      builder: (context, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          locale: localeController.locale,
+          supportedLocales: AdminUiLocales.supportedLocales,
+          localeResolutionCallback: (_, _) => localeController.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData.dark(),
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      context.l10n.missingSupabaseConfig,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
 class VidxonAdminApp extends StatelessWidget {
-  const VidxonAdminApp({super.key});
+  const VidxonAdminApp({required this.localeController, super.key});
+
+  final AdminLocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFFE50914);
 
-    return MaterialApp(
-      title: 'Vidxon Admin',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF090909),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF181818),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF333333)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: primaryColor, width: 2),
-          ),
-        ),
+    return AdminLocaleScope(
+      controller: localeController,
+      child: ListenableBuilder(
+        listenable: localeController,
+        builder: (context, _) {
+          return MaterialApp(
+            title: 'Vidxon Admin',
+            debugShowCheckedModeBanner: false,
+            locale: localeController.locale,
+            supportedLocales: AdminUiLocales.supportedLocales,
+            localeResolutionCallback: (_, _) => localeController.locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: ThemeData(
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: primaryColor,
+                brightness: Brightness.dark,
+              ),
+              scaffoldBackgroundColor: const Color(0xFF090909),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: const Color(0xFF181818),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF333333)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: primaryColor, width: 2),
+                ),
+              ),
+            ),
+            home: const AuthGate(),
+          );
+        },
       ),
-      home: const AuthGate(),
     );
   }
 }
@@ -191,7 +238,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       }
 
       setState(() {
-        _errorMessage = 'Giriş sırasında beklenmeyen bir hata oluştu.';
+        _errorMessage = context.l10n.loginUnexpectedError;
       });
     } finally {
       if (mounted) {
@@ -223,10 +270,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        'VIDXON',
+                      Text(
+                        context.l10n.appBrand,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 3,
@@ -234,10 +281,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Admin Panel',
+                      Text(
+                        context.l10n.adminPanel,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           color: Color(0xFFB3B3B3),
                         ),
@@ -248,19 +295,19 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         enabled: !_isLoading,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'E-posta',
-                          prefixIcon: Icon(Icons.email_outlined),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.email,
+                          prefixIcon: const Icon(Icons.email_outlined),
                         ),
                         validator: (value) {
                           final email = value?.trim() ?? '';
 
                           if (email.isEmpty) {
-                            return 'E-posta adresini gir.';
+                            return context.l10n.emailRequired;
                           }
 
                           if (!email.contains('@')) {
-                            return 'Geçerli bir e-posta adresi gir.';
+                            return context.l10n.emailInvalid;
                           }
 
                           return null;
@@ -274,7 +321,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _signIn(),
                         decoration: InputDecoration(
-                          labelText: 'Şifre',
+                          labelText: context.l10n.password,
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             onPressed: _isLoading
@@ -293,7 +340,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Şifreni gir.';
+                            return context.l10n.passwordRequired;
                           }
 
                           return null;
@@ -338,9 +385,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'Giriş Yap',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                              : Text(
+                                  context.l10n.signIn,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                         ),
                       ),
@@ -411,9 +460,9 @@ class _AdminAuthorizationGateState extends State<AdminAuthorizationGate> {
         if (snapshot.hasError) {
           return AccessMessagePage(
             icon: Icons.error_outline,
-            title: 'Yetki kontrolü başarısız',
+            title: context.l10n.authorizationFailed,
             message: snapshot.error.toString(),
-            actionLabel: 'Tekrar Dene',
+            actionLabel: context.l10n.retry,
             onAction: _retry,
           );
         }
@@ -438,13 +487,11 @@ class AccessDeniedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AccessMessagePage(
       icon: Icons.admin_panel_settings_outlined,
-      title: 'Erişim reddedildi',
-      message: 'Bu hesap Vidxon admin kullanıcıları arasında bulunmuyor.',
-      actionLabel: 'Çıkış Yap',
+      title: context.l10n.accessDenied,
+      message: context.l10n.accessDeniedMessage,
+      actionLabel: context.l10n.signOut,
       onAction: () async {
-        await Supabase.instance.client.auth.signOut(
-          scope: SignOutScope.global,
-        );
+        await Supabase.instance.client.auth.signOut(scope: SignOutScope.global);
       },
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/admin_user_wallet_errors.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_coin_debit_input.dart';
@@ -10,6 +11,10 @@ import '../domain/admin_coin_credit_input.dart';
 import '../domain/admin_user_details.dart';
 import '../domain/coin_debit_idempotency.dart';
 import '../domain/user_parse_helpers.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
 
 Future<String?> showAdminCoinDebitDialog({
   required BuildContext context,
@@ -137,9 +142,7 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
     }
 
     if (_isAmountExceedingBalance) {
-      setState(
-        () => _errorMessage = 'Kullanıcının bakiyesi bu işlem için yetersiz.',
-      );
+      setState(() => _errorMessage = context.l10n.insufficientBalance);
       return;
     }
 
@@ -188,9 +191,7 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
     }
 
     if (input.amount > widget.user.coinBalance) {
-      setState(
-        () => _errorMessage = 'Kullanıcının bakiyesi bu işlem için yetersiz.',
-      );
+      setState(() => _errorMessage = context.l10n.insufficientBalance);
       return;
     }
 
@@ -218,8 +219,11 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
 
       final debitedAmount = input.amount;
       final message = result.wasReplayed
-          ? 'İşlem daha önce tamamlanmıştı. Güncel bakiye: ${result.balanceAfter}'
-          : '$debitedAmount jeton eksiltildi. Yeni bakiye: ${result.balanceAfter}';
+          ? context.l10n.idempotentDebit('${result.balanceAfter}')
+          : context.l10n.coinsDebited(
+              '$debitedAmount',
+              '${result.balanceAfter}',
+            );
 
       Navigator.of(context).pop(message);
     } on AdminUserWalletException catch (error) {
@@ -244,13 +248,14 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
       setState(() {
         _step = _CoinDebitStep.confirm;
         _isSubmitting = false;
-        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.unexpectedRetry;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final user = widget.user;
     final input = _pendingInput;
 
@@ -259,7 +264,9 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
       child: AlertDialog(
         backgroundColor: const Color(0xFF181818),
         title: Text(
-          _step == _CoinDebitStep.confirm ? 'İşlemi Onayla' : 'Jeton Eksilt',
+          _step == _CoinDebitStep.confirm
+              ? l10n.confirmTransaction
+              : l10n.debitCoins,
         ),
         content: SizedBox(
           width: 480,
@@ -272,7 +279,7 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '${user.resolvedDisplayName} (${user.resolvedEmailLabel})',
+                      '${_localizedDisplayName(l10n, user.resolvedDisplayName)} (${adminResolvedEmailLabel(l10n, user.resolvedEmailLabel)})',
                       style: const TextStyle(color: Color(0xFFB3B3B3)),
                     ),
                     const SizedBox(height: 4),
@@ -281,15 +288,19 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                       style: const TextStyle(color: Color(0xFF808080)),
                     ),
                     const SizedBox(height: 8),
-                    Text('Mevcut bakiye: ${user.coinBalance} jeton'),
+                    Text(
+                      l10n.currentBalancePrefixed(
+                        l10n.coinsAmount(user.coinBalance),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _amountController,
                       enabled: !_isSubmitting,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Jeton miktarı',
+                      decoration: InputDecoration(
+                        labelText: l10n.coinAmount,
                         hintText: '1 – 1.000.000',
                       ),
                       validator: (value) => validateCoinAmountText(value),
@@ -297,21 +308,26 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                     ),
                     if (_isAmountExceedingBalance) ...[
                       const SizedBox(height: 8),
-                      const Text(
-                        'Kullanıcının bakiyesi bu işlem için yetersiz.',
-                        style: TextStyle(color: Color(0xFFFFB4B4)),
+                      Text(
+                        l10n.insufficientBalance,
+                        style: const TextStyle(color: Color(0xFFFFB4B4)),
                       ),
                     ],
                     const SizedBox(height: 12),
                     DropdownButtonFormField<AdminCoinDebitReason>(
                       initialValue: _selectedReason,
                       isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Sebep'),
+                      decoration: InputDecoration(labelText: l10n.reasonAlt),
                       items: [
                         for (final reason in AdminCoinDebitReason.values)
                           DropdownMenuItem(
                             value: reason,
-                            child: Text(reason.labelTurkish),
+                            child: Text(
+                              adminCoinDebitReasonLabel(
+                                l10n,
+                                reason.storageValue,
+                              ),
+                            ),
                           ),
                       ],
                       onChanged: _isSubmitting
@@ -327,8 +343,8 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                       controller: _descriptionController,
                       enabled: !_isSubmitting,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Açıklama',
+                      decoration: InputDecoration(
+                        labelText: l10n.description,
                         hintText: '5–500 karakter',
                       ),
                       validator: (value) => validateCoinDebitDescription(value),
@@ -337,15 +353,17 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                     TextFormField(
                       controller: _caseReferenceController,
                       enabled: !_isSubmitting,
-                      decoration: const InputDecoration(
-                        labelText: 'Vaka / Referans (isteğe bağlı)',
+                      decoration: InputDecoration(
+                        labelText: l10n.caseReferenceOptional,
                       ),
                       validator: (value) => validateCaseReference(value),
                     ),
                     if (_projectedBalance != null) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'Tahmini yeni bakiye: $_projectedBalance jeton',
+                        l10n.estimatedNewBalance(
+                          l10n.coinsAmount(_projectedBalance!),
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -365,46 +383,55 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _ConfirmRow(
-                  label: 'Kullanıcı',
-                  value: user.resolvedDisplayName,
+                  label: l10n.user,
+                  value: _localizedDisplayName(l10n, user.resolvedDisplayName),
                 ),
-                _ConfirmRow(label: 'E-posta', value: user.resolvedEmailLabel),
                 _ConfirmRow(
-                  label: 'Kullanıcı ID',
+                  label: l10n.email,
+                  value: adminResolvedEmailLabel(l10n, user.resolvedEmailLabel),
+                ),
+                _ConfirmRow(
+                  label: l10n.userId,
                   value: shortenUserId(user.userId),
                 ),
                 _ConfirmRow(
-                  label: 'Mevcut bakiye',
-                  value: '${user.coinBalance} jeton',
+                  label: l10n.currentBalance,
+                  value: l10n.coinsAmount(user.coinBalance),
                 ),
                 _ConfirmRow(
-                  label: 'Eksiltilecek',
-                  value: '${input?.amount ?? 0} jeton',
+                  label: l10n.toDebit,
+                  value: l10n.coinsAmount(input?.amount ?? 0),
                 ),
                 _ConfirmRow(
-                  label: 'Yeni bakiye',
-                  value:
-                      '${input?.projectedBalance(user.coinBalance) ?? user.coinBalance} jeton',
+                  label: l10n.newBalance,
+                  value: l10n.coinsAmount(
+                    input?.projectedBalance(user.coinBalance) ??
+                        user.coinBalance,
+                  ),
                 ),
                 _ConfirmRow(
-                  label: 'Sebep',
-                  value: input?.reason.labelTurkish ?? '—',
+                  label: l10n.reasonAlt,
+                  value: input == null
+                      ? '—'
+                      : adminCoinDebitReasonLabel(
+                          l10n,
+                          input.reason.storageValue,
+                        ),
                 ),
                 _ConfirmRow(
-                  label: 'Açıklama',
+                  label: l10n.description,
                   value: input?.description.trim() ?? '—',
                 ),
                 if (input?.caseReference != null &&
                     input!.caseReference!.trim().isNotEmpty)
                   _ConfirmRow(
-                    label: 'Referans',
+                    label: l10n.reference,
                     value: input.caseReference!.trim(),
                   ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Bu işlem mevcut ledger kayıtlarını silmez. Kullanıcının '
-                  'bakiyesine yeni bir negatif işlem kaydı eklenir.',
-                  style: TextStyle(color: Color(0xFFB3B3B3)),
+                Text(
+                  l10n.debitDoesNotDeleteLedger,
+                  style: const TextStyle(color: Color(0xFFB3B3B3)),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
@@ -422,11 +449,11 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
               _step == _CoinDebitStep.submitting)
             TextButton(
               onPressed: _isSubmitting ? null : _goBackToForm,
-              child: const Text('Geri'),
+              child: Text(l10n.back),
             ),
           TextButton(
             onPressed: _isSubmitting ? null : _closeDialog,
-            child: const Text('İptal'),
+            child: Text(l10n.cancel),
           ),
           if (_step == _CoinDebitStep.form)
             FilledButton(
@@ -434,7 +461,7 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                   ? null
                   : _goToConfirm,
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Devam'),
+              child: Text(l10n.continueShort),
             )
           else
             FilledButton(
@@ -453,7 +480,7 @@ class _AdminCoinDebitDialogState extends State<_AdminCoinDebitDialog> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Jeton Eksilt'),
+                  : Text(l10n.debitCoins),
             ),
         ],
       ),

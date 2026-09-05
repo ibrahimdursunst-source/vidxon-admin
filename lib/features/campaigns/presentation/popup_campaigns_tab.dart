@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/campaign_repository.dart';
 import '../domain/admin_campaign.dart';
 import 'popup_campaign_form_dialog.dart';
@@ -59,10 +60,8 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
   Future<void> _openForm({AdminCampaign? existing}) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => PopupCampaignFormDialog(
-        repository: _repository,
-        existing: existing,
-      ),
+      builder: (_) =>
+          PopupCampaignFormDialog(repository: _repository, existing: existing),
     );
     if (result == true) {
       _load();
@@ -111,7 +110,7 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
             FilledButton(
               onPressed: _load,
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Tekrar Dene'),
+              child: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -120,10 +119,10 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
 
     final campaigns = _campaigns ?? [];
     if (campaigns.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Henüz pop-up kampanyası oluşturulmadı.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+          context.l10n.noPopupCampaigns,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       );
     }
@@ -131,15 +130,15 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Durum')),
-          DataColumn(label: Text('Başlık')),
-          DataColumn(label: Text('Diller')),
-          DataColumn(label: Text('Hedef')),
-          DataColumn(label: Text('Öncelik')),
-          DataColumn(label: Text('Başlangıç')),
-          DataColumn(label: Text('Bitiş')),
-          DataColumn(label: Text('')),
+        columns: [
+          DataColumn(label: Text(context.l10n.status)),
+          DataColumn(label: Text(context.l10n.title)),
+          DataColumn(label: Text(context.l10n.languages)),
+          DataColumn(label: Text(context.l10n.target)),
+          DataColumn(label: Text(context.l10n.priority)),
+          DataColumn(label: Text(context.l10n.startsAt)),
+          DataColumn(label: Text(context.l10n.endsAt)),
+          const DataColumn(label: Text('')),
         ],
         rows: campaigns.map((c) => _buildRow(c)).toList(),
       ),
@@ -164,7 +163,7 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              campaign.statusLabel,
+              adminCampaignStatusLabel(context.l10n, campaign.statusLabel),
               style: TextStyle(color: statusColor, fontSize: 12),
             ),
           ),
@@ -177,12 +176,16 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
           ),
         ),
         DataCell(Text(campaign.targetLocales.join(', '))),
-        DataCell(Text(campaign.destinationLabel)),
+        DataCell(
+          Text(
+            adminDestinationTypeLabel(context.l10n, campaign.destinationType),
+          ),
+        ),
         DataCell(Text(campaign.priority.toString())),
         DataCell(Text(_formatDate(campaign.startsAt))),
-        DataCell(Text(
-          campaign.endsAt != null ? _formatDate(campaign.endsAt!) : '—',
-        )),
+        DataCell(
+          Text(campaign.endsAt != null ? _formatDate(campaign.endsAt!) : '—'),
+        ),
         DataCell(
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),

@@ -54,7 +54,7 @@ void main() {
       'lib/features/episodes/presentation/episode_form_page.dart',
     ).readAsStringSync();
 
-    expect(source, contains("label: 'Nitelikli İzlenme'"));
+    expect(source, contains('label: l10n.qualifiedViews'));
     expect(source, contains('_ReadOnlyInfo'));
     // No editable binding for qualified views.
     expect(source.contains('qualifiedViewsTotalController'), isFalse);

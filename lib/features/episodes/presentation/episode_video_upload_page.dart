@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../data/episode_video_upload_errors.dart';
 import '../data/episode_video_upload_repository.dart';
 import '../domain/admin_episode.dart';
@@ -200,7 +201,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
       setState(() {
         _isUploading = false;
         _stage = _UploadStage.failed;
-        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.unexpectedRetry;
         _canRetryAttach = false;
         _pendingStreamUid = null;
       });
@@ -257,8 +258,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
       setState(() {
         _isUploading = false;
         _stage = _UploadStage.failed;
-        _errorMessage =
-            'Video yüklendi fakat bölüme bağlanamadı. Videoyu yeniden yüklemeyin; bağlama işlemini tekrar deneyin.';
+        _errorMessage = context.l10n.videoUploadedAttachFailed;
         _canRetryAttach = true;
         _pendingStreamUid = streamUid;
       });
@@ -275,20 +275,17 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF181818),
-          title: const Text('Yükleme devam ediyor'),
-          content: const Text(
-            'Video yüklemesi sürerken sayfadan ayrılırsanız işlem yarıda kalabilir. '
-            'Yine de çıkmak istiyor musunuz?',
-          ),
+          title: Text(context.l10n.uploadInProgress),
+          content: Text(context.l10n.uploadInProgressLeave),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Kal'),
+              child: Text(context.l10n.stay),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Çık'),
+              child: Text(context.l10n.leave),
             ),
           ],
         );
@@ -298,8 +295,20 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
     return shouldLeave ?? false;
   }
 
+  String _stageDisplayLabel(AppLocalizations l10n) {
+    return switch (_stage) {
+      _UploadStage.noFileSelected => l10n.videoNotSelected,
+      _UploadStage.preparingTicket => l10n.preparingUploadLink,
+      _UploadStage.uploadingVideo => l10n.uploadingVideo,
+      _UploadStage.attachingVideo => l10n.attachingVideo,
+      _UploadStage.completed => l10n.uploadCompleted,
+      _UploadStage.failed => l10n.uploadFailedShort,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final episode = _episode;
     final selectedFile = _selectedFile;
     final canUpload = selectedFile != null && !_isUploading && !_canRetryAttach;
@@ -321,7 +330,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
         appBar: AppBar(
           backgroundColor: const Color(0xFF111111),
           title: Text(
-            widget.isReplacement ? 'Videoyu Değiştir' : 'Video Yükle',
+            widget.isReplacement ? l10n.replaceVideo : l10n.uploadVideo,
           ),
         ),
         body: SingleChildScrollView(
@@ -333,11 +342,11 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (widget.isReplacement)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
-                        'Yeni video hazır olana kadar mevcut video yayında kalmaya devam eder.',
-                        style: TextStyle(color: Color(0xFFB3B3B3)),
+                        l10n.replaceVideoConfirm,
+                        style: const TextStyle(color: Color(0xFFB3B3B3)),
                       ),
                     ),
                   _InfoCard(
@@ -358,9 +367,9 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Video Dosyası',
-                            style: TextStyle(
+                          Text(
+                            l10n.videoFile,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -369,7 +378,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                           OutlinedButton.icon(
                             onPressed: _isUploading ? null : _pickVideo,
                             icon: const Icon(Icons.video_file_outlined),
-                            label: const Text('MP4 Seç'),
+                            label: Text(l10n.selectMp4),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Color(0xFF333333)),
@@ -389,18 +398,18 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                               style: const TextStyle(color: Color(0xFFB3B3B3)),
                             ),
                           ] else
-                            const Text(
-                              'Henüz video seçilmedi.',
-                              style: TextStyle(color: Color(0xFFB3B3B3)),
+                            Text(
+                              l10n.noVideoSelectedYet,
+                              style: const TextStyle(color: Color(0xFFB3B3B3)),
                             ),
                           const SizedBox(height: 12),
-                          const Text(
-                            'Maksimum dosya boyutu: 200 MB',
-                            style: TextStyle(color: Color(0xFFB3B3B3)),
+                          Text(
+                            l10n.maxFileSize200Mb,
+                            style: const TextStyle(color: Color(0xFFB3B3B3)),
                           ),
-                          const Text(
-                            'Desteklenen format: MP4 (video/mp4)',
-                            style: TextStyle(color: Color(0xFFB3B3B3)),
+                          Text(
+                            l10n.supportedFormatMp4,
+                            style: const TextStyle(color: Color(0xFFB3B3B3)),
                           ),
                         ],
                       ),
@@ -409,7 +418,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                   const SizedBox(height: 24),
                   if (_isUploading || _stage == _UploadStage.failed) ...[
                     Text(
-                      _stage.label,
+                      _stageDisplayLabel(l10n),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
@@ -455,7 +464,7 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Bağlamayı Tekrar Dene'),
+                      child: Text(l10n.retryAttach),
                     )
                   else
                     FilledButton(
@@ -465,15 +474,14 @@ class _EpisodeVideoUploadPageState extends State<EpisodeVideoUploadPage> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Video Yükle'),
+                      child: Text(l10n.uploadVideo),
                     ),
                   if (_stage == _UploadStage.completed)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
                       child: Text(
-                        'Video Cloudflare Stream tarafından işlenmeye devam edecek. '
-                        'İşlem tamamlandığında bölüm listesinde durum güncellenecektir.',
-                        style: TextStyle(color: Color(0xFFB3B3B3)),
+                        l10n.videoProcessingContinues,
+                        style: const TextStyle(color: Color(0xFFB3B3B3)),
                       ),
                     ),
                 ],
@@ -518,12 +526,14 @@ class _InfoCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Bölüm $episodeNumber · $episodeTitle',
+              context.l10n.episodePickerLabel(episodeNumber, episodeTitle),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Text(
-              'Mevcut video durumu: $currentStatus',
+              context.l10n.currentVideoStatus(
+                adminVideoStatusLabel(context.l10n, currentStatus),
+              ),
               style: const TextStyle(color: Color(0xFFB3B3B3)),
             ),
           ],

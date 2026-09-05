@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../admin_context/presentation/admin_context_scope.dart';
+import '../../admin_locale/presentation/admin_language_selector.dart';
+import '../../admin_locale/presentation/admin_locale_scope.dart';
 import '../../admins/presentation/admin_management_page.dart';
 import '../../audit/presentation/admin_audit_page.dart';
 import '../../categories/data/category_repository.dart';
@@ -84,88 +87,93 @@ class _AdminHomePageState extends State<AdminHomePage> {
         contextResult != null &&
         !contextResult.isLoading &&
         contextResult.isSuperAdmin;
+    final l10n = context.l10n;
 
     return [
-      const _NavItem(
-        label: 'Genel Bakış',
+      _NavItem(
+        id: _NavId.overview,
+        label: l10n.navOverview,
         icon: Icons.dashboard_outlined,
         enabled: true,
       ),
-      const _NavItem(
-        label: 'Diziler',
+      _NavItem(
+        id: _NavId.series,
+        label: l10n.navSeries,
         icon: Icons.movie_outlined,
         enabled: true,
       ),
-      const _NavItem(
-        label: 'Kullanıcılar',
+      _NavItem(
+        id: _NavId.users,
+        label: l10n.navUsers,
         icon: Icons.people_outlined,
         enabled: true,
       ),
-      const _NavItem(
-        label: 'İşlem Kayıtları',
+      _NavItem(
+        id: _NavId.audit,
+        label: l10n.navAudit,
         icon: Icons.receipt_long_outlined,
         enabled: true,
       ),
-      const _NavItem(
-        label: 'Partnerler',
+      _NavItem(
+        id: _NavId.partners,
+        label: l10n.navPartners,
         icon: Icons.handshake_outlined,
         enabled: true,
       ),
       if (showSuperAdminNav) ...[
-        const _NavItem(
-          label: 'Kampanyalar',
+        _NavItem(
+          id: _NavId.campaigns,
+          label: l10n.navCampaigns,
           icon: Icons.campaign_outlined,
           enabled: true,
         ),
-        const _NavItem(
-          label: 'Yöneticiler',
+        _NavItem(
+          id: _NavId.admins,
+          label: l10n.navAdmins,
           icon: Icons.admin_panel_settings_outlined,
           enabled: true,
         ),
       ],
-      const _NavItem(
-        label: 'Bölümler',
+      _NavItem(
+        id: _NavId.episodes,
+        label: l10n.navEpisodes,
         icon: Icons.playlist_play_outlined,
         enabled: false,
       ),
-      const _NavItem(
-        label: 'Kategoriler',
+      _NavItem(
+        id: _NavId.categories,
+        label: l10n.navCategories,
         icon: Icons.category_outlined,
         enabled: false,
       ),
-      const _NavItem(
-        label: 'Medya',
+      _NavItem(
+        id: _NavId.media,
+        label: l10n.navMedia,
         icon: Icons.perm_media_outlined,
         enabled: false,
       ),
     ];
   }
 
-  String _navLabel(BuildContext context, int index) {
-    final items = _navItems(context);
-    if (index < 0 || index >= items.length) {
-      return '';
-    }
-
-    return items[index].label;
-  }
-
   void _refreshActivePage() {
-    final label = _navLabel(context, _selectedNavIndex);
-    switch (label) {
-      case 'Genel Bakış':
+    final items = _navItems(context);
+    if (_selectedNavIndex < 0 || _selectedNavIndex >= items.length) {
+      return;
+    }
+    switch (items[_selectedNavIndex].id) {
+      case _NavId.overview:
         _refreshCounts();
-      case 'Diziler':
+      case _NavId.series:
         _seriesListKey.currentState?.refresh();
-      case 'Kullanıcılar':
+      case _NavId.users:
         _usersPageKey.currentState?.refresh();
-      case 'İşlem Kayıtları':
+      case _NavId.audit:
         _auditPageKey.currentState?.refresh();
-      case 'Partnerler':
+      case _NavId.partners:
         _partnersPageKey.currentState?.refresh();
-      case 'Kampanyalar':
+      case _NavId.campaigns:
         _campaignsPageKey.currentState?.refresh();
-      case 'Yöneticiler':
+      case _NavId.admins:
         _managementPageKey.currentState?.refresh();
       default:
         break;
@@ -173,9 +181,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   Future<void> _signOut() async {
-    await Supabase.instance.client.auth.signOut(
-      scope: SignOutScope.global,
-    );
+    await Supabase.instance.client.auth.signOut(scope: SignOutScope.global);
   }
 
   @override
@@ -224,9 +230,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
     return AppBar(
       backgroundColor: const Color(0xFF111111),
       elevation: 0,
-      title: const Text(
-        'VIDXON ADMIN',
-        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
+      title: Text(
+        context.l10n.appBrandAdmin,
+        style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5),
       ),
       actions: [
         if (roleLabel != null) ...[
@@ -250,13 +256,20 @@ class _AdminHomePageState extends State<AdminHomePage> {
             ),
           ),
         ),
+        if (AdminLocaleScope.maybeOf(context) != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: AdminLanguageSelector(
+              controller: AdminLocaleScope.of(context),
+            ),
+          ),
         IconButton(
-          tooltip: 'Yenile',
+          tooltip: context.l10n.refresh,
           onPressed: _refreshActivePage,
           icon: const Icon(Icons.refresh),
         ),
         IconButton(
-          tooltip: 'Çıkış Yap',
+          tooltip: context.l10n.signOut,
           onPressed: _signOut,
           icon: const Icon(Icons.logout),
         ),
@@ -321,7 +334,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     if (index < navItems.length && navItems[index].enabled) {
       setState(() {
         _selectedNavIndex = index;
-        if (navItems[index].label != 'Diziler') {
+        if (navItems[index].id != _NavId.series) {
           _showSeriesCreate = false;
         }
       });
@@ -333,18 +346,18 @@ class _AdminHomePageState extends State<AdminHomePage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return switch (navItems[_selectedNavIndex].label) {
-      'Genel Bakış' => _buildOverviewContent(),
-      'Diziler' => _buildSeriesContent(),
-      'Kullanıcılar' => AdminUsersPage(key: _usersPageKey),
-      'İşlem Kayıtları' => AdminAuditPage(key: _auditPageKey),
-      'Partnerler' => PartnersPage(key: _partnersPageKey),
-      'Kampanyalar' => CampaignsPage(key: _campaignsPageKey),
-      'Yöneticiler' => AdminManagementPage(key: _managementPageKey),
-      _ => const Center(
+    return switch (navItems[_selectedNavIndex].id) {
+      _NavId.overview => _buildOverviewContent(),
+      _NavId.series => _buildSeriesContent(),
+      _NavId.users => AdminUsersPage(key: _usersPageKey),
+      _NavId.audit => AdminAuditPage(key: _auditPageKey),
+      _NavId.partners => PartnersPage(key: _partnersPageKey),
+      _NavId.campaigns => CampaignsPage(key: _campaignsPageKey),
+      _NavId.admins => AdminManagementPage(key: _managementPageKey),
+      _ => Center(
         child: Text(
-          'Bu bölüm yakında eklenecek.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+          context.l10n.comingSoonSection,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       ),
     };
@@ -426,7 +439,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Veriler yüklenemedi',
+                      context.l10n.dataLoadFailed,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
@@ -441,7 +454,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: _primaryColor,
                       ),
-                      child: const Text('Tekrar Dene'),
+                      child: Text(context.l10n.retry),
                     ),
                   ],
                 ),
@@ -458,15 +471,15 @@ class _AdminHomePageState extends State<AdminHomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Genel Bakış',
+                context.l10n.navOverview,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'İçerik istatistiklerinin özeti',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.overviewSubtitle,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
               const SizedBox(height: 24),
               LayoutBuilder(
@@ -482,7 +495,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       SizedBox(
                         width: constraints.maxWidth >= 720 ? cardWidth : null,
                         child: _StatCard(
-                          label: 'Diziler',
+                          label: context.l10n.navSeries,
                           count: counts.seriesCount,
                           icon: Icons.movie_outlined,
                         ),
@@ -490,7 +503,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       SizedBox(
                         width: constraints.maxWidth >= 720 ? cardWidth : null,
                         child: _StatCard(
-                          label: 'Bölümler',
+                          label: context.l10n.navEpisodes,
                           count: counts.episodeCount,
                           icon: Icons.playlist_play_outlined,
                         ),
@@ -498,7 +511,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       SizedBox(
                         width: constraints.maxWidth >= 720 ? cardWidth : null,
                         child: _StatCard(
-                          label: 'Kategoriler',
+                          label: context.l10n.navCategories,
                           count: counts.categoryCount,
                           icon: Icons.category_outlined,
                         ),
@@ -515,13 +528,28 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 }
 
+enum _NavId {
+  overview,
+  series,
+  users,
+  audit,
+  partners,
+  campaigns,
+  admins,
+  episodes,
+  categories,
+  media,
+}
+
 class _NavItem {
   const _NavItem({
+    required this.id,
     required this.label,
     required this.icon,
     required this.enabled,
   });
 
+  final _NavId id;
   final String label;
   final IconData icon;
   final bool enabled;

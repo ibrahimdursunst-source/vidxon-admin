@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../users/domain/user_parse_helpers.dart';
 import '../domain/partner_series_assignment.dart';
 
@@ -33,14 +34,14 @@ class PartnerAssignmentHistoryPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Partner Atama Geçmişi',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.assignmentHistory,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Geçmiş aralıklar değiştirilemez. Atamalar [başlangıç, bitiş) ile kaydedilir.',
-              style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+            Text(
+              context.l10n.assignmentHistoryHint,
+              style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
             ),
             const SizedBox(height: 16),
             if (isLoading)
@@ -62,15 +63,15 @@ class PartnerAssignmentHistoryPanel extends StatelessWidget {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: onRetry,
-                      child: const Text('Tekrar Dene'),
+                      child: Text(context.l10n.retry),
                     ),
                   ],
                 ],
               )
             else if (assignments.isEmpty)
-              const Text(
-                'Henüz Partner ataması yok.',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.noPartnerAssignments,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               )
             else
               for (final assignment in assignments) ...[
@@ -105,7 +106,7 @@ class _AssignmentRow extends StatelessWidget {
             : assignment.partnerId);
     final range =
         '${formatUserDateTime(assignment.startsAt)} → '
-        '${assignment.endsAt == null ? 'devam ediyor' : formatUserDateTime(assignment.endsAt)}';
+        '${assignment.endsAt == null ? context.l10n.ongoingAssignment : formatUserDateTime(assignment.endsAt)}';
 
     return Container(
       width: double.infinity,
@@ -126,7 +127,10 @@ class _AssignmentRow extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  showSeriesTitle ? (assignment.seriesTitle ?? 'Dizi') : name,
+                  showSeriesTitle
+                      ? (assignment.seriesTitle ??
+                            context.l10n.destinationSeries)
+                      : name,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -140,9 +144,12 @@ class _AssignmentRow extends StatelessWidget {
                     color: const Color(0xFFE50914).withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
-                    'Aktif',
-                    style: TextStyle(fontSize: 11, color: Color(0xFFFFB4B4)),
+                  child: Text(
+                    context.l10n.active,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFFFFB4B4),
+                    ),
                   ),
                 ),
             ],

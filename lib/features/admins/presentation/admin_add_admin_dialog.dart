@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../admin_context/domain/admin_role.dart';
 import '../../users/data/admin_user_wallet_errors.dart';
 import '../../users/data/admin_user_wallet_repository.dart';
@@ -11,6 +12,24 @@ import '../../users/presentation/admin_role_badge.dart';
 import '../../users/presentation/user_list_search_logic.dart';
 import '../../users/presentation/user_search_request_guard.dart';
 import '../data/admin_management_repository.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
+
+String _localizedRoleLabel(AppLocalizations l10n, AdminRole role) {
+  return switch (role) {
+    AdminRole.admin => l10n.adminRole,
+    AdminRole.superAdmin => l10n.superAdminRole,
+  };
+}
+
+String _localizedRoleDescription(AppLocalizations l10n, AdminRole role) {
+  return switch (role) {
+    AdminRole.admin => l10n.adminRoleDescription,
+    AdminRole.superAdmin => l10n.superAdminRoleDescription,
+  };
+}
 
 Future<String?> showAdminAddAdminDialog({
   required BuildContext context,
@@ -258,10 +277,9 @@ class _AdminAddAdminDialogState extends State<_AdminAddAdminDialog> {
       }
 
       Navigator.of(context).pop(
-        buildAdminAddSuccessMessage(
-          displayName: user.resolvedDisplayName,
-          role: _selectedRole,
-        ),
+        _selectedRole == AdminRole.superAdmin
+            ? context.l10n.addedAsSuperAdmin(user.resolvedDisplayName)
+            : context.l10n.addedAsAdmin(user.resolvedDisplayName),
       );
     } on AdminUserWalletException catch (error) {
       if (!mounted) {
@@ -279,7 +297,7 @@ class _AdminAddAdminDialogState extends State<_AdminAddAdminDialog> {
 
       setState(() {
         _step = _AddAdminStep.confirm;
-        _errorMessage = 'Ağ bağlantısı kesildi. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.networkDisconnected;
       });
     }
   }
@@ -333,9 +351,10 @@ class _AdminAddAdminDialogState extends State<_AdminAddAdminDialog> {
   }
 
   String get _dialogTitle => switch (_step) {
-    _AddAdminStep.search => 'Yönetici Ekle',
-    _AddAdminStep.role => 'Rol Seç',
-    _AddAdminStep.confirm || _AddAdminStep.submitting => 'Onay',
+    _AddAdminStep.search => context.l10n.addAdmin,
+    _AddAdminStep.role => context.l10n.selectRole,
+    _AddAdminStep.confirm ||
+    _AddAdminStep.submitting => context.l10n.confirmTitle,
   };
 
   List<Widget> _buildActions() {
@@ -345,16 +364,16 @@ class _AdminAddAdminDialogState extends State<_AdminAddAdminDialog> {
       if (_step != _AddAdminStep.search)
         TextButton(
           onPressed: isSubmitting ? null : _goBack,
-          child: const Text('Geri'),
+          child: Text(context.l10n.back),
         ),
       TextButton(
         onPressed: isSubmitting ? null : () => Navigator.of(context).pop(),
-        child: const Text('İptal'),
+        child: Text(context.l10n.cancel),
       ),
       if (_step == _AddAdminStep.role)
         FilledButton(
           onPressed: isSubmitting ? null : _goToConfirm,
-          child: const Text('Devam'),
+          child: Text(context.l10n.continueShort),
         ),
       if (_step == _AddAdminStep.confirm || _step == _AddAdminStep.submitting)
         FilledButton(
@@ -365,7 +384,7 @@ class _AdminAddAdminDialogState extends State<_AdminAddAdminDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Onayla'),
+              : Text(context.l10n.confirm),
         ),
     ];
   }
@@ -396,9 +415,9 @@ class _SearchStep extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Kullanıcı ID, e-posta veya görünen ad ile arayın.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+        Text(
+          context.l10n.searchByIdEmailName,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
         const SizedBox(height: 12),
         Row(
@@ -406,9 +425,9 @@ class _SearchStep extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'Arama sorgusu',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: context.l10n.searchQuery,
+                  border: const OutlineInputBorder(),
                 ),
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => onSubmitSearch(),
@@ -423,7 +442,7 @@ class _SearchStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Ara'),
+                  : Text(context.l10n.search),
             ),
           ],
         ),
@@ -434,9 +453,9 @@ class _SearchStep extends StatelessWidget {
         if (activeQuery.isNotEmpty && !isSearching && errorMessage == null) ...[
           const SizedBox(height: 16),
           if (results.isEmpty)
-            const Text(
-              'Sonuç bulunamadı.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+            Text(
+              context.l10n.noResultsPeriod,
+              style: const TextStyle(color: Color(0xFFB3B3B3)),
             )
           else
             ConstrainedBox(
@@ -474,16 +493,26 @@ class _SearchResultTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       title: Row(
         children: [
-          Expanded(child: Text(user.resolvedDisplayName)),
+          Expanded(
+            child: Text(
+              _localizedDisplayName(context.l10n, user.resolvedDisplayName),
+            ),
+          ),
           if (user.adminRoleLabel != null)
-            AdminRoleBadge(label: user.adminRoleLabel!),
+            AdminRoleBadge(
+              label: switch (user.adminRoleLabel!) {
+                'Admin' => context.l10n.adminRole,
+                'Super Admin' => context.l10n.superAdminRole,
+                _ => user.adminRoleLabel!,
+              },
+            ),
         ],
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            user.resolvedEmailLabel,
+            adminResolvedEmailLabel(context.l10n, user.resolvedEmailLabel),
             style: const TextStyle(color: Color(0xFFB3B3B3)),
           ),
           Text(
@@ -493,7 +522,10 @@ class _SearchResultTile extends StatelessWidget {
         ],
       ),
       trailing: canAdd
-          ? FilledButton(onPressed: onSelect, child: const Text('Yönetici Yap'))
+          ? FilledButton(
+              onPressed: onSelect,
+              child: Text(context.l10n.makeAdmin),
+            )
           : null,
     );
   }
@@ -516,18 +548,25 @@ class _RoleStep extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Hedef: ${user.resolvedDisplayName}'),
         Text(
-          user.resolvedEmailLabel,
+          context.l10n.targetNamed(
+            _localizedDisplayName(context.l10n, user.resolvedDisplayName),
+          ),
+        ),
+        Text(
+          adminResolvedEmailLabel(context.l10n, user.resolvedEmailLabel),
           style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
         const SizedBox(height: 16),
         SegmentedButton<AdminRole>(
-          segments: const [
-            ButtonSegment(value: AdminRole.admin, label: Text('Admin')),
+          segments: [
+            ButtonSegment(
+              value: AdminRole.admin,
+              label: Text(context.l10n.adminRole),
+            ),
             ButtonSegment(
               value: AdminRole.superAdmin,
-              label: Text('Super Admin'),
+              label: Text(context.l10n.superAdminRole),
             ),
           ],
           selected: {selectedRole},
@@ -539,7 +578,7 @@ class _RoleStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          adminRolePermissionDescription(selectedRole),
+          _localizedRoleDescription(context.l10n, selectedRole),
           style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       ],
@@ -564,20 +603,31 @@ class _ConfirmStep extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Kullanıcı: ${user.resolvedDisplayName}'),
-        Text('E-posta: ${user.resolvedEmailLabel}'),
-        Text('Kullanıcı ID: ${shortenUserId(user.userId)}'),
-        Text('Verilecek rol: ${role.labelTurkish}'),
+        Text(
+          context.l10n.userNamed(
+            _localizedDisplayName(context.l10n, user.resolvedDisplayName),
+          ),
+        ),
+        Text(
+          context.l10n.emailNamed(
+            adminResolvedEmailLabel(context.l10n, user.resolvedEmailLabel),
+          ),
+        ),
+        Text(context.l10n.userIdNamed(shortenUserId(user.userId))),
+        Text(
+          context.l10n.roleToGrantPrefixed(
+            _localizedRoleLabel(context.l10n, role),
+          ),
+        ),
         const SizedBox(height: 12),
         Text(
-          adminRolePermissionDescription(role),
+          _localizedRoleDescription(context.l10n, role),
           style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Bu işlem kullanıcının mevcut hesabını, profilini, cüzdanını veya '
-          'geçmişini değiştirmez. Kullanıcıya admin paneli erişimi verir.',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+        Text(
+          context.l10n.thisGrantsAdminAccess,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
         if (errorMessage != null) ...[
           const SizedBox(height: 12),

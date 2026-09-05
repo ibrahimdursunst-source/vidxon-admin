@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import 'popup_campaigns_tab.dart';
 import 'push_campaigns_tab.dart';
 
@@ -44,17 +45,17 @@ class CampaignsPageState extends State<CampaignsPage>
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
           child: Text(
-            'Kampanyalar',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            context.l10n.campaigns,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: "Pop-up'lar"),
-            Tab(text: 'Push Bildirimleri'),
+          tabs: [
+            Tab(text: context.l10n.popupTab),
+            Tab(text: context.l10n.pushTab),
           ],
           labelColor: const Color(0xFFE50914),
           unselectedLabelColor: Colors.grey,

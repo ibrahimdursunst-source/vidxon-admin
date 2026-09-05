@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/slug_helper.dart';
+import '../../../l10n/admin_l10n.dart';
 import '../../content/presentation/content_mutation_guard.dart';
 import '../../content_rating/domain/content_rating_catalog.dart';
 import '../../content_rating/presentation/content_rating_editor.dart';
@@ -165,7 +166,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
     if (bytes == null) {
       setState(() {
-        _errorMessage = 'Poster dosyası okunamadı.';
+        _errorMessage = context.l10n.posterUnreadable;
         _retryHint = null;
       });
       return;
@@ -231,7 +232,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       }
 
       setState(() {
-        _errorMessage = 'Poster seçimi zorunludur.';
+        _errorMessage = context.l10n.posterRequired;
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -275,12 +276,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       }
 
       final posterPath = objectPath;
-      if (posterPath.isEmpty) {
-        throw ImageUploadException('Poster yolu oluşturulamadı.');
-      }
-
       if (!mounted) {
         return;
+      }
+
+      if (posterPath.isEmpty) {
+        throw ImageUploadException(context.l10n.posterPathFailed);
       }
 
       setState(() {
@@ -316,9 +317,9 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dizi başarıyla oluşturuldu.'),
-          backgroundColor: Color(0xFF35C46A),
+        SnackBar(
+          content: Text(context.l10n.seriesCreated),
+          backgroundColor: const Color(0xFF35C46A),
         ),
       );
 
@@ -341,8 +342,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
       setState(() {
         _errorMessage = error.message;
-        _retryHint =
-            'Poster zaten yüklendi. Bilgileri düzenleyip tekrar deneyebilirsiniz.';
+        _retryHint = context.l10n.posterAlreadyUploadedRetry;
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -352,10 +352,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       }
 
       setState(() {
-        _errorMessage =
-            'Dizi oluşturuldu ancak Partner ataması başarısız: ${error.message}';
-        _retryHint =
-            'Dizi kaydı oluştu. Partner atamasını dizi detayından yeniden deneyin.';
+        _errorMessage = context.l10n.seriesCreatedPartnerFailed(error.message);
+        _retryHint = context.l10n.seriesCreatedRetryPartner;
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -365,10 +363,10 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       }
 
       setState(() {
-        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.unexpectedRetry;
         _retryHint = _uploadedObjectPath == null
             ? null
-            : 'Poster zaten yüklendi. Tekrar deneyebilirsiniz.';
+            : context.l10n.posterAlreadyUploaded;
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -442,15 +440,15 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Yeni Dizi',
+          context.l10n.newSeries,
           style: Theme.of(
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Kataloga yeni bir dizi ekleyin',
-          style: TextStyle(color: Color(0xFFB3B3B3)),
+        Text(
+          context.l10n.newSeriesSubtitle,
+          style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       ],
     );
@@ -474,10 +472,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              _submitStage!.label,
-              style: const TextStyle(color: Color(0xFFB3B3B3)),
-            ),
+            child: Text(switch (_submitStage!) {
+              _SubmitStage.validating => context.l10n.validatingForm,
+              _SubmitStage.preparingUpload => context.l10n.preparingUploadLink,
+              _SubmitStage.uploadingPoster => context.l10n.uploadingPoster,
+              _SubmitStage.savingSeries => context.l10n.savingSeries,
+            }, style: const TextStyle(color: Color(0xFFB3B3B3))),
           ),
         ],
       ),
@@ -513,16 +513,18 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
   Widget _buildBasicFields() {
     return _SectionCard(
-      title: 'Temel Bilgiler',
+      title: context.l10n.basicInfo,
       child: Column(
         children: [
           TextFormField(
             controller: _titleController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(labelText: 'Başlık *'),
+            decoration: InputDecoration(
+              labelText: context.l10n.titleRequiredStar,
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Başlık zorunludur.';
+                return context.l10n.titleRequired;
               }
               return null;
             },
@@ -531,14 +533,14 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           TextFormField(
             controller: _slugController,
             enabled: !_isSubmitting,
-            decoration: const InputDecoration(
-              labelText: 'Slug *',
-              helperText: 'Küçük harf, rakam ve tire',
+            decoration: InputDecoration(
+              labelText: context.l10n.slugRequiredStar,
+              helperText: context.l10n.slugHint,
             ),
             validator: (value) {
               final slug = value?.trim() ?? '';
               if (!SlugHelper.isValid(slug)) {
-                return 'Geçerli bir slug girin.';
+                return context.l10n.validSlug;
               }
               return null;
             },
@@ -549,8 +551,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             enabled: !_isSubmitting,
             minLines: 3,
             maxLines: 6,
-            decoration: const InputDecoration(
-              labelText: 'Açıklama',
+            decoration: InputDecoration(
+              labelText: context.l10n.description,
               alignLabelWithHint: true,
             ),
           ),
@@ -559,10 +561,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             children: [
               Expanded(
                 child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Yayın Tarihi'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.releaseDate,
+                  ),
                   child: Text(
                     _releaseDate == null
-                        ? 'Seçilmedi'
+                        ? context.l10n.notSelected
                         : _formatReleaseDate(_releaseDate!),
                     style: TextStyle(
                       color: _releaseDate == null
@@ -575,12 +579,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
               const SizedBox(width: 12),
               OutlinedButton(
                 onPressed: _isSubmitting ? null : _pickReleaseDate,
-                child: const Text('Tarih Seç'),
+                child: Text(context.l10n.selectDate),
               ),
               if (_releaseDate != null) ...[
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Temizle',
+                  tooltip: context.l10n.clear,
                   onPressed: _isSubmitting
                       ? null
                       : () {
@@ -600,7 +604,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
   Widget _buildContentRatingSection() {
     return _SectionCard(
-      title: 'İçerik Derecelendirmesi',
+      title: context.l10n.contentRating,
       child: ContentRatingEditor(
         ageRating: _contentAgeRating,
         descriptors: _contentDescriptors,
@@ -620,7 +624,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
     final poster = _posterFile;
 
     return _SectionCard(
-      title: 'Poster *',
+      title: context.l10n.posterRequiredStar,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -632,7 +636,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
               OutlinedButton.icon(
                 onPressed: _isSubmitting ? null : _pickPoster,
                 icon: const Icon(Icons.upload_file_outlined),
-                label: const Text('Poster Seç'),
+                label: Text(context.l10n.selectPoster),
               ),
               if (poster != null)
                 Text(
@@ -660,9 +664,9 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             _posterPlaceholder(),
           ],
           const SizedBox(height: 8),
-          const Text(
-            'JPG, PNG veya WEBP · En fazla 10 MiB',
-            style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+          Text(
+            context.l10n.posterFormatsHint,
+            style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
           ),
         ],
       ),
@@ -686,19 +690,24 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
   Widget _buildStatusSection() {
     return _SectionCard(
-      title: 'Yayın Ayarları',
+      title: context.l10n.publishSettings,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Durum'),
+            decoration: InputDecoration(labelText: context.l10n.status),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<SeriesStatusValue>(
                 value: _status,
                 isExpanded: true,
                 items: [
                   for (final status in SeriesStatusValue.values)
-                    DropdownMenuItem(value: status, child: Text(status.label)),
+                    DropdownMenuItem(
+                      value: status,
+                      child: Text(
+                        adminSeriesStatusLabel(context.l10n, status.value),
+                      ),
+                    ),
                 ],
                 onChanged: _isSubmitting
                     ? null
@@ -715,7 +724,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Öne Çıkan'),
+            title: Text(context.l10n.featured),
             value: _isFeatured,
             onChanged: _isSubmitting
                 ? null
@@ -727,7 +736,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Premium'),
+            title: Text(context.l10n.premium),
             value: _isPremium,
             onChanged: _isSubmitting
                 ? null
@@ -744,11 +753,12 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
   Widget _buildPartnerSection() {
     return _SectionCard(
-      title: 'İş Birliği Ortağı',
+      title: context.l10n.collaborationPartner,
       child: PartnerSelector(
         selectedPartnerId: _selectedPartnerId,
         enabled: !_isSubmitting,
         repository: _partnerRepository,
+        label: context.l10n.collaborationPartner,
         onChanged: (value) {
           setState(() => _selectedPartnerId = value);
         },
@@ -758,7 +768,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
   Widget _buildCategorySection() {
     return _SectionCard(
-      title: 'Kategoriler',
+      title: context.l10n.categories,
       child: FutureBuilder<List<AdminCategory>>(
         future: _categoriesFuture,
         builder: (context, snapshot) {
@@ -775,14 +785,14 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Kategoriler yüklenemedi.',
-                  style: TextStyle(color: Color(0xFFFFB4B4)),
+                Text(
+                  context.l10n.categoriesLoadFailed,
+                  style: const TextStyle(color: Color(0xFFFFB4B4)),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
                   onPressed: _isSubmitting ? null : _reloadCategories,
-                  child: const Text('Tekrar Dene'),
+                  child: Text(context.l10n.retry),
                 ),
               ],
             );
@@ -791,9 +801,9 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           final categories = snapshot.data ?? const [];
 
           if (categories.isEmpty) {
-            return const Text(
-              'Henüz kategori bulunmuyor.',
-              style: TextStyle(color: Color(0xFFB3B3B3)),
+            return Text(
+              context.l10n.noCategoriesYet,
+              style: const TextStyle(color: Color(0xFFB3B3B3)),
             );
           }
 
@@ -829,7 +839,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       children: [
         OutlinedButton(
           onPressed: _isSubmitting ? null : widget.onCancel,
-          child: const Text('İptal'),
+          child: Text(context.l10n.cancel),
         ),
         const SizedBox(width: 12),
         FilledButton(
@@ -844,7 +854,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                     color: Colors.white,
                   ),
                 )
-              : const Text('Diziyi Oluştur'),
+              : Text(context.l10n.createSeries),
         ),
       ],
     );

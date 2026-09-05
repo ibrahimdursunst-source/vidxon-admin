@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/data/content_errors.dart';
 import '../../series/data/series_mutation_repository.dart';
 import '../data/episode_repository.dart';
@@ -126,7 +127,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       }
 
       setState(() {
-        _errorMessage = 'Sıralama kaydedilemedi.';
+        _errorMessage = context.l10n.reorderSaveFailed;
         _isSaving = false;
         _ordered = sortEpisodesByNumber(_baselineEpisodes);
         _hasChanges = false;
@@ -154,9 +155,9 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(ContentErrorMapper.reorderConflictReconciledMessage),
-          duration: Duration(seconds: 6),
+        SnackBar(
+          content: Text(context.l10n.reorderConflictReloaded),
+          duration: const Duration(seconds: 6),
         ),
       );
     } catch (_) {
@@ -166,8 +167,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
 
       setState(() {
         _isSaving = false;
-        _errorMessage =
-            'Güncel sıralama yüklenemedi. Lütfen sayfayı kapatıp tekrar deneyin.';
+        _errorMessage = context.l10n.reorderLoadFailed;
         _ordered = sortEpisodesByNumber(_baselineEpisodes);
         _hasChanges = false;
       });
@@ -184,18 +184,16 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF181818),
-          title: const Text('Kaydedilmemiş sıralama'),
-          content: const Text(
-            'Sıralama değişiklikleri kaydedilmedi. Çıkmak istiyor musunuz?',
-          ),
+          title: Text(context.l10n.unsavedReorder),
+          content: Text(context.l10n.unsavedReorderMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Kal'),
+              child: Text(context.l10n.stay),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Çık'),
+              child: Text(context.l10n.leave),
             ),
           ],
         );
@@ -223,7 +221,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
         backgroundColor: const Color(0xFF090909),
         appBar: AppBar(
           backgroundColor: const Color(0xFF111111),
-          title: const Text('Bölüm Sıralaması'),
+          title: Text(context.l10n.episodeOrder),
         ),
         body: Column(
           children: [
@@ -259,7 +257,12 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
                       title: Text(
                         '#${episode.episodeNumber} · ${episode.title}',
                       ),
-                      subtitle: Text(episode.publishLabel),
+                      subtitle: Text(
+                        adminPublishDisplayLabel(
+                          context.l10n,
+                          episode.publishLabel,
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -277,7 +280,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
                               Navigator.of(context).pop();
                             }
                           },
-                    child: const Text('Vazgeç'),
+                    child: Text(context.l10n.dismiss),
                   ),
                   const SizedBox(width: 12),
                   FilledButton(
@@ -294,7 +297,7 @@ class _EpisodeReorderPageState extends State<EpisodeReorderPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Sıralamayı Kaydet'),
+                        : Text(context.l10n.saveOrder),
                   ),
                 ],
               ),

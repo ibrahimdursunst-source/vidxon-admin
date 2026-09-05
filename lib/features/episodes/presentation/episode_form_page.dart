@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content_rating/presentation/content_rating_editor.dart';
@@ -158,7 +159,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
     final coinPrice = _parseCoinPrice();
     if (coinPrice == null) {
       setState(() {
-        _errorMessage = 'Geçerli bir coin fiyatı girin.';
+        _errorMessage = context.l10n.validCoinPrice;
         _isSubmitting = false;
       });
       return;
@@ -187,7 +188,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
         final episodeNumber = _parseEpisodeNumber();
         if (episodeNumber == null) {
           setState(() {
-            _errorMessage = 'Geçerli bir bölüm numarası girin.';
+            _errorMessage = context.l10n.validEpisodeNumber;
             _isSubmitting = false;
           });
           return;
@@ -216,8 +217,8 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
       showContentSuccessSnackBar(
         context,
         widget.isEditing
-            ? 'Bölüm başarıyla güncellendi.'
-            : 'Bölüm başarıyla oluşturuldu.',
+            ? context.l10n.episodeUpdated
+            : context.l10n.episodeCreated,
       );
 
       Navigator.of(context).pop(result);
@@ -261,7 +262,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
       }
 
       setState(() {
-        _errorMessage = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.unexpectedRetry;
         _isSubmitting = false;
       });
     }
@@ -270,12 +271,13 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
   @override
   Widget build(BuildContext context) {
     final episode = _episode;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111111),
-        title: Text(widget.isEditing ? 'Bölümü Düzenle' : 'Yeni Bölüm'),
+        title: Text(widget.isEditing ? l10n.editEpisode : l10n.newEpisode),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -297,15 +299,15 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      labelText: 'Bölüm Numarası *',
+                      labelText: l10n.episodeNumberStar,
                       helperText: widget.isEditing
-                          ? 'Bölüm numarası sıralama ekranından değiştirilir.'
+                          ? l10n.episodeNumberReorderHint
                           : null,
                     ),
                     validator: (value) {
                       final number = int.tryParse(value?.trim() ?? '');
                       if (number == null || number <= 0) {
-                        return 'Bölüm numarası 0\'dan büyük olmalıdır.';
+                        return l10n.episodeNumberMustBePositive;
                       }
                       return null;
                     },
@@ -315,10 +317,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     controller: _titleController,
                     enabled: !_isSubmitting,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Başlık *'),
+                    decoration: InputDecoration(
+                      labelText: l10n.titleRequiredStar,
+                    ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Başlık zorunludur.';
+                        return l10n.titleRequired;
                       }
                       return null;
                     },
@@ -329,21 +333,19 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     enabled: !_isSubmitting,
                     minLines: 3,
                     maxLines: 6,
-                    decoration: const InputDecoration(
-                      labelText: 'Açıklama',
+                    decoration: InputDecoration(
+                      labelText: l10n.description,
                       alignLabelWithHint: true,
                     ),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Bu bölüm için farklı derecelendirme kullan',
-                    ),
+                    title: Text(l10n.useDifferentRatingForEpisode),
                     subtitle: Text(
                       _useContentRatingOverride
-                          ? 'Bölüme özel derecelendirme'
-                          : 'Dizi derecelendirmesini kullan',
+                          ? l10n.episodeSpecificRating
+                          : l10n.useSeriesRating,
                     ),
                     value: _useContentRatingOverride,
                     onChanged: _isSubmitting
@@ -374,13 +376,13 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     const SizedBox(height: 8),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Tanımlayıcıları diziden miras al'),
+                      title: Text(l10n.inheritDescriptorsFromSeries),
                       subtitle: Text(
                         _contentDescriptors == null
-                            ? 'Dizi tanımlayıcıları kullanılır'
+                            ? l10n.seriesDescriptorsUsed
                             : _contentDescriptors!.isEmpty
-                            ? 'Bu bölümde tanımlayıcı yok (açık boş liste)'
-                            : 'Bölüme özel tanımlayıcı listesi',
+                            ? l10n.episodeNoDescriptors
+                            : l10n.episodeSpecificDescriptors,
                       ),
                       value: _contentDescriptors == null,
                       onChanged: _isSubmitting
@@ -388,7 +390,9 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                           : (inherit) {
                               setState(() {
                                 // Explicit off → start as [] (not inferred from empty).
-                                _contentDescriptors = inherit ? null : <String>[];
+                                _contentDescriptors = inherit
+                                    ? null
+                                    : <String>[];
                               });
                             },
                     ),
@@ -410,7 +414,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                   const SizedBox(height: 16),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Ücretsiz Bölüm'),
+                    title: Text(l10n.freeEpisode),
                     value: _isFree,
                     onChanged: _isSubmitting ? null : _onIsFreeChanged,
                   ),
@@ -421,21 +425,21 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      labelText: 'Coin Fiyatı',
-                      helperText: 'En fazla $episodeMaxCoinPrice jeton',
+                      labelText: l10n.coinPrice,
+                      helperText: l10n.coinPriceHelper(episodeMaxCoinPrice),
                     ),
                     validator: (value) {
                       final price = int.tryParse(value?.trim() ?? '');
                       if (price == null || price < 0) {
-                        return 'Coin fiyatı negatif olamaz.';
+                        return l10n.coinPriceNotNegative;
                       }
 
                       if (price > episodeMaxCoinPrice) {
-                        return 'Coin fiyatı en fazla $episodeMaxCoinPrice olabilir.';
+                        return l10n.coinPriceMax(episodeMaxCoinPrice);
                       }
 
                       if (_isFree && price != 0) {
-                        return 'Ücretsiz bölümlerde coin fiyatı 0 olmalıdır.';
+                        return l10n.freeEpisodeCoinMustBeZero;
                       }
 
                       return null;
@@ -446,12 +450,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     children: [
                       Expanded(
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Yayın Tarihi',
+                          decoration: InputDecoration(
+                            labelText: l10n.releaseDate,
                           ),
                           child: Text(
                             _releaseAtLocal == null
-                                ? 'Seçilmedi'
+                                ? l10n.notSelected
                                 : formatEpisodeDateTime(
                                     _releaseAtLocal!.toUtc(),
                                   ),
@@ -466,12 +470,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                       const SizedBox(width: 12),
                       OutlinedButton(
                         onPressed: _isSubmitting ? null : _pickReleaseDateTime,
-                        child: const Text('Yayın Tarihi'),
+                        child: Text(l10n.releaseDate),
                       ),
                       if (_releaseAtLocal != null) ...[
                         const SizedBox(width: 8),
                         IconButton(
-                          tooltip: 'Tarihi Temizle',
+                          tooltip: l10n.clearDate,
                           onPressed: _isSubmitting
                               ? null
                               : () {
@@ -487,29 +491,38 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                   if (widget.isEditing && episode != null) ...[
                     const SizedBox(height: 24),
                     _ReadOnlyInfo(
-                      label: 'Yayın Durumu',
-                      value: episode.publishLabel,
+                      label: l10n.publishStatus,
+                      value: adminPublishDisplayLabel(
+                        l10n,
+                        episode.publishLabel,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _ReadOnlyInfo(
-                      label: 'Video',
-                      value: episode.videoStatusLabel,
+                      label: l10n.video,
+                      value: adminVideoStatusLabel(
+                        l10n,
+                        episode.videoStatusLabel,
+                      ),
                     ),
                     if (episode.hasPendingReplacement) ...[
                       const SizedBox(height: 8),
                       _ReadOnlyInfo(
-                        label: 'Bekleyen Video',
-                        value: episode.pendingVideoStatusLabel,
+                        label: l10n.pendingVideo,
+                        value: adminVideoStatusLabel(
+                          l10n,
+                          episode.pendingVideoStatusLabel,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 8),
                     _ReadOnlyInfo(
-                      label: 'Nitelikli İzlenme',
+                      label: l10n.qualifiedViews,
                       value: episode.qualifiedViewsTotal.toString(),
                     ),
                     const SizedBox(height: 8),
                     _ReadOnlyInfo(
-                      label: 'Eski Sayaç (seed)',
+                      label: l10n.legacyCounterSeed,
                       value: episode.totalViews.toString(),
                     ),
                   ],
@@ -520,7 +533,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text('Vazgeç'),
+                        child: Text(l10n.dismiss),
                       ),
                       const SizedBox(width: 12),
                       FilledButton(
@@ -537,7 +550,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : Text(widget.isEditing ? 'Güncelle' : 'Kaydet'),
+                            : Text(widget.isEditing ? l10n.update : l10n.save),
                       ),
                     ],
                   ),

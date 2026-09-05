@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../users/domain/user_parse_helpers.dart';
 import '../data/partner_errors.dart';
@@ -92,7 +93,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
         return;
       }
       setState(() {
-        _errorMessage = 'Partner detayı yüklenemedi.';
+        _errorMessage = context.l10n.partnerDetailLoadFailed;
         _isLoading = false;
       });
     }
@@ -114,7 +115,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
       return;
     }
 
-    showContentSuccessSnackBar(context, 'Partner güncellendi.');
+    showContentSuccessSnackBar(context, context.l10n.partnerUpdated);
     await _load();
   }
 
@@ -131,7 +132,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
     );
 
     if (added == true && mounted) {
-      showContentSuccessSnackBar(context, 'Üye eklendi.');
+      showContentSuccessSnackBar(context, context.l10n.memberAdded);
       await _load();
     }
   }
@@ -142,11 +143,15 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
   ) async {
     final confirmed = await confirmContentAction(
       context,
-      title: 'Üye durumunu değiştir',
-      message:
-          '${formatUserDisplayName(displayName: member.displayName, email: member.email)} '
-          'durumu “${status.label}” olarak ayarlansın mı?',
-      confirmLabel: 'Onayla',
+      title: context.l10n.changeMemberStatus,
+      message: context.l10n.memberStatusConfirm(
+        formatUserDisplayName(
+          displayName: member.displayName,
+          email: member.email,
+        ),
+        adminPartnerStatusLabel(context.l10n, status.value),
+      ),
+      confirmLabel: context.l10n.confirm,
     );
     if (!confirmed || !mounted) {
       return;
@@ -161,7 +166,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
       if (!mounted) {
         return;
       }
-      showContentSuccessSnackBar(context, 'Üye durumu güncellendi.');
+      showContentSuccessSnackBar(context, context.l10n.memberStatusUpdated);
       await _load();
     } on PartnerException catch (error) {
       if (!mounted) {
@@ -175,7 +180,9 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
   Widget build(BuildContext context) {
     final detail = _detail;
     final title =
-        detail?.displayName ?? widget.initialSummary?.displayName ?? 'Partner';
+        detail?.displayName ??
+        widget.initialSummary?.displayName ??
+        context.l10n.partner;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
@@ -184,13 +191,13 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
         title: Text(title),
         actions: [
           IconButton(
-            tooltip: 'Yenile',
+            tooltip: context.l10n.refresh,
             onPressed: _isLoading ? null : _load,
             icon: const Icon(Icons.refresh),
           ),
           if (detail != null)
             IconButton(
-              tooltip: 'Düzenle',
+              tooltip: context.l10n.edit,
               onPressed: _editPartner,
               icon: const Icon(Icons.edit_outlined),
             ),
@@ -213,7 +220,7 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
                     style: FilledButton.styleFrom(
                       backgroundColor: _primaryColor,
                     ),
-                    child: const Text('Tekrar Dene'),
+                    child: Text(context.l10n.retry),
                   ),
                 ],
               ),
@@ -257,9 +264,9 @@ class _PartnerDetailPageState extends State<PartnerDetailPage> {
                             repository: _repository,
                           ),
                       ] else
-                        const Text(
-                          'Analitik için önce bir dizi ataması gerekir.',
-                          style: TextStyle(color: Color(0xFFB3B3B3)),
+                        Text(
+                          context.l10n.analyticsNeedsAssignment,
+                          style: const TextStyle(color: Color(0xFFB3B3B3)),
                         ),
                     ],
                   ),
@@ -304,9 +311,16 @@ class _HeaderCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _Badge(label: detail.status.label),
                 _Badge(
-                  label: 'Oluşturulma ${formatUserDateTime(detail.createdAt)}',
+                  label: adminPartnerStatusLabel(
+                    context.l10n,
+                    detail.status.value,
+                  ),
+                ),
+                _Badge(
+                  label: context.l10n.createdAtPrefixed(
+                    formatUserDateTime(detail.createdAt),
+                  ),
                 ),
               ],
             ),
@@ -362,10 +376,13 @@ class _MembersSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Üyeler',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    context.l10n.members,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 FilledButton.icon(
@@ -374,15 +391,15 @@ class _MembersSection extends StatelessWidget {
                     backgroundColor: const Color(0xFFE50914),
                   ),
                   icon: const Icon(Icons.person_add_alt_1, size: 18),
-                  label: const Text('Üye Ekle'),
+                  label: Text(context.l10n.addMember),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             if (members.isEmpty)
-              const Text(
-                'Henüz üye yok.',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.noMembersYet,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               )
             else
               for (final member in members) ...[
@@ -425,7 +442,7 @@ class _MemberRow extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  formatUserEmailLabel(member.email),
+                  adminEmailLabel(context.l10n, member.email),
                   style: const TextStyle(
                     color: Color(0xFF777777),
                     fontSize: 12,
@@ -435,17 +452,22 @@ class _MemberRow extends StatelessWidget {
             ),
           ),
           Text(
-            member.status.label,
+            adminPartnerStatusLabel(context.l10n, member.status.value),
             style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 12),
           ),
           const SizedBox(width: 8),
           PopupMenuButton<PartnerMemberStatus>(
-            tooltip: 'Durum',
+            tooltip: context.l10n.status,
             onSelected: (status) => onSetStatus(member, status),
             itemBuilder: (context) => [
               for (final status in PartnerMemberStatus.values)
                 if (status != member.status)
-                  PopupMenuItem(value: status, child: Text(status.label)),
+                  PopupMenuItem(
+                    value: status,
+                    child: Text(
+                      adminPartnerStatusLabel(context.l10n, status.value),
+                    ),
+                  ),
             ],
           ),
         ],
@@ -474,7 +496,7 @@ class _AnalyticsSeriesPicker extends StatelessWidget {
     }
 
     return InputDecorator(
-      decoration: const InputDecoration(labelText: 'Analitik Dizisi'),
+      decoration: InputDecoration(labelText: context.l10n.analyticsSeries),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedSeriesId,
@@ -516,7 +538,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
   Future<void> _lookupUser() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _errorMessage = 'E-posta zorunludur.');
+      setState(() => _errorMessage = context.l10n.emailRequiredShort);
       return;
     }
 
@@ -548,7 +570,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
         return;
       }
       setState(() {
-        _errorMessage = 'Kullanıcı aranamadı.';
+        _errorMessage = context.l10n.userSearchFailed;
         _isLookingUp = false;
       });
     }
@@ -587,7 +609,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
         return;
       }
       setState(() {
-        _errorMessage = 'Üye eklenemedi.';
+        _errorMessage = context.l10n.memberAddFailed;
         _isAdding = false;
       });
     }
@@ -597,16 +619,16 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF181818),
-      title: const Text('Üye Ekle'),
+      title: Text(context.l10n.addMember),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Mevcut bir Vidxon hesabını tam e-posta ile bulun.',
-              style: TextStyle(color: Color(0xFFB3B3B3), fontSize: 13),
+            Text(
+              context.l10n.findExistingAccount,
+              style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 13),
             ),
             const SizedBox(height: 12),
             if (_errorMessage != null) ...[
@@ -619,7 +641,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
             TextField(
               controller: _emailController,
               enabled: !_isLookingUp && !_isAdding,
-              decoration: const InputDecoration(labelText: 'E-posta'),
+              decoration: InputDecoration(labelText: context.l10n.email),
               keyboardType: TextInputType.emailAddress,
               onSubmitted: (_) => _lookupUser(),
             ),
@@ -632,7 +654,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Kullanıcıyı Bul'),
+                  : Text(context.l10n.findUser),
             ),
             if (_lookup != null) ...[
               const SizedBox(height: 16),
@@ -670,7 +692,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
       actions: [
         TextButton(
           onPressed: _isAdding ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Vazgeç'),
+          child: Text(context.l10n.dismiss),
         ),
         FilledButton(
           onPressed: _lookup == null || _isAdding ? null : _add,
@@ -683,7 +705,7 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Üye Olarak Ekle'),
+              : Text(context.l10n.addAsMember),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/config/media_config.dart';
+import '../../../l10n/admin_l10n.dart';
 import '../../content/presentation/content_mutation_guard.dart';
 import '../../content_rating/presentation/synopsis_preview.dart';
 import '../../episodes/presentation/series_episodes_page.dart';
@@ -152,17 +153,16 @@ class SeriesListPageState extends State<SeriesListPage> {
               ),
               const SizedBox(height: 24),
               if (allSeries.isEmpty)
-                const _EmptyState(
+                _EmptyState(
                   icon: Icons.movie_outlined,
-                  title: 'Henüz dizi yok',
-                  message: 'Katalogda listelenecek dizi bulunmuyor.',
+                  title: context.l10n.noSeriesYet,
+                  message: context.l10n.noSeriesInCatalog,
                 )
               else if (filteredSeries.isEmpty)
-                const _EmptyState(
+                _EmptyState(
                   icon: Icons.search_off_outlined,
-                  title: 'Sonuç bulunamadı',
-                  message:
-                      'Arama veya filtre kriterlerinize uygun dizi bulunamadı.',
+                  title: context.l10n.noResults,
+                  message: context.l10n.noSeriesMatchFilters,
                 )
               else
                 LayoutBuilder(
@@ -207,15 +207,15 @@ class _PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Diziler',
+                context.l10n.navSeries,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Vidxon içerik kataloğundaki dizileri yönetin',
-                style: TextStyle(color: Color(0xFFB3B3B3)),
+              Text(
+                context.l10n.seriesCatalogSubtitle,
+                style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
             ],
           ),
@@ -231,7 +231,7 @@ class _PageHeader extends StatelessWidget {
                     ? onCreateTap
                     : null,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Yeni Dizi'),
+                label: Text(context.l10n.newSeries),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFE50914),
                   foregroundColor: Colors.white,
@@ -240,7 +240,7 @@ class _PageHeader extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Yenile'),
+              label: Text(context.l10n.refresh),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: Color(0xFF333333)),
@@ -280,12 +280,12 @@ class _FilterBar extends StatelessWidget {
           child: TextField(
             controller: searchController,
             decoration: InputDecoration(
-              hintText: 'Dizi adı veya slug ara...',
+              hintText: context.l10n.searchSeriesNameOrSlug,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: searchController.text.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Temizle',
+                      tooltip: context.l10n.clear,
                       onPressed: searchController.clear,
                       icon: const Icon(Icons.close),
                     ),
@@ -293,14 +293,23 @@ class _FilterBar extends StatelessWidget {
           ),
         ),
         SegmentedButton<_PublishFilter>(
-          segments: const [
-            ButtonSegment(value: _PublishFilter.all, label: Text('Tümü')),
+          segments: [
+            ButtonSegment(
+              value: _PublishFilter.all,
+              label: Text(context.l10n.all),
+            ),
             ButtonSegment(
               value: _PublishFilter.published,
-              label: Text('Yayında'),
+              label: Text(context.l10n.published),
             ),
-            ButtonSegment(value: _PublishFilter.draft, label: Text('Taslak')),
-            ButtonSegment(value: _PublishFilter.archived, label: Text('Arşiv')),
+            ButtonSegment(
+              value: _PublishFilter.draft,
+              label: Text(context.l10n.draft),
+            ),
+            ButtonSegment(
+              value: _PublishFilter.archived,
+              label: Text(context.l10n.archive),
+            ),
           ],
           selected: {publishFilter},
           onSelectionChanged: (selection) {
@@ -310,22 +319,22 @@ class _FilterBar extends StatelessWidget {
         DropdownButton<_StatusFilter>(
           value: statusFilter,
           dropdownColor: const Color(0xFF181818),
-          items: const [
+          items: [
             DropdownMenuItem(
               value: _StatusFilter.all,
-              child: Text('Tüm Durumlar'),
+              child: Text(context.l10n.allStatuses),
             ),
             DropdownMenuItem(
               value: _StatusFilter.ongoing,
-              child: Text('Devam Ediyor'),
+              child: Text(adminSeriesStatusLabel(context.l10n, 'ongoing')),
             ),
             DropdownMenuItem(
               value: _StatusFilter.completed,
-              child: Text('Tamamlandı'),
+              child: Text(context.l10n.statusCompleted),
             ),
             DropdownMenuItem(
               value: _StatusFilter.comingSoon,
-              child: Text('Yakında'),
+              child: Text(context.l10n.statusComingSoon),
             ),
           ],
           onChanged: (value) {
@@ -366,15 +375,15 @@ class _SeriesDataTable extends StatelessWidget {
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
             dataRowMinHeight: 72,
             dataRowMaxHeight: 120,
-            columns: const [
-              DataColumn(label: Text('Poster')),
-              DataColumn(label: Text('Dizi Adı')),
-              DataColumn(label: Text('Durum')),
-              DataColumn(label: Text('Kategori')),
-              DataColumn(label: Text('Bölüm')),
-              DataColumn(label: Text('Yayın')),
-              DataColumn(label: Text('Son Güncelleme')),
-              DataColumn(label: Text('İşlemler')),
+            columns: [
+              DataColumn(label: Text(context.l10n.poster)),
+              DataColumn(label: Text(context.l10n.seriesName)),
+              DataColumn(label: Text(context.l10n.status)),
+              DataColumn(label: Text(context.l10n.category)),
+              DataColumn(label: Text(context.l10n.destinationEpisode)),
+              DataColumn(label: Text(context.l10n.publish)),
+              DataColumn(label: Text(context.l10n.lastUpdate)),
+              DataColumn(label: Text(context.l10n.actions)),
             ],
             rows: [for (final item in series) _buildRow(context, item)],
           ),
@@ -411,7 +420,7 @@ class _SeriesDataTable extends StatelessWidget {
             ),
           ),
         ),
-        DataCell(Text(item.statusLabel)),
+        DataCell(Text(adminSeriesStatusLabel(context.l10n, item.statusLabel))),
         DataCell(Text(_formatCategories(item.categories))),
         DataCell(Text(item.episodeCount.toString())),
         DataCell(
@@ -426,7 +435,7 @@ class _SeriesDataTable extends StatelessWidget {
         DataCell(Text(_formatDateTime(item.updatedAt))),
         DataCell(
           PopupMenuButton<_SeriesRowAction>(
-            tooltip: 'İşlemler',
+            tooltip: context.l10n.actions,
             onSelected: (action) {
               switch (action) {
                 case _SeriesRowAction.detail:
@@ -435,14 +444,14 @@ class _SeriesDataTable extends StatelessWidget {
                   onEpisodesTap(item);
               }
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: _SeriesRowAction.detail,
-                child: Text('Düzenle / Detay'),
+                child: Text(context.l10n.editOrDetail),
               ),
               PopupMenuItem(
                 value: _SeriesRowAction.episodes,
-                child: Text('Bölümler'),
+                child: Text(context.l10n.navEpisodes),
               ),
             ],
             child: const Icon(Icons.more_vert),
@@ -523,7 +532,7 @@ class _SeriesCard extends StatelessWidget {
                   SynopsisPreview(synopsis: item.synopsis),
                   const SizedBox(height: 6),
                   Text(
-                    '${item.statusLabel} · ${_formatCategories(item.categories)}',
+                    '${adminSeriesStatusLabel(context.l10n, item.statusLabel)} · ${_formatCategories(item.categories)}',
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   const SizedBox(height: 10),
@@ -537,12 +546,12 @@ class _SeriesCard extends StatelessWidget {
                           Icons.playlist_play_outlined,
                           size: 18,
                         ),
-                        label: const Text('Bölümler'),
+                        label: Text(context.l10n.navEpisodes),
                       ),
                       OutlinedButton.icon(
                         onPressed: onDetailTap,
                         icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Detay'),
+                        label: Text(context.l10n.detail),
                       ),
                     ],
                   ),
@@ -555,11 +564,13 @@ class _SeriesCard extends StatelessWidget {
                       _PublishStatusBadge(isPublished: item.isPublished),
                       if (item.isArchived) const _ArchiveBadge(),
                       Text(
-                        '${item.episodeCount} bölüm',
+                        context.l10n.episodeCountLabel(item.episodeCount),
                         style: const TextStyle(color: Color(0xFFB3B3B3)),
                       ),
                       Text(
-                        'Güncelleme: ${_formatDateTime(item.updatedAt)}',
+                        context.l10n.updatedAtLabel(
+                          _formatDateTime(item.updatedAt),
+                        ),
                         style: const TextStyle(
                           color: Color(0xFF777777),
                           fontSize: 12,
@@ -646,7 +657,7 @@ class _PublishStatusBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Text(
-        isPublished ? 'Yayında' : 'Taslak',
+        isPublished ? context.l10n.published : context.l10n.draft,
         style: TextStyle(
           color: color,
           fontSize: 12,
@@ -671,9 +682,9 @@ class _ArchiveBadge extends StatelessWidget {
           color: const Color(0xFFE5A000).withValues(alpha: 0.45),
         ),
       ),
-      child: const Text(
-        'Arşiv',
-        style: TextStyle(
+      child: Text(
+        context.l10n.archive,
+        style: const TextStyle(
           color: Color(0xFFE5A000),
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -743,7 +754,7 @@ class _ErrorState extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Diziler yüklenemedi',
+                context.l10n.seriesLoadFailedTitle,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
@@ -758,7 +769,7 @@ class _ErrorState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFE50914),
                 ),
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),

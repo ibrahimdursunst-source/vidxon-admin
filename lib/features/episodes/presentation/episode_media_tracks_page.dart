@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../content/presentation/content_mutation_guard.dart';
 import '../data/episode_media_tracks_errors.dart';
 import '../data/episode_media_tracks_repository.dart';
@@ -86,7 +87,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       }
       setState(() {
         _loading = false;
-        _errorMessage = 'Medya parçaları yüklenemedi. Lütfen tekrar deneyin.';
+        _errorMessage = context.l10n.mediaTracksLoadFailed;
       });
     }
   }
@@ -102,7 +103,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
     final locale = _originalLocaleController.text.trim();
     if (!MediaLocale.isValid(locale)) {
       setState(() {
-        _errorMessage = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.';
+        _errorMessage = context.l10n.invalidLocaleExample;
       });
       return;
     }
@@ -126,7 +127,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
         _busy = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Orijinal ses dili güncellendi.')),
+        SnackBar(content: Text(context.l10n.originalAudioUpdated)),
       );
       await _load();
     } on EpisodeMediaTracksException catch (error) {
@@ -143,7 +144,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       }
       setState(() {
         _busy = false;
-        _errorMessage = 'Orijinal ses dili kaydedilemedi.';
+        _errorMessage = context.l10n.originalAudioSaveFailed;
       });
     }
   }
@@ -172,8 +173,8 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
         SnackBar(
           content: Text(
             existing == null
-                ? 'Ses parçası yükleme isteği alındı.'
-                : 'Ses parçası değiştirme isteği alındı.',
+                ? context.l10n.audioUploadAccepted
+                : context.l10n.audioReplaceAccepted,
           ),
         ),
       );
@@ -204,7 +205,9 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            existing == null ? 'Altyazı yüklendi.' : 'Altyazı değiştirildi.',
+            existing == null
+                ? context.l10n.subtitleUploaded
+                : context.l10n.subtitleReplaced,
           ),
         ),
       );
@@ -222,17 +225,17 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF181818),
-          title: const Text('Ses parçasını kaldır'),
-          content: Text('${track.locale} dilindeki dublaj kaldırılsın mı?'),
+          title: Text(context.l10n.removeAudioTrack),
+          content: Text(context.l10n.removeAudioTrackConfirm(track.locale)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Vazgeç'),
+              child: Text(context.l10n.dismiss),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Kaldır'),
+              child: Text(context.l10n.remove),
             ),
           ],
         );
@@ -256,7 +259,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       setState(() => _busy = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Ses parçası kaldırıldı.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.audioTrackRemoved)));
       await _load();
     } on EpisodeMediaTracksException catch (error) {
       if (!mounted) {
@@ -272,7 +275,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       }
       setState(() {
         _busy = false;
-        _errorMessage = 'Ses parçası kaldırılamadı.';
+        _errorMessage = context.l10n.audioTrackRemoveFailed;
       });
     }
   }
@@ -287,17 +290,17 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF181818),
-          title: const Text('Altyazıyı kaldır'),
-          content: Text('${track.locale} dilindeki altyazı kaldırılsın mı?'),
+          title: Text(context.l10n.removeSubtitle),
+          content: Text(context.l10n.removeSubtitleConfirm(track.locale)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Vazgeç'),
+              child: Text(context.l10n.dismiss),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Kaldır'),
+              child: Text(context.l10n.remove),
             ),
           ],
         );
@@ -321,7 +324,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       setState(() => _busy = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Altyazı kaldırıldı.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.subtitleRemoved)));
       await _load();
     } on EpisodeMediaTracksException catch (error) {
       if (!mounted) {
@@ -337,7 +340,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       }
       setState(() {
         _busy = false;
-        _errorMessage = 'Altyazı kaldırılamadı.';
+        _errorMessage = context.l10n.subtitleRemoveFailed;
       });
     }
   }
@@ -373,7 +376,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       }
       setState(() {
         _busy = false;
-        _errorMessage = 'Durum güncellenemedi.';
+        _errorMessage = context.l10n.statusUpdateFailed;
       });
     }
   }
@@ -387,12 +390,12 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
       backgroundColor: const Color(0xFF090909),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111111),
-        title: const Text('Ses / Altyazı'),
+        title: Text(context.l10n.audioSubtitles),
         actions: [
           IconButton(
             onPressed: _loading || _busy ? null : _load,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Yenile',
+            tooltip: context.l10n.refresh,
           ),
         ],
       ),
@@ -421,14 +424,15 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
                         ],
                         const SizedBox(height: 24),
                         _SectionCard(
-                          title: 'Orijinal ses dili',
+                          title: context.l10n.originalAudioLanguage,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text(
-                                'Videonun gömülü program sesinin dili. '
-                                'Dublaj dilleri bu değerden farklı olmalıdır.',
-                                style: TextStyle(color: Color(0xFFB3B3B3)),
+                              Text(
+                                context.l10n.originalAudioHelp,
+                                style: const TextStyle(
+                                  color: Color(0xFFB3B3B3),
+                                ),
                               ),
                               const SizedBox(height: 12),
                               _LocaleField(
@@ -445,7 +449,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
                                   style: FilledButton.styleFrom(
                                     backgroundColor: _primaryColor,
                                   ),
-                                  child: const Text('Kaydet'),
+                                  child: Text(context.l10n.save),
                                 ),
                               ),
                             ],
@@ -453,26 +457,31 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
                         ),
                         const SizedBox(height: 24),
                         _SectionCard(
-                          title: 'Dublajlar',
+                          title: context.l10n.dubs,
                           trailing: TextButton.icon(
                             onPressed: mutationsEnabled
                                 ? () => _openAudioUploadDialog()
                                 : null,
                             icon: const Icon(Icons.add),
-                            label: const Text('Ekle'),
+                            label: Text(context.l10n.add),
                           ),
                           child:
                               snapshot == null || snapshot.audioTracks.isEmpty
-                              ? const Text(
-                                  'Henüz dublaj yok.',
-                                  style: TextStyle(color: Color(0xFFB3B3B3)),
+                              ? Text(
+                                  context.l10n.noDubsYet,
+                                  style: const TextStyle(
+                                    color: Color(0xFFB3B3B3),
+                                  ),
                                 )
                               : Column(
                                   children: [
                                     for (final track in snapshot.audioTracks)
                                       _TrackTile(
                                         locale: track.locale,
-                                        statusLabel: track.statusLabel,
+                                        statusLabel: adminVideoStatusLabel(
+                                          context.l10n,
+                                          track.statusLabel,
+                                        ),
                                         warningLevel:
                                             track.durationWarningLevel,
                                         enabled: mutationsEnabled,
@@ -491,27 +500,32 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
                         ),
                         const SizedBox(height: 24),
                         _SectionCard(
-                          title: 'Altyazılar',
+                          title: context.l10n.subtitles,
                           trailing: TextButton.icon(
                             onPressed: mutationsEnabled
                                 ? () => _openSubtitleUploadDialog()
                                 : null,
                             icon: const Icon(Icons.add),
-                            label: const Text('Ekle'),
+                            label: Text(context.l10n.add),
                           ),
                           child:
                               snapshot == null ||
                                   snapshot.subtitleTracks.isEmpty
-                              ? const Text(
-                                  'Henüz altyazı yok.',
-                                  style: TextStyle(color: Color(0xFFB3B3B3)),
+                              ? Text(
+                                  context.l10n.noSubtitlesYet,
+                                  style: const TextStyle(
+                                    color: Color(0xFFB3B3B3),
+                                  ),
                                 )
                               : Column(
                                   children: [
                                     for (final track in snapshot.subtitleTracks)
                                       _TrackTile(
                                         locale: track.locale,
-                                        statusLabel: track.statusLabel,
+                                        statusLabel: adminVideoStatusLabel(
+                                          context.l10n,
+                                          track.statusLabel,
+                                        ),
                                         enabled: mutationsEnabled,
                                         onReplace: () =>
                                             _openSubtitleUploadDialog(
@@ -566,13 +580,13 @@ class _InfoCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Bölüm $episodeNumber · $episodeTitle',
+              context.l10n.episodePickerLabel(episodeNumber, episodeTitle),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             if (durationSeconds != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Bölüm süresi: ${durationSeconds}s',
+                context.l10n.episodeDurationSeconds(durationSeconds!),
                 style: const TextStyle(color: Color(0xFFB3B3B3)),
               ),
             ],
@@ -661,10 +675,10 @@ class _LocaleField extends StatelessWidget {
         TextField(
           controller: controller,
           enabled: enabled,
-          decoration: const InputDecoration(
-            labelText: 'Dil kodu',
+          decoration: InputDecoration(
+            labelText: context.l10n.localeCode,
             hintText: 'tr, en, pt_BR, zh_Hans…',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
@@ -714,7 +728,9 @@ class _TrackTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final warningMessage = warningLevel == null
         ? null
-        : durationWarningBannerMessage(warningLevel!);
+        : durationWarningBannerMessage(warningLevel!) == null
+        ? null
+        : context.l10n.durationMismatch;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -760,15 +776,15 @@ class _TrackTile extends StatelessWidget {
                   if (onRefreshStatus != null)
                     TextButton(
                       onPressed: enabled ? onRefreshStatus : null,
-                      child: const Text('Durumu Güncelle'),
+                      child: Text(context.l10n.updateStatus),
                     ),
                   TextButton(
                     onPressed: enabled ? onReplace : null,
-                    child: const Text('Değiştir'),
+                    child: Text(context.l10n.replace),
                   ),
                   TextButton(
                     onPressed: enabled ? onRemove : null,
-                    child: const Text('Kaldır'),
+                    child: Text(context.l10n.remove),
                   ),
                 ],
               ),
@@ -882,14 +898,12 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
 
     final locale = _localeController.text.trim();
     if (!MediaLocale.isValid(locale)) {
-      setState(
-        () => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.',
-      );
+      setState(() => _error = context.l10n.invalidLocaleExample);
       return;
     }
 
     if (locale == widget.originalLocale) {
-      setState(() => _error = 'Dublaj dili orijinal ses diliyle aynı olamaz.');
+      setState(() => _error = context.l10n.dubCannotMatchOriginal);
       return;
     }
 
@@ -897,10 +911,7 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
     if (warning != null &&
         warning.level.requiresExplicitOverride &&
         !_severeConfirmed) {
-      setState(
-        () => _error =
-            'Ciddi süre farkı için onay kutusu işaretlenmeden yükleme yapılamaz.',
-      );
+      setState(() => _error = context.l10n.severeDurationNeedsConfirm);
       return;
     }
 
@@ -948,7 +959,7 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
       }
       setState(() {
         _uploading = false;
-        _error = 'Yükleme başarısız oldu. Lütfen tekrar deneyin.';
+        _error = context.l10n.uploadFailedRetry;
       });
     }
   }
@@ -958,12 +969,16 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
     final warning = _warning;
     final warningMessage = warning == null
         ? null
-        : durationWarningBannerMessage(warning.level);
+        : durationWarningBannerMessage(warning.level) == null
+        ? null
+        : context.l10n.durationMismatch;
     final isReplace = widget.replaceLocale != null;
 
     return AlertDialog(
       backgroundColor: const Color(0xFF181818),
-      title: Text(isReplace ? 'Ses parçasını değiştir' : 'Ses parçası ekle'),
+      title: Text(
+        isReplace ? context.l10n.replaceAudioTrack : context.l10n.addAudioTrack,
+      ),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -981,10 +996,10 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
                 enabled: !_uploading,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Ses süresi (saniye)',
-                  border: OutlineInputBorder(),
-                  helperText: 'Bölüm süresiyle karşılaştırmak için girin',
+                decoration: InputDecoration(
+                  labelText: context.l10n.audioDurationSeconds,
+                  border: const OutlineInputBorder(),
+                  helperText: context.l10n.audioDurationHint,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -1009,10 +1024,9 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
                       : (value) {
                           setState(() => _severeConfirmed = value ?? false);
                         },
-                  title: const Text(
-                    'Süre farkının ciddi olduğunu ve yine de yüklemek '
-                    'istediğimi onaylıyorum.',
-                    style: TextStyle(fontSize: 13),
+                  title: Text(
+                    context.l10n.severeDurationConfirm,
+                    style: const TextStyle(fontSize: 13),
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
@@ -1021,7 +1035,7 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
               OutlinedButton.icon(
                 onPressed: _uploading ? null : _pickFile,
                 icon: const Icon(Icons.audio_file_outlined),
-                label: const Text('Ses dosyası seç (MP3 / M4A / AAC)'),
+                label: Text(context.l10n.selectAudioFile),
               ),
               if (_file != null) ...[
                 const SizedBox(height: 8),
@@ -1050,12 +1064,12 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
       actions: [
         TextButton(
           onPressed: _uploading ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Vazgeç'),
+          child: Text(context.l10n.dismiss),
         ),
         FilledButton(
           onPressed: _uploading || _file == null ? null : _upload,
           style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-          child: const Text('Yükle'),
+          child: Text(context.l10n.upload),
         ),
       ],
     );
@@ -1135,9 +1149,7 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
 
     final locale = _localeController.text.trim();
     if (!MediaLocale.isValid(locale)) {
-      setState(
-        () => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.',
-      );
+      setState(() => _error = context.l10n.invalidLocaleExample);
       return;
     }
 
@@ -1178,7 +1190,7 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
       }
       setState(() {
         _uploading = false;
-        _error = 'Yükleme başarısız oldu. Lütfen tekrar deneyin.';
+        _error = context.l10n.uploadFailedRetry;
       });
     }
   }
@@ -1189,7 +1201,9 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
 
     return AlertDialog(
       backgroundColor: const Color(0xFF181818),
-      title: Text(isReplace ? 'Altyazıyı değiştir' : 'Altyazı ekle'),
+      title: Text(
+        isReplace ? context.l10n.replaceSubtitle : context.l10n.addSubtitle,
+      ),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -1205,7 +1219,7 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
               OutlinedButton.icon(
                 onPressed: _uploading ? null : _pickFile,
                 icon: const Icon(Icons.subtitles_outlined),
-                label: const Text('WebVTT (.vtt) seç'),
+                label: Text(context.l10n.selectWebvtt),
               ),
               if (_file != null) ...[
                 const SizedBox(height: 8),
@@ -1230,12 +1244,12 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
       actions: [
         TextButton(
           onPressed: _uploading ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Vazgeç'),
+          child: Text(context.l10n.dismiss),
         ),
         FilledButton(
           onPressed: _uploading || _file == null ? null : _upload,
           style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-          child: const Text('Yükle'),
+          child: Text(context.l10n.upload),
         ),
       ],
     );

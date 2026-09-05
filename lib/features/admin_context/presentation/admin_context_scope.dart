@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../users/data/admin_user_wallet_errors.dart';
 import '../data/admin_context_repository.dart';
 import '../domain/admin_current_context.dart';
@@ -99,8 +100,8 @@ class _AdminContextLoaderState extends State<AdminContextLoader> {
       }
 
       setState(
-        () => _result = const AdminContextLoadResult.error(
-          'Admin oturum bilgisi yüklenemedi.',
+        () => _result = AdminContextLoadResult.error(
+          context.l10n.adminContextLoadFailed,
         ),
       );
     }

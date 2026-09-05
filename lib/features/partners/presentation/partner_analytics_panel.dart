@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
+import '../../users/domain/user_parse_helpers.dart';
 import '../data/partner_errors.dart';
 import '../data/partner_repository.dart';
 import '../domain/partner_analytics_report.dart';
 import '../domain/partner_metric_copy.dart';
 import '../domain/partner_status.dart';
-import '../../users/domain/user_parse_helpers.dart';
 
 class PartnerAnalyticsPanel extends StatefulWidget {
   const PartnerAnalyticsPanel({
@@ -100,7 +101,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
       }
       setState(() {
         _report = null;
-        _errorMessage = 'Analitik raporu yüklenemedi.';
+        _errorMessage = context.l10n.analyticsReportLoadFailed;
         _isLoading = false;
       });
     }
@@ -139,7 +140,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
           page.metricVersion != report.metricVersion) {
         setState(() {
           _isLoadingMoreEpisodes = false;
-          _pageErrorMessage = 'Sayfa anlık görüntüsü uyuşmuyor. Yenileyin.';
+          _pageErrorMessage = context.l10n.pageSnapshotMismatch;
         });
         return;
       }
@@ -161,7 +162,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
       }
       setState(() {
         _isLoadingMoreEpisodes = false;
-        _pageErrorMessage = 'Bölüm sayfası yüklenemedi.';
+        _pageErrorMessage = context.l10n.episodePageLoadFailed;
       });
     }
   }
@@ -173,7 +174,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
       initialDate: _customStart?.toLocal() ?? now.toLocal(),
       firstDate: DateTime(2020),
       lastDate: now.toLocal().add(const Duration(days: 1)),
-      helpText: 'Başlangıç tarihi (UTC günü)',
+      helpText: context.l10n.startDateUtc,
     );
     if (!mounted || start == null) {
       return;
@@ -184,7 +185,7 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
       initialDate: _customEnd?.toLocal() ?? start,
       firstDate: start,
       lastDate: now.toLocal().add(const Duration(days: 1)),
-      helpText: 'Bitiş tarihi (hariç, UTC)',
+      helpText: context.l10n.endDateExclusiveUtc,
     );
     if (!mounted || end == null) {
       return;
@@ -212,14 +213,14 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Dizi Analitiği',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.seriesAnalytics,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Salt okunur · UTC dönem · Kazanç/ödeme yok',
-              style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+            Text(
+              context.l10n.analyticsReadonlyHint,
+              style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -228,7 +229,9 @@ class _PartnerAnalyticsPanelState extends State<PartnerAnalyticsPanel> {
               children: [
                 for (final preset in PartnerAnalyticsPreset.values)
                   ChoiceChip(
-                    label: Text(preset.label),
+                    label: Text(
+                      adminAnalyticsPresetLabel(context.l10n, preset.value),
+                    ),
                     selected: _preset == preset,
                     onSelected: _isLoading
                         ? null
@@ -294,9 +297,9 @@ class _UnavailableBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Rapor kullanılamıyor',
-            style: TextStyle(
+          Text(
+            context.l10n.reportUnavailable,
+            style: const TextStyle(
               color: Color(0xFFFFB4B4),
               fontWeight: FontWeight.w600,
             ),
@@ -304,9 +307,9 @@ class _UnavailableBanner extends StatelessWidget {
           const SizedBox(height: 8),
           Text(message, style: const TextStyle(color: Color(0xFFFFB4B4))),
           const SizedBox(height: 8),
-          const Text(
-            'Hata durumu sıfır aktivite olarak gösterilmez.',
-            style: TextStyle(color: Color(0xFFB3B3B3), fontSize: 12),
+          Text(
+            context.l10n.errorNotShownAsZero,
+            style: const TextStyle(color: Color(0xFFB3B3B3), fontSize: 12),
           ),
           const SizedBox(height: 12),
           FilledButton(
@@ -314,7 +317,7 @@ class _UnavailableBanner extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE50914),
             ),
-            child: const Text('Tekrar Dene'),
+            child: Text(context.l10n.retry),
           ),
         ],
       ),
@@ -360,11 +363,10 @@ class _ReportBody extends StatelessWidget {
             ),
             child: Text(
               integrity == PartnerDataIntegrityStatus.unavailable
-                  ? 'Veri bütünlüğü: Kullanılamıyor. Metrikler güvenilir sonuç '
-                        'olarak gösterilmiyor.'
-                  : 'Veri bütünlüğü: ${integrity.label}. Bu rapordaki sayılar '
-                        'şimdilik yetkili finansal sonuç olarak sunulmaz; Analitik '
-                        'Sağlık kontrolünü inceleyin.',
+                  ? context.l10n.integrityUnavailable
+                  : context.l10n.integrityWarning(
+                      adminIntegrityStatusLabel(context.l10n, integrity.value),
+                    ),
               style: const TextStyle(color: Color(0xFFFFE0B2)),
             ),
           ),
@@ -380,9 +382,9 @@ class _ReportBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (integrity == PartnerDataIntegrityStatus.unavailable)
-          const Text(
-            'Rapor şu an güvenilir sayısal sonuç üretmiyor.',
-            style: TextStyle(color: Color(0xFFBDBDBD)),
+          Text(
+            context.l10n.reportNotReliable,
+            style: const TextStyle(color: Color(0xFFBDBDBD)),
           )
         else
           Opacity(
@@ -392,56 +394,56 @@ class _ReportBody extends StatelessWidget {
               runSpacing: 12,
               children: [
                 _MetricCard(
-                  title: PartnerMetricCopy.qualifiedViewsTitle,
+                  title: context.l10n.qualifiedViews,
                   value: integrity == PartnerDataIntegrityStatus.warning
                       ? '—'
                       : '${report.qualifiedViews}',
-                  help: PartnerMetricCopy.qualifiedViewsHelp,
+                  help: context.l10n.qualifiedViewsHelp,
                 ),
                 _MetricCard(
-                  title: PartnerMetricCopy.uniqueViewersTitle,
+                  title: context.l10n.uniqueViewersTitle,
                   value: integrity == PartnerDataIntegrityStatus.warning
                       ? '—'
                       : '${report.uniqueViewers}',
-                  help: PartnerMetricCopy.uniqueViewersHelp,
+                  help: context.l10n.uniqueViewersHelp,
                 ),
                 _MetricCard(
-                  title: PartnerMetricCopy.watchTimeTitle,
+                  title: context.l10n.watchTimeTitle,
                   value: integrity == PartnerDataIntegrityStatus.warning
                       ? '—'
                       : PartnerMetricCopy.formatWatchSeconds(
                           report.validatedWatchSeconds,
                         ),
-                  help: PartnerMetricCopy.watchTimeHelp,
+                  help: context.l10n.watchTimeHelp,
                 ),
                 _MetricCard(
-                  title: PartnerMetricCopy.completionRateTitle,
+                  title: context.l10n.completionRateTitle,
                   value: integrity == PartnerDataIntegrityStatus.warning
                       ? '—'
                       : PartnerMetricCopy.formatCompletionRate(
                           report.completionRate,
                         ),
-                  help: PartnerMetricCopy.completionRateHelp,
+                  help: context.l10n.completionRateHelp,
                 ),
               ],
             ),
           ),
         const SizedBox(height: 20),
-        const Text(
-          'Bölüm Dağılımı',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        Text(
+          context.l10n.episodeDistribution,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         if (integrity == PartnerDataIntegrityStatus.unavailable ||
             integrity == PartnerDataIntegrityStatus.warning)
-          const Text(
-            'Bölüm dağılımı, bütünlük uyarısı nedeniyle yetkili sonuç olarak gösterilmiyor.',
-            style: TextStyle(color: Color(0xFFB3B3B3)),
+          Text(
+            context.l10n.episodeDistributionHidden,
+            style: const TextStyle(color: Color(0xFFB3B3B3)),
           )
         else if (report.episodes.isEmpty)
-          const Text(
-            'Bu dönemde bölüme ait kayıt yok.',
-            style: TextStyle(color: Color(0xFFB3B3B3)),
+          Text(
+            context.l10n.noEpisodeRecordsInPeriod,
+            style: const TextStyle(color: Color(0xFFB3B3B3)),
           )
         else ...[
           for (final episode in report.episodes) ...[
@@ -467,7 +469,7 @@ class _ReportBody extends StatelessWidget {
                     )
                   : TextButton(
                       onPressed: onLoadMoreEpisodes,
-                      child: const Text('Daha fazla bölüm yükle'),
+                      child: Text(context.l10n.loadMoreEpisodes),
                     ),
             ),
           ],
@@ -541,7 +543,12 @@ class _EpisodeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = episode.episodeNumber != null
-        ? 'Bölüm ${episode.episodeNumber}${episode.title != null ? ' · ${episode.title}' : ''}'
+        ? episode.title != null
+              ? context.l10n.episodePickerLabel(
+                  episode.episodeNumber!,
+                  episode.title!,
+                )
+              : context.l10n.episodePickerNumberOnly(episode.episodeNumber!)
         : (episode.title ?? episode.episodeId);
 
     return Container(

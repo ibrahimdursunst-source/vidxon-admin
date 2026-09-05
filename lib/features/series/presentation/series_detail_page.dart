@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/config/media_config.dart';
+import '../../../l10n/admin_l10n.dart';
 import '../../categories/data/category_repository.dart';
 import '../../categories/domain/admin_category.dart';
 import '../../content/data/content_errors.dart';
@@ -14,7 +15,6 @@ import '../../media/data/image_upload_repository.dart';
 import '../../media/domain/poster_file.dart';
 import '../../partners/data/partner_errors.dart';
 import '../../partners/data/partner_repository.dart';
-import '../../partners/domain/partner_metric_copy.dart';
 import '../../partners/domain/partner_series_assignment.dart';
 import '../../partners/presentation/partner_assignment_history_panel.dart';
 import '../../partners/presentation/partner_selector.dart';
@@ -135,7 +135,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
       setState(() {
         _series = null;
-        _errorMessage = 'Dizi yüklenemedi.';
+        _errorMessage = context.l10n.seriesLoadFailed;
         _isLoading = false;
       });
     }
@@ -193,7 +193,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         return;
       }
       setState(() {
-        _assignmentsError = 'Atama geçmişi yüklenemedi.';
+        _assignmentsError = context.l10n.assignmentHistoryLoadFailed;
         _assignmentsLoading = false;
       });
     }
@@ -213,11 +213,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final isUnassign = nextPartnerId == null;
     final confirmed = await confirmContentAction(
       context,
-      title: isUnassign ? 'Partner atamasını kaldır' : 'Partner atamasını değiştir',
+      title: isUnassign
+          ? context.l10n.removePartnerAssignment
+          : context.l10n.changePartnerAssignment,
       message: isUnassign
-          ? PartnerMetricCopy.unassignWarning
-          : PartnerMetricCopy.partnerChangeWarning,
-      confirmLabel: isUnassign ? 'Atamayı Kaldır' : 'Atamayı Değiştir',
+          ? context.l10n.unassignWarning
+          : context.l10n.partnerChangeWarning,
+      confirmLabel: isUnassign
+          ? context.l10n.removeAssignment
+          : context.l10n.changeAssignment,
     );
 
     if (!confirmed || !mounted) {
@@ -291,7 +295,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         }
         _isSaving = false;
       });
-      showContentSuccessSnackBar(context, 'Dizi güncellendi.');
+      showContentSuccessSnackBar(context, context.l10n.seriesUpdated);
       if (partnerChanged) {
         await _loadAssignments();
       }
@@ -329,7 +333,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
       }
 
       setState(() {
-        _errorMessage = 'Dizi güncellenemedi.';
+        _errorMessage = context.l10n.seriesUpdateFailed;
         _selectedPartnerId = _loadedPartnerId;
         _isSaving = false;
       });
@@ -355,7 +359,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final picked = result.files.single;
     final bytes = picked.bytes;
     if (bytes == null) {
-      setState(() => _errorMessage = 'Poster dosyası okunamadı.');
+      setState(() => _errorMessage = context.l10n.posterUnreadable);
       return;
     }
 
@@ -417,7 +421,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         _newPosterFile = null;
         _isPosterUploading = false;
       });
-      showContentSuccessSnackBar(context, 'Poster güncellendi.');
+      showContentSuccessSnackBar(context, context.l10n.posterUpdated);
     } on ContentException catch (error) {
       if (!mounted) {
         return;
@@ -459,7 +463,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
       }
 
       setState(() {
-        _errorMessage = 'Poster güncellenemedi.';
+        _errorMessage = context.l10n.posterUpdateFailed;
         _isPosterUploading = false;
       });
     }
@@ -516,7 +520,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         return;
       }
 
-      showContentErrorSnackBar(context, 'İşlem tamamlanamadı.');
+      showContentErrorSnackBar(context, context.l10n.actionIncomplete);
       setState(() => _lifecycleBusy = false);
     }
   }
@@ -529,9 +533,9 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
     final confirmed = await confirmContentAction(
       context,
-      title: 'Yayınla',
-      message: 'Bu dizi yayına alınsın mı?',
-      confirmLabel: 'Yayınla',
+      title: context.l10n.publishSeries,
+      message: context.l10n.publishSeriesConfirm,
+      confirmLabel: context.l10n.publishSeries,
     );
     if (!confirmed || !mounted) {
       return;
@@ -543,7 +547,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         expectedContentVersion: series.contentVersion,
       );
       if (mounted) {
-        showContentSuccessSnackBar(context, 'Dizi yayınlandı.');
+        showContentSuccessSnackBar(context, context.l10n.seriesPublished);
       }
       return series.copyWith(
         isPublished: result.isPublished,
@@ -562,9 +566,9 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
     final confirmed = await confirmContentAction(
       context,
-      title: 'Yayından Kaldır',
-      message: 'Bu dizi yayından kaldırılsın mı?',
-      confirmLabel: 'Yayından Kaldır',
+      title: context.l10n.unpublish,
+      message: context.l10n.unpublishSeriesConfirm,
+      confirmLabel: context.l10n.unpublish,
     );
     if (!confirmed || !mounted) {
       return;
@@ -576,7 +580,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         expectedContentVersion: series.contentVersion,
       );
       if (mounted) {
-        showContentSuccessSnackBar(context, 'Dizi yayından kaldırıldı.');
+        showContentSuccessSnackBar(context, context.l10n.seriesUnpublished);
       }
       return series.copyWith(
         isPublished: result.isPublished,
@@ -594,11 +598,9 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
     final confirmed = await confirmContentAction(
       context,
-      title: 'Arşivle',
-      message:
-          'Bu dizi arşivlenecek. Arşivlenmiş içerik yayından kaldırılır ve '
-          'düzenleme kısıtlanabilir.',
-      confirmLabel: 'Arşivle',
+      title: context.l10n.archiveAction,
+      message: context.l10n.archiveSeriesConfirm,
+      confirmLabel: context.l10n.archiveAction,
     );
     if (!confirmed || !mounted) {
       return;
@@ -610,7 +612,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         expectedContentVersion: series.contentVersion,
       );
       if (mounted) {
-        showContentSuccessSnackBar(context, 'Dizi arşivlendi.');
+        showContentSuccessSnackBar(context, context.l10n.seriesArchived);
       }
       return series.copyWith(
         isPublished: result.isPublished,
@@ -629,9 +631,9 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
     final confirmed = await confirmContentAction(
       context,
-      title: 'Geri Yükle',
-      message: 'Bu dizi arşivden geri yüklensin mi?',
-      confirmLabel: 'Geri Yükle',
+      title: context.l10n.restore,
+      message: context.l10n.restoreSeriesConfirm,
+      confirmLabel: context.l10n.restore,
     );
     if (!confirmed || !mounted) {
       return;
@@ -643,7 +645,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         expectedContentVersion: series.contentVersion,
       );
       if (mounted) {
-        showContentSuccessSnackBar(context, 'Dizi geri yüklendi.');
+        showContentSuccessSnackBar(context, context.l10n.seriesRestored);
       }
       return series.copyWith(
         isArchived: result.isArchived,
@@ -678,24 +680,23 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final series = _series;
     final mutationsEnabled = contentMutationsEnabled(context);
     final busy =
-        _isSaving ||
-        _isPosterUploading ||
-        _lifecycleBusy ||
-        !mutationsEnabled;
+        _isSaving || _isPosterUploading || _lifecycleBusy || !mutationsEnabled;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111111),
         title: Text(
-          series?.title ?? _placeholderSeries?.title ?? 'Dizi Detayı',
+          series?.title ??
+              _placeholderSeries?.title ??
+              context.l10n.seriesDetail,
         ),
         actions: [
           if (series != null)
             TextButton.icon(
               onPressed: busy ? null : _openEpisodes,
               icon: const Icon(Icons.playlist_play_outlined, size: 18),
-              label: const Text('Bölümler'),
+              label: Text(context.l10n.navEpisodes),
             ),
         ],
       ),
@@ -706,11 +707,11 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(_errorMessage ?? 'Dizi bulunamadı.'),
+                  Text(_errorMessage ?? context.l10n.seriesNotFound),
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => _loadSeries(),
-                    child: const Text('Tekrar Dene'),
+                    child: Text(context.l10n.retry),
                   ),
                 ],
               ),
@@ -819,7 +820,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Değişiklikleri Kaydet'),
+                            : Text(context.l10n.saveChanges),
                       ),
                     ],
                   ),
@@ -857,20 +858,21 @@ class _PartnerAssignmentSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'İş Birliği Ortağı',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.collaborationPartner,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Değişiklik mevcut atamayı şimdi kapatır; geçmiş korunur.',
-              style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+            Text(
+              context.l10n.partnerChangeClosesAssignment,
+              style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
             ),
             const SizedBox(height: 16),
             PartnerSelector(
               selectedPartnerId: selectedPartnerId,
               enabled: enabled,
               repository: repository,
+              label: context.l10n.collaborationPartner,
               onChanged: onChanged,
             ),
           ],
@@ -894,24 +896,27 @@ class _SeriesMetaHeader extends StatelessWidget {
       children: [
         Text(series.slug, style: const TextStyle(color: Color(0xFF777777))),
         _Badge(
-          label: series.publishLabel,
+          label: adminPublishDisplayLabel(context.l10n, series.publishLabel),
           color: series.isPublished
               ? const Color(0xFF35C46A)
               : const Color(0xFF888888),
         ),
         _Badge(
-          label: series.archiveLabel,
+          label: adminArchiveDisplayLabel(context.l10n, series.archiveLabel),
           color: series.isArchived
               ? const Color(0xFFE5A000)
               : const Color(0xFF555555),
         ),
-        _Badge(label: series.statusLabel, color: const Color(0xFF555555)),
         _Badge(
-          label: 'Nitelikli: ${series.qualifiedViewsTotal}',
+          label: adminSeriesStatusLabel(context.l10n, series.statusLabel),
+          color: const Color(0xFF555555),
+        ),
+        _Badge(
+          label: context.l10n.qualifiedViewsCount(series.qualifiedViewsTotal),
           color: const Color(0xFF3D5AFE),
         ),
         Text(
-          '${series.episodeCount} bölüm',
+          context.l10n.episodeCountLabel(series.episodeCount),
           style: const TextStyle(color: Color(0xFFB3B3B3)),
         ),
       ],
@@ -951,9 +956,9 @@ class _PosterSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Poster',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.poster,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             Row(
@@ -987,7 +992,7 @@ class _PosterSection extends StatelessWidget {
                       OutlinedButton.icon(
                         onPressed: disabled ? null : onPick,
                         icon: const Icon(Icons.upload_file_outlined),
-                        label: const Text('Yeni Poster Seç'),
+                        label: Text(context.l10n.selectNewPoster),
                       ),
                       if (newPoster != null) ...[
                         const SizedBox(height: 8),
@@ -1010,7 +1015,7 @@ class _PosterSection extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Posteri Değiştir'),
+                              : Text(context.l10n.changePoster),
                         ),
                       ],
                     ],
@@ -1078,18 +1083,20 @@ class _EditSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Dizi Bilgileri',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.seriesInfo,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: titleController,
               enabled: !disabled,
-              decoration: const InputDecoration(labelText: 'Başlık *'),
+              decoration: InputDecoration(
+                labelText: context.l10n.titleRequiredStar,
+              ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Başlık zorunludur.';
+                  return context.l10n.titleRequired;
                 }
                 return null;
               },
@@ -1100,8 +1107,8 @@ class _EditSection extends StatelessWidget {
               enabled: !disabled,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Açıklama',
+              decoration: InputDecoration(
+                labelText: context.l10n.description,
                 alignLabelWithHint: true,
               ),
             ),
@@ -1115,14 +1122,19 @@ class _EditSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'Durum'),
+              decoration: InputDecoration(labelText: context.l10n.status),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<SeriesStatusValue>(
                   value: status,
                   isExpanded: true,
                   items: [
                     for (final item in SeriesStatusValue.values)
-                      DropdownMenuItem(value: item, child: Text(item.label)),
+                      DropdownMenuItem(
+                        value: item,
+                        child: Text(
+                          adminSeriesStatusLabel(context.l10n, item.value),
+                        ),
+                      ),
                   ],
                   onChanged: disabled
                       ? null
@@ -1136,18 +1148,18 @@ class _EditSection extends StatelessWidget {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Öne Çıkan'),
+              title: Text(context.l10n.featured),
               value: isFeatured,
               onChanged: disabled ? null : onFeaturedChanged,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Premium'),
+              title: Text(context.l10n.premium),
               value: isPremium,
               onChanged: disabled ? null : onPremiumChanged,
             ),
             const SizedBox(height: 8),
-            const Text('Kategoriler'),
+            Text(context.l10n.categories),
             const SizedBox(height: 8),
             FutureBuilder<List<AdminCategory>>(
               future: categoriesFuture,
@@ -1160,13 +1172,13 @@ class _EditSection extends StatelessWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Kategoriler yüklenemedi.',
-                        style: TextStyle(color: Color(0xFFFFB4B4)),
+                      Text(
+                        context.l10n.categoriesLoadFailed,
+                        style: const TextStyle(color: Color(0xFFFFB4B4)),
                       ),
                       OutlinedButton(
                         onPressed: disabled ? null : onReloadCategories,
-                        child: const Text('Tekrar Dene'),
+                        child: Text(context.l10n.retry),
                       ),
                     ],
                   );
@@ -1227,9 +1239,9 @@ class _LifecycleSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Yayın ve Arşiv',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Text(
+              context.l10n.publishAndArchive,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -1242,17 +1254,17 @@ class _LifecycleSection extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF35C46A),
                     ),
-                    child: const Text('Yayınla'),
+                    child: Text(context.l10n.publishSeries),
                   ),
                 if (!series.isArchived && series.isPublished)
                   OutlinedButton(
                     onPressed: busy ? null : onUnpublish,
-                    child: const Text('Yayından Kaldır'),
+                    child: Text(context.l10n.unpublish),
                   ),
                 if (!series.isArchived)
                   OutlinedButton(
                     onPressed: busy ? null : onArchive,
-                    child: const Text('Arşivle'),
+                    child: Text(context.l10n.archiveAction),
                   ),
                 if (series.isArchived)
                   FilledButton(
@@ -1260,7 +1272,7 @@ class _LifecycleSection extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFE50914),
                     ),
-                    child: const Text('Geri Yükle'),
+                    child: Text(context.l10n.restore),
                   ),
               ],
             ),

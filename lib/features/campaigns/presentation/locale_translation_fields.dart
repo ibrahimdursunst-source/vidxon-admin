@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/locale/vidxon_product_locales.dart';
+import '../../../l10n/admin_l10n.dart';
 
 /// Reusable per-locale translation fields for campaign forms.
 class LocaleTranslationFields extends StatelessWidget {
@@ -50,15 +51,20 @@ class LocaleTranslationFields extends StatelessWidget {
           const SizedBox(height: 8),
           TextFormField(
             controller: titleController,
-            decoration: InputDecoration(labelText: 'Başlık ($locale) *'),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Başlık zorunlu' : null,
+            decoration: InputDecoration(
+              labelText: context.l10n.titleForLocaleRequired(locale),
+            ),
+            validator: (v) => v == null || v.trim().isEmpty
+                ? context.l10n.titleRequiredShort
+                : null,
           ),
           if (descriptionController != null && !showBody) ...[
             const SizedBox(height: 8),
             TextFormField(
               controller: descriptionController,
-              decoration: InputDecoration(labelText: 'Açıklama ($locale)'),
+              decoration: InputDecoration(
+                labelText: context.l10n.descriptionForLocale(locale),
+              ),
               maxLines: 2,
             ),
           ],
@@ -66,10 +72,13 @@ class LocaleTranslationFields extends StatelessWidget {
             const SizedBox(height: 8),
             TextFormField(
               controller: bodyController,
-              decoration: InputDecoration(labelText: 'Mesaj ($locale) *'),
+              decoration: InputDecoration(
+                labelText: context.l10n.messageForLocaleRequired(locale),
+              ),
               maxLines: 2,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Mesaj zorunlu' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? context.l10n.messageRequired
+                  : null,
             ),
           ],
           if (ctaController != null) ...[
@@ -77,10 +86,14 @@ class LocaleTranslationFields extends StatelessWidget {
             TextFormField(
               controller: ctaController,
               decoration: InputDecoration(
-                labelText: 'CTA Butonu ($locale)${ctaRequired ? ' *' : ''}',
+                labelText: ctaRequired
+                    ? context.l10n.ctaButtonForLocaleRequired(locale)
+                    : context.l10n.ctaButtonForLocale(locale),
               ),
               validator: ctaRequired
-                  ? (v) => v == null || v.trim().isEmpty ? 'CTA zorunlu' : null
+                  ? (v) => v == null || v.trim().isEmpty
+                        ? context.l10n.ctaRequired
+                        : null
                   : null,
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../episodes/domain/admin_episode.dart';
 import '../application/campaign_destination_controller.dart';
 import '../domain/campaign_destination.dart';
@@ -27,12 +28,16 @@ class CampaignDestinationFields extends StatelessWidget {
             DropdownButtonFormField<String>(
               key: const Key('campaign-destination-type'),
               initialValue: destinationType,
-              decoration: const InputDecoration(labelText: 'Hedef Türü'),
+              decoration: InputDecoration(
+                labelText: context.l10n.destinationType,
+              ),
               items: [
                 for (final option in kCampaignDestinationOptions)
                   DropdownMenuItem(
                     value: option.value,
-                    child: Text(option.label),
+                    child: Text(
+                      adminDestinationTypeLabel(context.l10n, option.value),
+                    ),
                   ),
               ],
               onChanged: (value) => onDestinationTypeChanged(
@@ -47,7 +52,12 @@ class CampaignDestinationFields extends StatelessWidget {
               _EpisodePicker(controller: controller),
             ],
             FormField<String>(
-              validator: (_) => controller.validate(),
+              validator: (_) {
+                final raw = controller.validate();
+                if (raw == 'Dizi seçin') return context.l10n.selectSeries;
+                if (raw == 'Bölüm seçin') return context.l10n.selectEpisode;
+                return raw;
+              },
               builder: (state) {
                 if (state.errorText == null) return const SizedBox.shrink();
                 return Padding(
@@ -81,23 +91,22 @@ class _SeriesPicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       key: const Key('campaign-series-picker'),
       children: [
-        const Text(
-          'Dizi',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+        Text(
+          context.l10n.destinationSeries,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         const SizedBox(height: 8),
         if (controller.seriesUnavailable)
-          const _UnavailableBanner(
-            key: Key('campaign-series-unavailable'),
-            message:
-                'Kayıtlı dizi artık kullanılamıyor. Mevcut hedef korunur; yeni bir dizi seçmezseniz önceki hedef değişmez.',
+          _UnavailableBanner(
+            key: const Key('campaign-series-unavailable'),
+            message: context.l10n.seriesUnavailableBanner,
           ),
         if (selected != null && !controller.seriesPickerOpen)
           _SelectedEntityCard(
             key: const Key('campaign-series-selected'),
             title: selected.title,
-            subtitle: selected.publishLabel,
-            actionLabel: 'Dizi Değiştir',
+            subtitle: adminPublishedLabel(context.l10n, selected.isPublished),
+            actionLabel: context.l10n.changeSeries,
             actionKey: const Key('campaign-series-change'),
             onChange: controller.beginChangeSeries,
           ),
@@ -108,16 +117,16 @@ class _SeriesPicker extends StatelessWidget {
               child: TextButton(
                 key: const Key('campaign-series-cancel-change'),
                 onPressed: controller.cancelChangeSeries,
-                child: const Text('Vazgeç'),
+                child: Text(context.l10n.dismiss),
               ),
             ),
           ],
           TextField(
             key: const Key('campaign-series-search'),
-            decoration: const InputDecoration(
-              labelText: 'Dizi ara',
-              hintText: 'Başlık veya slug',
-              prefixIcon: Icon(Icons.search, size: 20),
+            decoration: InputDecoration(
+              labelText: context.l10n.searchSeries,
+              hintText: context.l10n.titleOrSlug,
+              prefixIcon: const Icon(Icons.search, size: 20),
             ),
             onChanged: controller.setSeriesQuery,
           ),
@@ -130,7 +139,10 @@ class _SeriesPicker extends StatelessWidget {
           else if (controller.seriesLoadError != null &&
               controller.series.isEmpty)
             Text(
-              controller.seriesLoadError!,
+              controller.seriesLoadError ==
+                      'Diziler yüklenemedi. Lütfen tekrar deneyin.'
+                  ? context.l10n.seriesCatalogLoadFailed
+                  : controller.seriesLoadError!,
               style: const TextStyle(color: Colors.orangeAccent),
             )
           else
@@ -143,9 +155,9 @@ class _SeriesPicker extends StatelessWidget {
                   shrinkWrap: true,
                   children: [
                     if (controller.filteredSeries.isEmpty)
-                      const ListTile(
+                      ListTile(
                         dense: true,
-                        title: Text('Eşleşen dizi yok'),
+                        title: Text(context.l10n.noMatchingSeries),
                       )
                     else
                       for (final series in controller.filteredSeries)
@@ -154,7 +166,12 @@ class _SeriesPicker extends StatelessWidget {
                           dense: true,
                           selected: series.id == controller.selectedSeriesId,
                           title: Text(series.title),
-                          subtitle: Text(series.publishLabel),
+                          subtitle: Text(
+                            adminPublishedLabel(
+                              context.l10n,
+                              series.isPublished,
+                            ),
+                          ),
                           onTap: () => controller.selectSeries(series),
                         ),
                   ],
@@ -179,36 +196,35 @@ class _EpisodePicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       key: const Key('campaign-episode-picker'),
       children: [
-        const Text(
-          'Bölüm',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+        Text(
+          context.l10n.destinationEpisode,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         const SizedBox(height: 8),
         if (controller.episodeUnavailable)
-          const _UnavailableBanner(
-            key: Key('campaign-episode-unavailable'),
-            message:
-                'Kayıtlı bölüm artık kullanılamıyor. Mevcut hedef korunur; yeni bir bölüm seçmezseniz önceki hedef değişmez.',
+          _UnavailableBanner(
+            key: const Key('campaign-episode-unavailable'),
+            message: context.l10n.episodeUnavailableBanner,
           ),
         if (controller.selectedSeriesId == null)
-          const Text(
-            key: Key('campaign-episode-need-series'),
-            'Önce bir dizi seçin.',
-            style: TextStyle(color: Colors.grey, fontSize: 13),
+          Text(
+            key: const Key('campaign-episode-need-series'),
+            context.l10n.selectSeriesFirst,
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
           )
         else if (controller.loadingEpisodes)
-          const Padding(
-            key: Key('campaign-episode-loading'),
-            padding: EdgeInsets.symmetric(vertical: 12),
+          Padding(
+            key: const Key('campaign-episode-loading'),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                SizedBox(width: 10),
-                Text('Bölümler yükleniyor...'),
+                const SizedBox(width: 10),
+                Text(context.l10n.episodesLoading),
               ],
             ),
           )
@@ -218,28 +234,30 @@ class _EpisodePicker extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                controller.episodeLoadError!,
+                controller.episodeLoadError == 'Bölümler yüklenemedi.'
+                    ? context.l10n.episodesLoadFailed
+                    : controller.episodeLoadError!,
                 style: const TextStyle(color: Colors.orangeAccent),
               ),
               TextButton(
                 key: const Key('campaign-episode-retry'),
                 onPressed: controller.reloadEpisodes,
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           )
         else if (controller.episodes.isEmpty)
-          const Text(
-            key: Key('campaign-episode-empty'),
-            'Bu dizide henüz bölüm bulunmuyor.',
-            style: TextStyle(color: Colors.grey, fontSize: 13),
+          Text(
+            key: const Key('campaign-episode-empty'),
+            context.l10n.episodesEmptyForSeries,
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
           )
         else if (selected != null && !controller.episodePickerOpen)
           _SelectedEntityCard(
             key: const Key('campaign-episode-selected'),
-            title: _episodeLabel(selected),
-            subtitle: selected.publishLabel,
-            actionLabel: 'Bölüm Değiştir',
+            title: _episodeLabel(context, selected),
+            subtitle: adminPublishedLabel(context.l10n, selected.isPublished),
+            actionLabel: context.l10n.changeEpisode,
             actionKey: const Key('campaign-episode-change'),
             onChange: controller.beginChangeEpisode,
           )
@@ -249,13 +267,15 @@ class _EpisodePicker extends StatelessWidget {
               'campaign-episode-dropdown-${controller.selectedSeriesId}-${controller.episodes.length}',
             ),
             initialValue: controller.selectedEpisodeId,
-            decoration: const InputDecoration(labelText: 'Bölüm'),
-            hint: const Text('Bölüm seçin'),
+            decoration: InputDecoration(
+              labelText: context.l10n.destinationEpisode,
+            ),
+            hint: Text(context.l10n.selectEpisode),
             items: [
               for (final episode in controller.episodes)
                 DropdownMenuItem(
                   value: episode.id,
-                  child: Text(_episodeLabel(episode)),
+                  child: Text(_episodeLabel(context, episode)),
                 ),
             ],
             onChanged: (id) {
@@ -270,11 +290,12 @@ class _EpisodePicker extends StatelessWidget {
     );
   }
 
-  String _episodeLabel(AdminEpisode episode) {
-    return campaignEpisodePickerLabel(
-      episodeNumber: episode.episodeNumber,
-      title: episode.title,
-    );
+  String _episodeLabel(BuildContext context, AdminEpisode episode) {
+    final trimmed = episode.title.trim();
+    if (trimmed.isEmpty) {
+      return context.l10n.episodePickerNumberOnly(episode.episodeNumber);
+    }
+    return context.l10n.episodePickerLabel(episode.episodeNumber, trimmed);
   }
 }
 

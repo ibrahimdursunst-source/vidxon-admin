@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../domain/content_rating_catalog.dart';
 
 class ContentRatingEditor extends StatelessWidget {
@@ -47,21 +48,20 @@ class ContentRatingEditor extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showSectionTitle) ...[
-          const Text(
-            'İçerik Derecelendirmesi',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          Text(
+            context.l10n.contentRating,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
         ],
-        const Text(
-          'Bunlar Vidxon uygulama içi uygunluk etiketleridir; '
-          'App Store / Google Play derecelendirmelerinin yerine geçmez.',
-          style: TextStyle(color: Color(0xFF777777), fontSize: 12),
+        Text(
+          context.l10n.contentRatingDisclaimer,
+          style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
         ),
         if (includeAge) ...[
           const SizedBox(height: 16),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Yaş Derecesi'),
+            decoration: InputDecoration(labelText: context.l10n.ageRating),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int?>(
                 value: ageRating,
@@ -70,7 +70,7 @@ class ContentRatingEditor extends StatelessWidget {
                   for (final age in ContentRatingCatalog.ages)
                     DropdownMenuItem(
                       value: age,
-                      child: Text(ContentRatingCatalog.ageLabel(age)),
+                      child: Text(adminAgeRatingLabel(context.l10n, age)),
                     ),
                 ],
                 onChanged: enabled ? onAgeChanged : null,
@@ -80,9 +80,9 @@ class ContentRatingEditor extends StatelessWidget {
         ],
         if (includeDescriptors) ...[
           const SizedBox(height: 16),
-          const Text(
-            'İçerik Tanımlayıcıları',
-            style: TextStyle(fontWeight: FontWeight.w500),
+          Text(
+            context.l10n.contentDescriptors,
+            style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -91,7 +91,7 @@ class ContentRatingEditor extends StatelessWidget {
             children: [
               for (final id in ContentRatingCatalog.descriptorIds)
                 FilterChip(
-                  label: Text(ContentRatingCatalog.descriptorLabel(id)),
+                  label: Text(adminDescriptorLabel(context.l10n, id)),
                   selected: selected.contains(id),
                   onSelected: enabled
                       ? (value) => _toggleDescriptor(id, value)

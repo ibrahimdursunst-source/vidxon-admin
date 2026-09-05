@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/locale/vidxon_product_locales.dart';
+import '../../../l10n/admin_l10n.dart';
 import '../../episodes/data/episode_repository.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../series/data/series_repository.dart';
@@ -133,9 +134,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
     if (!_imageController.canSave) {
       setState(() {
         _errorMessage = _imageController.uploading
-            ? 'Görsel yükleniyor, lütfen bekleyin.'
+            ? context.l10n.imageUploadingWait
             : (_imageController.errorMessage ??
-                  'Görsel yüklemesi tamamlanmadan kaydedilemez.');
+                  context.l10n.imageUploadMustFinish);
       });
       return;
     }
@@ -232,7 +233,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _isEditing ? 'Pop-up Düzenle' : 'Yeni Pop-up',
+                  _isEditing ? context.l10n.editPopup : context.l10n.newPopup,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -240,7 +241,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 const SizedBox(height: 20),
 
                 // === Genel ===
-                _sectionLabel('Görsel'),
+                _sectionLabel(context.l10n.image),
                 _CampaignImageField(
                   controller: _imageController,
                   onPick: _pickAndUploadImage,
@@ -268,9 +269,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 TextFormField(
                   key: const Key('campaign-priority-field'),
                   controller: _priorityController,
-                  decoration: const InputDecoration(
-                    labelText: CampaignPriority.label,
-                    helperText: CampaignPriority.helperText,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.priority,
+                    helperText: context.l10n.priorityHelper,
                     helperMaxLines: 4,
                   ),
                   keyboardType: TextInputType.number,
@@ -278,7 +279,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 const SizedBox(height: 16),
 
                 // === Diller ===
-                _sectionLabel('Hedef Diller'),
+                _sectionLabel(context.l10n.targetLanguages),
                 Wrap(
                   spacing: 8,
                   children: kSupportedLocales.map((locale) {
@@ -313,12 +314,12 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 }),
 
                 // === Zamanlama ===
-                _sectionLabel('Zamanlama'),
+                _sectionLabel(context.l10n.schedule),
                 Row(
                   children: [
                     Expanded(
                       child: _DateTimeField(
-                        label: 'Başlangıç',
+                        label: context.l10n.startsAt,
                         value: _startsAt,
                         onTap: () => _pickDateTime(isStart: true),
                       ),
@@ -326,7 +327,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _DateTimeField(
-                        label: 'Bitiş (opsiyonel)',
+                        label: context.l10n.endsAtOptional,
                         value: _endsAt,
                         onTap: () => _pickDateTime(isStart: false),
                       ),
@@ -341,7 +342,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 const SizedBox(height: 16),
 
                 SwitchListTile(
-                  title: const Text('Aktif'),
+                  title: Text(context.l10n.active),
                   value: _isActive,
                   onChanged: (v) => setState(() => _isActive = v),
                   activeTrackColor: _primaryColor,
@@ -365,7 +366,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                       onPressed: _isSaving
                           ? null
                           : () => Navigator.of(context).pop(false),
-                      child: const Text('İptal'),
+                      child: Text(context.l10n.cancel),
                     ),
                     const SizedBox(width: 12),
                     FilledButton(
@@ -379,7 +380,11 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(_isEditing ? 'Güncelle' : 'Oluştur'),
+                          : Text(
+                              _isEditing
+                                  ? context.l10n.update
+                                  : context.l10n.create,
+                            ),
                     ),
                   ],
                 ),
@@ -412,7 +417,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         final file = result.files.single;
         if (file.bytes == null) {
           setState(() {
-            _imageController.errorMessage = 'Görsel dosyası okunamadı.';
+            _imageController.errorMessage = context.l10n.imageFileUnreadable;
           });
           return;
         }
@@ -430,7 +435,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
       if (mounted) {
         setState(() {
           _imageController.uploading = false;
-          _imageController.errorMessage = 'Görsel yüklenemedi.';
+          _imageController.errorMessage = context.l10n.imageUploadFailed;
         });
       }
     }
@@ -494,8 +499,8 @@ class _CampaignImageField extends StatelessWidget {
               : Center(
                   child: Text(
                     controller.hasImage
-                        ? 'Görsel yüklendi'
-                        : 'Görsel seçilmedi (opsiyonel)',
+                        ? context.l10n.imageUploaded
+                        : context.l10n.imageNotSelectedOptional,
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ),
@@ -508,7 +513,9 @@ class _CampaignImageField extends StatelessWidget {
               onPressed: controller.uploading ? null : onPick,
               icon: const Icon(Icons.upload_file, size: 18),
               label: Text(
-                controller.hasImage ? 'Görseli Değiştir' : 'Görsel Yükle',
+                controller.hasImage
+                    ? context.l10n.changeImage
+                    : context.l10n.uploadImage,
               ),
             ),
             if (controller.hasImage || controller.previewBytes != null)
@@ -519,7 +526,7 @@ class _CampaignImageField extends StatelessWidget {
                         controller.remove();
                         onChanged();
                       },
-                child: const Text('Görseli Kaldır'),
+                child: Text(context.l10n.removeImage),
               ),
           ],
         ),

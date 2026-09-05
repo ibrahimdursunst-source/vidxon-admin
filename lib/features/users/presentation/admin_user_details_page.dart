@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../admin_context/presentation/admin_context_scope.dart';
 import '../data/admin_user_wallet_repository.dart';
 import '../domain/admin_user_details.dart';
@@ -11,6 +12,27 @@ import 'admin_coin_credit_dialog.dart';
 import 'admin_coin_debit_dialog.dart';
 import 'admin_role_badge.dart';
 import 'admin_wallet_mutation_permission.dart';
+
+String _localizedDisplayName(AppLocalizations l10n, String name) {
+  return name == 'Anonim Kullanıcı' ? l10n.anonymousUser : name;
+}
+
+String _localizedRoleLabel(AppLocalizations l10n, String label) {
+  return switch (label) {
+    'Admin' => l10n.adminRole,
+    'Super Admin' => l10n.superAdminRole,
+    _ => label,
+  };
+}
+
+String _ledgerActorLabel(AppLocalizations l10n, AdminWalletLedgerEntry entry) {
+  final actorId = entry.actorAdminUserId;
+  if (actorId == null || actorId.trim().isEmpty) {
+    return adminActorLabel(l10n, actorId);
+  }
+
+  return shortenUserId(actorId);
+}
 
 class AdminUserDetailsPage extends StatefulWidget {
   const AdminUserDetailsPage({
@@ -184,7 +206,7 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Kullanıcı ID kopyalandı.')));
+    ).showSnackBar(SnackBar(content: Text(context.l10n.userIdCopied)));
   }
 
   @override
@@ -195,10 +217,17 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
       backgroundColor: const Color(0xFF090909),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111111),
-        title: Text(summary?.resolvedDisplayName ?? 'Kullanıcı Detayı'),
+        title: Text(
+          summary == null
+              ? context.l10n.userDetail
+              : _localizedDisplayName(
+                  context.l10n,
+                  summary.resolvedDisplayName,
+                ),
+        ),
         actions: [
           IconButton(
-            tooltip: 'Yenile',
+            tooltip: context.l10n.refresh,
             onPressed: _isLoading ? null : () => _loadAll(resetLedger: true),
             icon: const Icon(Icons.refresh),
           ),
@@ -238,7 +267,10 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    restrictionMessage,
+                    adminWalletRestrictionLabel(
+                      context.l10n,
+                      restrictionMessage,
+                    ),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                 ),
@@ -249,7 +281,7 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
                   FilledButton.icon(
                     onPressed: canMutateWallet ? _openCoinCredit : null,
                     icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Jeton Yükle'),
+                    label: Text(context.l10n.creditCoins),
                     style: FilledButton.styleFrom(
                       backgroundColor: _primaryColor,
                       foregroundColor: Colors.white,
@@ -262,7 +294,7 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
                   OutlinedButton.icon(
                     onPressed: canMutateWallet ? _openCoinDebit : null,
                     icon: const Icon(Icons.remove_circle_outline),
-                    label: const Text('Jeton Eksilt'),
+                    label: Text(context.l10n.debitCoins),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: const BorderSide(color: Color(0xFF444444)),
@@ -276,7 +308,7 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Jeton Hareket Geçmişi',
+                context.l10n.coinLedger,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -305,7 +337,7 @@ class _AdminUserDetailsPageState extends State<AdminUserDetailsPage> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Daha Fazla Yükle'),
+                        : Text(context.l10n.loadMore),
                   ),
                 ),
               ],
@@ -337,16 +369,21 @@ class _ProfileCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              details.resolvedDisplayName,
+              _localizedDisplayName(context.l10n, details.resolvedDisplayName),
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             if (details.adminRoleLabel != null) ...[
               const SizedBox(height: 8),
-              AdminRoleBadge(label: details.adminRoleLabel!),
+              AdminRoleBadge(
+                label: _localizedRoleLabel(
+                  context.l10n,
+                  details.adminRoleLabel!,
+                ),
+              ),
             ],
             const SizedBox(height: 8),
             Text(
-              details.resolvedEmailLabel,
+              adminResolvedEmailLabel(context.l10n, details.resolvedEmailLabel),
               style: const TextStyle(color: Color(0xFFB3B3B3)),
             ),
             const SizedBox(height: 16),
@@ -355,38 +392,43 @@ class _ProfileCard extends StatelessWidget {
               runSpacing: 12,
               children: [
                 _MetaItem(
-                  label: 'Kullanıcı ID',
+                  label: context.l10n.userId,
                   value: details.userId,
                   onCopy: onCopyUserId,
                   compact: true,
                 ),
                 _MetaItem(
-                  label: 'Hesap durumu',
-                  value: details.accountStatusLabel,
+                  label: context.l10n.accountStatus,
+                  value: adminUserStatusLabel(
+                    context.l10n,
+                    details.accountStatusLabel,
+                  ),
                 ),
                 _MetaItem(
-                  label: 'Kayıt tarihi',
+                  label: context.l10n.registeredDate,
                   value: formatUserDateTime(details.accountCreatedAt),
                 ),
                 _MetaItem(
-                  label: 'Son giriş',
+                  label: context.l10n.lastSignIn,
                   value: formatUserDateTime(details.lastSignInAt),
                 ),
                 _MetaItem(
-                  label: 'Güncel jeton bakiyesi',
-                  value: '${details.coinBalance} jeton',
+                  label: context.l10n.currentCoinBalance,
+                  value: context.l10n.coinsAmount(details.coinBalance),
                 ),
                 _MetaItem(
-                  label: 'Wallet son güncelleme',
+                  label: context.l10n.walletLastUpdate,
                   value: formatUserDateTime(details.walletUpdatedAt),
                 ),
                 _MetaItem(
-                  label: 'Toplam ledger kaydı',
+                  label: context.l10n.totalLedgerRecords,
                   value: details.ledgerEntryCount.toString(),
                 ),
                 _MetaItem(
-                  label: 'Admin yüklemesi toplamı',
-                  value: '${details.totalAdminCoinCredited} jeton',
+                  label: context.l10n.adminCreditTotal,
+                  value: context.l10n.coinsAmount(
+                    details.totalAdminCoinCredited,
+                  ),
                 ),
               ],
             ),
@@ -431,7 +473,7 @@ class _MetaItem extends StatelessWidget {
               ),
               if (onCopy != null)
                 IconButton(
-                  tooltip: 'Kullanıcı ID kopyala',
+                  tooltip: context.l10n.copyUserId,
                   onPressed: onCopy,
                   icon: const Icon(Icons.copy, size: 18),
                 ),
@@ -450,6 +492,8 @@ class _LedgerDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -462,16 +506,16 @@ class _LedgerDataTable extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(const Color(0xFF181818)),
-            columns: const [
-              DataColumn(label: Text('Tarih')),
-              DataColumn(label: Text('Miktar')),
-              DataColumn(label: Text('Tür')),
-              DataColumn(label: Text('Neden')),
-              DataColumn(label: Text('Açıklama')),
-              DataColumn(label: Text('Referans')),
-              DataColumn(label: Text('Önceki')),
-              DataColumn(label: Text('Sonraki')),
-              DataColumn(label: Text('Admin')),
+            columns: [
+              DataColumn(label: Text(l10n.date)),
+              DataColumn(label: Text(l10n.amount)),
+              DataColumn(label: Text(l10n.type)),
+              DataColumn(label: Text(l10n.reason)),
+              DataColumn(label: Text(l10n.description)),
+              DataColumn(label: Text(l10n.reference)),
+              DataColumn(label: Text(l10n.previous)),
+              DataColumn(label: Text(l10n.next)),
+              DataColumn(label: Text(l10n.admin)),
             ],
             rows: [
               for (final entry in entries)
@@ -488,19 +532,17 @@ class _LedgerDataTable extends StatelessWidget {
                         ),
                       ),
                     ),
-                    DataCell(Text(entry.transactionTypeLabel)),
-                    DataCell(Text(entry.reasonLabel)),
+                    DataCell(
+                      Text(adminWalletTxnLabel(l10n, entry.transactionType)),
+                    ),
+                    DataCell(
+                      Text(adminWalletReasonLabel(l10n, entry.reasonCode)),
+                    ),
                     DataCell(Text(entry.descriptionLabel)),
                     DataCell(Text(entry.caseReferenceLabel)),
                     DataCell(Text(entry.balanceBeforeLabel)),
                     DataCell(Text(entry.balanceAfter.toString())),
-                    DataCell(
-                      Text(
-                        entry.actorAdminUserId == null
-                            ? entry.actorLabel
-                            : shortenUserId(entry.actorAdminUserId!),
-                      ),
-                    ),
+                    DataCell(Text(_ledgerActorLabel(l10n, entry))),
                   ],
                 ),
             ],
@@ -552,7 +594,9 @@ class _LedgerCardList extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('${entry.transactionTypeLabel} · ${entry.reasonLabel}'),
+                  Text(
+                    '${adminWalletTxnLabel(context.l10n, entry.transactionType)} · ${adminWalletReasonLabel(context.l10n, entry.reasonCode)}',
+                  ),
                   if (entry.description != null &&
                       entry.description!.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -562,17 +606,20 @@ class _LedgerCardList extends StatelessWidget {
                       entry.caseReference!.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Referans: ${entry.caseReference!}',
+                      context.l10n.referencePrefixed(entry.caseReference!),
                       style: const TextStyle(color: Color(0xFFB3B3B3)),
                     ),
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    'Bakiye: ${entry.balanceBeforeLabel} → ${entry.balanceAfter}',
+                    context.l10n.balanceArrow(
+                      entry.balanceBeforeLabel,
+                      entry.balanceAfter.toString(),
+                    ),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   Text(
-                    'Admin: ${entry.actorAdminUserId == null ? entry.actorLabel : shortenUserId(entry.actorAdminUserId!)}',
+                    '${context.l10n.admin}: ${_ledgerActorLabel(context.l10n, entry)}',
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                 ],
@@ -591,18 +638,18 @@ class _LedgerEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
+    return DecoratedBox(
+      decoration: const BoxDecoration(
         color: Color(0xFF111111),
         borderRadius: BorderRadius.all(Radius.circular(14)),
         border: Border.fromBorderSide(BorderSide(color: Color(0xFF2A2A2A))),
       ),
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'Henüz jeton hareketi yok.',
-            style: TextStyle(color: Color(0xFFB3B3B3)),
+            context.l10n.noCoinMovements,
+            style: const TextStyle(color: Color(0xFFB3B3B3)),
           ),
         ),
       ),
@@ -632,7 +679,7 @@ class _ErrorState extends StatelessWidget {
                 color: Color(0xFFE50914),
               ),
               const SizedBox(height: 16),
-              const Text('Kullanıcı detayı yüklenemedi'),
+              Text(context.l10n.userDetailLoadFailed),
               const SizedBox(height: 8),
               SelectableText(
                 message,
@@ -645,7 +692,7 @@ class _ErrorState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Color(0xFFE50914),
                 ),
-                child: const Text('Tekrar Dene'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
