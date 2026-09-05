@@ -25,10 +25,18 @@ String _localizedRoleLabel(AppLocalizations l10n, String label) {
   };
 }
 
-String _ledgerActorLabel(AppLocalizations l10n, AdminWalletLedgerEntry entry) {
+String adminLedgerActorLabel(
+  AppLocalizations l10n,
+  AdminWalletLedgerEntry entry,
+) {
   final actorId = entry.actorAdminUserId;
   if (actorId == null || actorId.trim().isEmpty) {
     return adminActorLabel(l10n, actorId);
+  }
+
+  final email = entry.actorAdminEmail?.trim();
+  if (email != null && email.isNotEmpty) {
+    return email;
   }
 
   return shortenUserId(actorId);
@@ -542,7 +550,7 @@ class _LedgerDataTable extends StatelessWidget {
                     DataCell(Text(entry.caseReferenceLabel)),
                     DataCell(Text(entry.balanceBeforeLabel)),
                     DataCell(Text(entry.balanceAfter.toString())),
-                    DataCell(Text(_ledgerActorLabel(l10n, entry))),
+                    DataCell(Text(adminLedgerActorLabel(l10n, entry))),
                   ],
                 ),
             ],
@@ -619,7 +627,7 @@ class _LedgerCardList extends StatelessWidget {
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   Text(
-                    '${context.l10n.admin}: ${_ledgerActorLabel(context.l10n, entry)}',
+                    '${context.l10n.admin}: ${adminLedgerActorLabel(context.l10n, entry)}',
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                 ],

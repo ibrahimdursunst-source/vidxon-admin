@@ -110,6 +110,64 @@ void main() {
       expect(entry.reasonLabel, 'Müşteri Desteği');
       expect(entry.descriptionLabel, 'Destek talebi jeton yüklemesi');
       expect(entry.balanceBefore, 120);
+      expect(entry.actorAdminUserId, '33333333-3333-3333-3333-333333333333');
+      expect(entry.actorAdminEmail, isNull);
+    });
+
+    test('missing actor_admin_email key still parses successfully', () {
+      final entry = AdminWalletLedgerEntry.fromMap({
+        'ledger_id': 10,
+        'amount': 500,
+        'transaction_type': 'admin_coin_credit',
+        'reason_code': 'customer_support',
+        'description': 'Destek talebi jeton yüklemesi',
+        'case_reference': 'CASE-123',
+        'balance_before': 120,
+        'balance_after': 620,
+        'actor_admin_user_id': '33333333-3333-3333-3333-333333333333',
+        'created_at': '2026-07-29T12:00:00.000Z',
+      });
+
+      expect(entry.actorAdminUserId, '33333333-3333-3333-3333-333333333333');
+      expect(entry.actorAdminEmail, isNull);
+    });
+
+    test('parses actor_admin_email when present', () {
+      final entry = AdminWalletLedgerEntry.fromMap({
+        'ledger_id': 11,
+        'amount': 500,
+        'transaction_type': 'admin_coin_credit',
+        'reason_code': 'customer_support',
+        'description': 'Destek talebi jeton yüklemesi',
+        'case_reference': 'CASE-123',
+        'balance_before': 120,
+        'balance_after': 620,
+        'actor_admin_user_id': '33333333-3333-3333-3333-333333333333',
+        'actor_admin_email': 'actor@example.com',
+        'created_at': '2026-07-29T12:00:00.000Z',
+      });
+
+      expect(entry.actorAdminUserId, '33333333-3333-3333-3333-333333333333');
+      expect(entry.actorAdminEmail, 'actor@example.com');
+    });
+
+    test('treats blank actor_admin_email as null', () {
+      final entry = AdminWalletLedgerEntry.fromMap({
+        'ledger_id': 12,
+        'amount': 500,
+        'transaction_type': 'admin_coin_credit',
+        'reason_code': 'customer_support',
+        'description': 'Destek talebi jeton yüklemesi',
+        'case_reference': 'CASE-123',
+        'balance_before': 120,
+        'balance_after': 620,
+        'actor_admin_user_id': '33333333-3333-3333-3333-333333333333',
+        'actor_admin_email': '   ',
+        'created_at': '2026-07-29T12:00:00.000Z',
+      });
+
+      expect(entry.actorAdminUserId, '33333333-3333-3333-3333-333333333333');
+      expect(entry.actorAdminEmail, isNull);
     });
   });
 

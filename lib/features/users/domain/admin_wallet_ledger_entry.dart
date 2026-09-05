@@ -13,6 +13,7 @@ class AdminWalletLedgerEntry {
     this.caseReference,
     this.balanceBefore,
     this.actorAdminUserId,
+    this.actorAdminEmail,
   });
 
   final int ledgerId;
@@ -24,6 +25,7 @@ class AdminWalletLedgerEntry {
   final int? balanceBefore;
   final int balanceAfter;
   final String? actorAdminUserId;
+  final String? actorAdminEmail;
   final DateTime createdAt;
 
   bool get isCredit => amount > 0;
@@ -80,6 +82,9 @@ class AdminWalletLedgerEntry {
       actorAdminUserId: UserParseHelpers.parseOptionalUserId(
         map['actor_admin_user_id'],
         fieldName: 'actor_admin_user_id',
+      ),
+      actorAdminEmail: UserParseHelpers.parseNullableEmail(
+        map['actor_admin_email'],
       ),
       createdAt: UserParseHelpers.requireUtcDateTime(
         map['created_at'],
