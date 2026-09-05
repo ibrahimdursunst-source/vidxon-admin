@@ -51,9 +51,14 @@ void main() {
       );
       expect(
         EpisodeRepository.adminEpisodeSelect,
-        contains('original_audio_locale'),
+        isNot(contains('original_audio_locale')),
+        reason:
+            'original_audio_locale is not on current remote episodes; '
+            'media-track locale uses admin_list_episode_media_tracks',
       );
       expect(EpisodeRepository.adminEpisodeSelect, contains('content_version'));
+      expect(EpisodeRepository.adminEpisodeSelect, contains('episode_number'));
+      expect(EpisodeRepository.adminEpisodeSelect, contains('title'));
       expect(EpisodeRepository.adminEpisodeSelect, isNot(contains('*')));
     });
 
@@ -126,6 +131,29 @@ void main() {
       );
       expect(content, isNot(contains(".select('*')")));
       expect(content, isNot(contains('.select("*")')));
+    });
+
+    test('campaign picker and series episodes page share fetchEpisodesForSeries', () {
+      final campaignController = File(
+        'lib/features/campaigns/application/campaign_destination_controller.dart',
+      ).readAsStringSync();
+      final seriesEpisodesPage = File(
+        'lib/features/episodes/presentation/series_episodes_page.dart',
+      ).readAsStringSync();
+      final campaignLib = Directory('lib/features/campaigns')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart'))
+          .map((file) => file.readAsStringSync())
+          .join('\n');
+
+      expect(campaignController, contains('fetchEpisodesForSeries(seriesId)'));
+      expect(
+        seriesEpisodesPage,
+        contains('fetchEpisodesForSeries(widget.seriesId)'),
+      );
+      expect(campaignLib, isNot(contains("from('episodes')")));
+      expect(campaignLib, isNot(contains('cloudflare_stream_uid')));
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vidxon_admin/core/locale/vidxon_product_locales.dart';
@@ -37,13 +39,28 @@ class _SeriesCatalog extends SeriesRepository {
 }
 
 class _EpisodeCatalog extends EpisodeRepository {
-  _EpisodeCatalog(this.items, {this.missingIds = const {}}) : super(client: null);
+  _EpisodeCatalog(
+    this.items, {
+    this.missingIds = const {},
+    this.fetchError,
+    this.delay,
+  }) : super(client: null);
 
   final List<AdminEpisode> items;
   final Set<String> missingIds;
+  Object? fetchError;
+  Completer<void>? delay;
+  final List<String> fetchedSeriesIds = [];
 
   @override
   Future<List<AdminEpisode>> fetchEpisodesForSeries(String seriesId) async {
+    fetchedSeriesIds.add(seriesId);
+    if (delay != null) {
+      await delay!.future;
+    }
+    if (fetchError != null) {
+      throw fetchError!;
+    }
     return items.where((item) => item.seriesId == seriesId).toList();
   }
 
@@ -234,19 +251,34 @@ void main() {
     expect(find.byKey(const Key('campaign-episode-picker')), findsOneWidget);
     expect(find.text('Bölüm ID *'), findsNothing);
     expect(find.text('UUID'), findsNothing);
-    expect(find.text('Önce bir dizi seçin, ardından bölümü seçin.'), findsOneWidget);
+    expect(find.text('Önce bir dizi seçin.'), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-search')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-results')), findsOneWidget);
 
     await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
     await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-search')), findsNothing);
+    expect(find.byKey(const Key('campaign-series-results')), findsNothing);
+    expect(find.text('Kuzey Yıldızı'), findsWidgets);
+    expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
 
     await tester.tap(find.text('Bölüm 1 · Başlangıç').last);
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-episode-selected')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('campaign-series-change')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-series-results')), findsOneWidget);
     await tester.tap(find.byKey(Key('campaign-series-option-$seriesB')));
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Başlangıç'), findsNothing);
+    expect(find.byKey(const Key('campaign-episode-selected')), findsNothing);
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Giriş'), findsWidgets);
@@ -308,6 +340,109 @@ void main() {
     expect(find.text('Kuzey Yıldızı'), findsWidgets);
     expect(find.text('Yayında'), findsWidgets);
     expect(find.text(seriesA), findsNothing);
+    expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-search')), findsNothing);
+    expect(find.byKey(const Key('campaign-series-results')), findsNothing);
+  });
+
+  testWidgets('episode loading and enabled picker after series selection', (
+    tester,
+  ) async {
+    final delay = Completer<void>();
+    final episodesRepo = _EpisodeCatalog(episodes, delay: delay);
+    await pumpPopup(
+      tester,
+      repo: _FakeCampaignRepository(),
+      episodeRepository: episodesRepo,
+    );
+    await selectDestination(tester, 'Bölüm');
+    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('campaign-episode-loading')), findsOneWidget);
+    expect(find.text('Bölümler yükleniyor...'), findsOneWidget);
+    expect(episodesRepo.fetchedSeriesIds, [seriesA]);
+
+    delay.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-episode-loading')), findsNothing);
+    expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
+  });
+
+  testWidgets('empty episode catalog shows an explicit empty state', (
+    tester,
+  ) async {
+    await pumpPopup(
+      tester,
+      repo: _FakeCampaignRepository(),
+      episodeRepository: _EpisodeCatalog(const []),
+    );
+    await selectDestination(tester, 'Bölüm');
+    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-episode-empty')), findsOneWidget);
+    expect(find.text('Bu dizide henüz bölüm bulunmuyor.'), findsOneWidget);
+  });
+
+  testWidgets('episode load error shows retry and refetches the same series', (
+    tester,
+  ) async {
+    final episodesRepo = _EpisodeCatalog(
+      episodes,
+      fetchError: StateError('fail'),
+    );
+    await pumpPopup(
+      tester,
+      repo: _FakeCampaignRepository(),
+      episodeRepository: episodesRepo,
+    );
+    await selectDestination(tester, 'Bölüm');
+    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-episode-error')), findsOneWidget);
+    expect(find.text('Bölümler yüklenemedi.'), findsOneWidget);
+
+    episodesRepo.fetchError = null;
+    await tester.tap(find.byKey(const Key('campaign-episode-retry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-episode-error')), findsNothing);
+    expect(episodesRepo.fetchedSeriesIds, [seriesA, seriesA]);
+  });
+
+  testWidgets('edit episode campaign hydrates collapsed series and selected episode', (
+    tester,
+  ) async {
+    await pumpPopup(
+      tester,
+      repo: _FakeCampaignRepository(),
+      existing: AdminCampaign(
+        id: 'camp-edit-ep',
+        imagePath: '',
+        destinationType: 'episode',
+        destinationEpisodeId: episodeA1,
+        targetLocales: const ['tr'],
+        isActive: false,
+        priority: 0,
+        startsAt: DateTime.utc(2026, 1, 1),
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        translations: const [
+          AdminCampaignTranslation(locale: 'tr', title: 'Eski', description: ''),
+        ],
+      ),
+    );
+
+    expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-episode-selected')), findsOneWidget);
+    expect(find.text('Kuzey Yıldızı'), findsWidgets);
+    expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
+    expect(find.byKey(const Key('campaign-series-search')), findsNothing);
+    expect(find.byKey(const Key('campaign-series-results')), findsNothing);
+    expect(find.text(seriesA), findsNothing);
+    expect(find.text(episodeA1), findsNothing);
   });
 
   testWidgets('missing series target stays preserved and visible as unavailable', (
@@ -459,8 +594,45 @@ void main() {
     await tester.pumpAndSettle();
     await selectDestination(tester, 'Dizi');
     expect(find.byKey(const Key('campaign-series-picker')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-search')), findsOneWidget);
     expect(find.text('UUID'), findsNothing);
     expect(find.text('Dizi ID *'), findsNothing);
     expect(find.byKey(const Key('campaign-priority-field')), findsNothing);
+
+    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-series-search')), findsNothing);
+    expect(find.byKey(const Key('campaign-series-results')), findsNothing);
+  });
+
+  testWidgets('push episode destination uses the same series fetch path', (
+    tester,
+  ) async {
+    final episodesRepo = _EpisodeCatalog(episodes);
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: PushCampaignFormDialog(
+            repository: _FakePushRepository(),
+            seriesRepository: _SeriesCatalog(series),
+            episodeRepository: episodesRepo,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await selectDestination(tester, 'Bölüm');
+    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
+    await tester.pumpAndSettle();
+    expect(episodesRepo.fetchedSeriesIds, [seriesA]);
+    expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
+    expect(find.text(episodeA1), findsNothing);
   });
 }

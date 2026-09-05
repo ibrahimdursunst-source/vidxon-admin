@@ -37,8 +37,14 @@ class CampaignDestinationController extends ChangeNotifier {
   bool loadingEpisodes = false;
   bool seriesUnavailable = false;
   bool episodeUnavailable = false;
-  String? loadError;
+  bool seriesPickerOpen = true;
+  bool episodePickerOpen = true;
+  String? seriesLoadError;
+  String? episodeLoadError;
   String seriesQuery = '';
+  String? lastEpisodeFetchSeriesId;
+  int episodeFetchCalls = 0;
+  int _episodeLoadToken = 0;
 
   String get destinationType => _destinationType;
   String? get selectedSeriesId => _selectedSeriesId;
@@ -50,6 +56,18 @@ class CampaignDestinationController extends ChangeNotifier {
       CampaignDestinationType.needsSeriesPicker(_destinationType);
   bool get showEpisodePicker =>
       CampaignDestinationType.needsEpisodePicker(_destinationType);
+
+  /// Search + results are visible only while choosing/changing a series.
+  bool get isSeriesCatalogVisible =>
+      showSeriesPicker && (selectedSeries == null || seriesPickerOpen);
+
+  bool get isEpisodeChooserVisible =>
+      showEpisodePicker &&
+      selectedSeriesId != null &&
+      !loadingEpisodes &&
+      episodeLoadError == null &&
+      _episodes.isNotEmpty &&
+      (selectedEpisode == null || episodePickerOpen);
 
   String? get seriesIdForSave {
     if (_destinationType != CampaignDestinationType.series) return null;
@@ -96,30 +114,52 @@ class CampaignDestinationController extends ChangeNotifier {
     if (!showSeriesPicker) return;
     await _ensureCatalogLoaded();
     await _resolveInitialTargets();
+    _syncPickerOpenState();
+    notifyListeners();
   }
 
   Future<void> setDestinationType(String type) async {
     if (_destinationType == type) return;
     _destinationType = type;
-    loadError = null;
+    seriesLoadError = null;
+    episodeLoadError = null;
     notifyListeners();
     if (showSeriesPicker) {
       await _ensureCatalogLoaded();
-      if (showEpisodePicker &&
-          _selectedSeriesId != null &&
-          _episodes.isEmpty) {
-        await _loadEpisodesForSelectedSeries();
+      if (showEpisodePicker && _selectedSeriesId != null) {
+        episodePickerOpen = selectedEpisode == null;
+        await reloadEpisodes();
       }
       if (_selectedSeriesId == null &&
           _selectedEpisodeId == null &&
           (_preservedSeriesId != null || _preservedEpisodeId != null)) {
         await _resolveInitialTargets();
+        _syncPickerOpenState();
       }
     }
+    notifyListeners();
   }
 
   void setSeriesQuery(String value) {
     seriesQuery = value;
+    notifyListeners();
+  }
+
+  void beginChangeSeries() {
+    seriesPickerOpen = true;
+    seriesQuery = '';
+    notifyListeners();
+  }
+
+  void cancelChangeSeries() {
+    if (selectedSeries == null && !seriesUnavailable) return;
+    seriesPickerOpen = false;
+    seriesQuery = '';
+    notifyListeners();
+  }
+
+  void beginChangeEpisode() {
+    episodePickerOpen = true;
     notifyListeners();
   }
 
@@ -129,35 +169,44 @@ class CampaignDestinationController extends ChangeNotifier {
     _preservedSeriesId = null;
     seriesUnavailable = false;
     seriesQuery = '';
+    seriesPickerOpen = false;
     if (showEpisodePicker && seriesChanged) {
       _selectedEpisodeId = null;
       _preservedEpisodeId = null;
       episodeUnavailable = false;
       _episodes = const [];
+      episodeLoadError = null;
+      episodePickerOpen = true;
     }
     notifyListeners();
     if (showEpisodePicker && seriesChanged) {
-      await _loadEpisodesForSelectedSeries();
+      await reloadEpisodes();
     }
   }
 
   void selectEpisode(AdminEpisode episode) {
+    if (episode.seriesId != _selectedSeriesId) {
+      return;
+    }
     _selectedEpisodeId = episode.id;
     _preservedEpisodeId = null;
     episodeUnavailable = false;
+    episodePickerOpen = false;
     notifyListeners();
   }
+
+  Future<void> reloadEpisodes() => _loadEpisodesForSelectedSeries();
 
   Future<void> _ensureCatalogLoaded() async {
     if (_catalogLoaded || loadingSeries) return;
     loadingSeries = true;
-    loadError = null;
+    seriesLoadError = null;
     notifyListeners();
     try {
       _series = await _seriesRepository.fetchAll();
       _catalogLoaded = true;
     } catch (_) {
-      loadError = 'Diziler yüklenemedi. Lütfen tekrar deneyin.';
+      seriesLoadError = 'Diziler yüklenemedi. Lütfen tekrar deneyin.';
     } finally {
       loadingSeries = false;
       notifyListeners();
@@ -181,6 +230,7 @@ class CampaignDestinationController extends ChangeNotifier {
       _selectedSeriesId = inCatalog.id;
       _preservedSeriesId = null;
       seriesUnavailable = false;
+      seriesPickerOpen = false;
       notifyListeners();
       return;
     }
@@ -190,10 +240,12 @@ class CampaignDestinationController extends ChangeNotifier {
       _selectedSeriesId = fetched.id;
       _preservedSeriesId = null;
       seriesUnavailable = false;
+      seriesPickerOpen = false;
     } catch (_) {
       _selectedSeriesId = null;
       _preservedSeriesId = seriesId;
       seriesUnavailable = true;
+      seriesPickerOpen = true;
     }
     notifyListeners();
   }
@@ -208,10 +260,11 @@ class CampaignDestinationController extends ChangeNotifier {
         _selectedEpisodeId = fetched.id;
         _preservedEpisodeId = null;
         episodeUnavailable = false;
+        episodePickerOpen = false;
         notifyListeners();
         return;
       }
-      await _loadEpisodesForSelectedSeries();
+      await reloadEpisodes();
       final inList = _findEpisode(fetched.id);
       if (inList == null) {
         _episodes = [fetched, ..._episodes];
@@ -219,10 +272,12 @@ class CampaignDestinationController extends ChangeNotifier {
       _selectedEpisodeId = fetched.id;
       _preservedEpisodeId = null;
       episodeUnavailable = false;
+      episodePickerOpen = false;
     } catch (_) {
       _selectedEpisodeId = null;
       _preservedEpisodeId = episodeId;
       episodeUnavailable = true;
+      episodePickerOpen = true;
       if (_preservedSeriesId != null && _selectedSeriesId == null) {
         await _resolveSeries(_preservedSeriesId);
       }
@@ -232,22 +287,39 @@ class CampaignDestinationController extends ChangeNotifier {
 
   Future<void> _loadEpisodesForSelectedSeries() async {
     final seriesId = _selectedSeriesId;
+    final token = ++_episodeLoadToken;
     if (seriesId == null) {
       _episodes = const [];
+      lastEpisodeFetchSeriesId = null;
+      loadingEpisodes = false;
+      episodeLoadError = null;
       notifyListeners();
       return;
     }
     loadingEpisodes = true;
+    episodeLoadError = null;
+    lastEpisodeFetchSeriesId = seriesId;
+    episodeFetchCalls += 1;
     notifyListeners();
     try {
-      _episodes = await _episodeRepository.fetchEpisodesForSeries(seriesId);
+      final loaded = await _episodeRepository.fetchEpisodesForSeries(seriesId);
+      if (token != _episodeLoadToken) return;
+      _episodes = sortEpisodesByNumber(loaded);
     } catch (_) {
-      loadError = 'Bölümler yüklenemedi. Lütfen tekrar deneyin.';
+      if (token != _episodeLoadToken) return;
+      episodeLoadError = 'Bölümler yüklenemedi.';
       _episodes = const [];
     } finally {
-      loadingEpisodes = false;
-      notifyListeners();
+      if (token == _episodeLoadToken) {
+        loadingEpisodes = false;
+        notifyListeners();
+      }
     }
+  }
+
+  void _syncPickerOpenState() {
+    seriesPickerOpen = selectedSeries == null;
+    episodePickerOpen = selectedEpisode == null;
   }
 
   AdminSeries? _findSeries(String id) {

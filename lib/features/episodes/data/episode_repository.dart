@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../content/data/content_errors.dart';
@@ -14,6 +15,11 @@ class EpisodeRepository {
   SupabaseClient get _resolvedClient => _client ?? Supabase.instance.client;
 
   /// Safe column projection for admin reads against [public.episodes].
+  ///
+  /// Omits Stream UID columns and [original_audio_locale]. That locale column
+  /// is added only by `20260904180000_episode_media_tracks_v1` and is not on
+  /// current remote. [AdminEpisode.fromMap] defaults a missing locale to `tr`.
+  /// Media-track locale uses `admin_list_episode_media_tracks`.
   static const adminEpisodeSelect = '''
     id,
     series_id,
@@ -26,7 +32,6 @@ class EpisodeRepository {
     cloudflare_stream_pending_requested_at,
     cloudflare_stream_last_checked_at,
     duration_seconds,
-    original_audio_locale,
     is_free,
     coin_price,
     is_published,
@@ -46,18 +51,26 @@ class EpisodeRepository {
   static const adminEpisodeCountColumn = 'id';
 
   Future<List<AdminEpisode>> fetchEpisodesForSeries(String seriesId) async {
-    final response = await _resolvedClient
-        .from('episodes')
-        .select(adminEpisodeSelect)
-        .eq('series_id', seriesId)
-        .order('episode_number', ascending: true)
-        .order('created_at', ascending: true);
+    try {
+      final response = await _resolvedClient
+          .from('episodes')
+          .select(adminEpisodeSelect)
+          .eq('series_id', seriesId)
+          .order('episode_number', ascending: true)
+          .order('created_at', ascending: true);
 
-    final rows = response as List<dynamic>;
+      final rows = response as List<dynamic>;
 
-    return rows
-        .map((row) => AdminEpisode.fromMap(row as Map<String, dynamic>))
-        .toList();
+      return rows
+          .map((row) => AdminEpisode.fromMap(row as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (error) {
+      debugPrint(
+        'EpisodeRepository.fetchEpisodesForSeries failed '
+        'code=${error.code} message=${error.message}',
+      );
+      rethrow;
+    }
   }
 
   /// Loads reorder state from one atomic admin RPC snapshot.
