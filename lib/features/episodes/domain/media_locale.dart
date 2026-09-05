@@ -1,17 +1,14 @@
+import '../../../core/locale/vidxon_product_locales.dart';
+
 /// Vidxon product locale helpers. `pt` and `pt_BR` are distinct — never fuzzy-match.
 abstract final class MediaLocale {
-  static final RegExp pattern = RegExp(r'^[a-z]{2,3}(_[A-Z]{2})?$');
+  /// Accepts `tr`, `pt_BR` (region), or `zh_Hans` (ISO 15924 script).
+  static final RegExp pattern = RegExp(
+    r'^[a-z]{2,3}(_([A-Z]{2}|[A-Z][a-z]{3}))?$',
+  );
 
-  /// Common suggestions; arbitrary valid locales are still allowed.
-  static const List<String> suggestedLocales = [
-    'tr',
-    'en',
-    'es',
-    'pt',
-    'pt_BR',
-    'ar',
-    'id',
-  ];
+  /// Curated Vidxon UI suggestions; arbitrary valid locales are still allowed.
+  static const List<String> suggestedLocales = VidxonProductLocales.all;
 
   static bool isValid(String? value) {
     if (value == null) {
@@ -33,4 +30,7 @@ abstract final class MediaLocale {
 
   static String toBcp47(String vidxonLocale) =>
       vidxonLocale.replaceAll('_', '-');
+
+  static String displayName(String locale) =>
+      VidxonProductLocales.displayName(locale);
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
+
 /// Reusable per-locale translation fields for campaign forms.
 class LocaleTranslationFields extends StatelessWidget {
   const LocaleTranslationFields({
@@ -37,7 +39,7 @@ class LocaleTranslationFields extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              locale.toUpperCase(),
+              VidxonProductLocales.displayName(locale),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
@@ -75,13 +77,10 @@ class LocaleTranslationFields extends StatelessWidget {
             TextFormField(
               controller: ctaController,
               decoration: InputDecoration(
-                labelText:
-                    'CTA Butonu ($locale)${ctaRequired ? ' *' : ''}',
+                labelText: 'CTA Butonu ($locale)${ctaRequired ? ' *' : ''}',
               ),
               validator: ctaRequired
-                  ? (v) => v == null || v.trim().isEmpty
-                      ? 'CTA zorunlu'
-                      : null
+                  ? (v) => v == null || v.trim().isEmpty ? 'CTA zorunlu' : null
                   : null,
             ),
           ],

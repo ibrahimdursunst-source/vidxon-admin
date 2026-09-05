@@ -102,7 +102,7 @@ class _EpisodeMediaTracksPageState extends State<EpisodeMediaTracksPage> {
     final locale = _originalLocaleController.text.trim();
     if (!MediaLocale.isValid(locale)) {
       setState(() {
-        _errorMessage = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR.';
+        _errorMessage = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.';
       });
       return;
     }
@@ -663,7 +663,7 @@ class _LocaleField extends StatelessWidget {
           enabled: enabled,
           decoration: const InputDecoration(
             labelText: 'Dil kodu',
-            hintText: 'tr, en, pt_BR…',
+            hintText: 'tr, en, pt_BR, zh_Hans…',
             border: OutlineInputBorder(),
           ),
         ),
@@ -674,7 +674,7 @@ class _LocaleField extends StatelessWidget {
           children: [
             for (final locale in MediaLocale.suggestedLocales)
               ActionChip(
-                label: Text(locale),
+                label: Text(MediaLocale.displayName(locale)),
                 onPressed: enabled
                     ? () {
                         controller.text = locale;
@@ -882,7 +882,9 @@ class _AudioUploadDialogState extends State<_AudioUploadDialog> {
 
     final locale = _localeController.text.trim();
     if (!MediaLocale.isValid(locale)) {
-      setState(() => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR.');
+      setState(
+        () => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.',
+      );
       return;
     }
 
@@ -1133,7 +1135,9 @@ class _SubtitleUploadDialogState extends State<_SubtitleUploadDialog> {
 
     final locale = _localeController.text.trim();
     if (!MediaLocale.isValid(locale)) {
-      setState(() => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR.');
+      setState(
+        () => _error = 'Geçersiz dil kodu. Örnek: tr, en, pt_BR, zh_Hans.',
+      );
       return;
     }
 

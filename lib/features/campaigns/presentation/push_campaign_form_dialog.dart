@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
 import 'locale_translation_fields.dart';
@@ -42,23 +43,27 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _seriesIdController =
-        TextEditingController(text: e?.destinationSeriesId ?? '');
-    _episodeIdController =
-        TextEditingController(text: e?.destinationEpisodeId ?? '');
+    _seriesIdController = TextEditingController(
+      text: e?.destinationSeriesId ?? '',
+    );
+    _episodeIdController = TextEditingController(
+      text: e?.destinationEpisodeId ?? '',
+    );
     _destinationType = e?.destinationType ?? 'none';
     _scheduledAt = e?.scheduledAt;
 
-    _selectedLocales =
-        e != null ? Set<String>.from(e.targetLocales) : {'tr'};
+    _selectedLocales = e != null ? Set<String>.from(e.targetLocales) : {'tr'};
 
     for (final locale in kSupportedLocales) {
-      final existing =
-          e?.translations.where((t) => t.locale == locale).firstOrNull;
-      _titleControllers[locale] =
-          TextEditingController(text: existing?.title ?? '');
-      _bodyControllers[locale] =
-          TextEditingController(text: existing?.body ?? '');
+      final existing = e?.translations
+          .where((t) => t.locale == locale)
+          .firstOrNull;
+      _titleControllers[locale] = TextEditingController(
+        text: existing?.title ?? '',
+      );
+      _bodyControllers[locale] = TextEditingController(
+        text: existing?.body ?? '',
+      );
     }
   }
 
@@ -136,8 +141,13 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
     );
     if (time == null || !mounted) return;
     setState(() {
-      _scheduledAt =
-          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _scheduledAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
@@ -157,10 +167,9 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
               children: [
                 Text(
                   _isEditing ? 'Push Düzenle' : 'Yeni Push Bildirimi',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
 
@@ -171,14 +180,19 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   decoration: const InputDecoration(labelText: 'Hedef Türü'),
                   items: const [
                     DropdownMenuItem(
-                        value: 'none', child: Text('Bilgilendirme')),
+                      value: 'none',
+                      child: Text('Bilgilendirme'),
+                    ),
                     DropdownMenuItem(value: 'series', child: Text('Dizi')),
                     DropdownMenuItem(value: 'episode', child: Text('Bölüm')),
                     DropdownMenuItem(
-                        value: 'coin_purchase',
-                        child: Text('Jeton Satın Al')),
+                      value: 'coin_purchase',
+                      child: Text('Jeton Satın Al'),
+                    ),
                     DropdownMenuItem(
-                        value: 'membership', child: Text('Üyelik')),
+                      value: 'membership',
+                      child: Text('Üyelik'),
+                    ),
                   ],
                   onChanged: (v) =>
                       setState(() => _destinationType = v ?? 'none'),
@@ -189,12 +203,14 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   TextFormField(
                     controller: _seriesIdController,
                     decoration: const InputDecoration(
-                        labelText: 'Dizi ID *', hintText: 'UUID'),
+                      labelText: 'Dizi ID *',
+                      hintText: 'UUID',
+                    ),
                     validator: (v) =>
                         _destinationType == 'series' &&
-                                (v == null || v.trim().isEmpty)
-                            ? 'Dizi ID zorunlu'
-                            : null,
+                            (v == null || v.trim().isEmpty)
+                        ? 'Dizi ID zorunlu'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -203,12 +219,14 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   TextFormField(
                     controller: _episodeIdController,
                     decoration: const InputDecoration(
-                        labelText: 'Bölüm ID *', hintText: 'UUID'),
+                      labelText: 'Bölüm ID *',
+                      hintText: 'UUID',
+                    ),
                     validator: (v) =>
                         _destinationType == 'episode' &&
-                                (v == null || v.trim().isEmpty)
-                            ? 'Bölüm ID zorunlu'
-                            : null,
+                            (v == null || v.trim().isEmpty)
+                        ? 'Bölüm ID zorunlu'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -220,7 +238,7 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   children: kSupportedLocales.map((locale) {
                     final selected = _selectedLocales.contains(locale);
                     return FilterChip(
-                      label: Text(locale.toUpperCase()),
+                      label: Text(VidxonProductLocales.displayName(locale)),
                       selected: selected,
                       onSelected: (v) {
                         setState(() {
@@ -269,8 +287,10 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
 
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
-                  Text(_errorMessage!,
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ],
 
                 const SizedBox(height: 20),
@@ -286,16 +306,20 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                     ),
                     const SizedBox(width: 8),
                     OutlinedButton(
-                      onPressed: _isSaving ? null : () => _save(status: 'draft'),
+                      onPressed: _isSaving
+                          ? null
+                          : () => _save(status: 'draft'),
                       child: const Text('Taslak Kaydet'),
                     ),
                     if (_scheduledAt != null) ...[
                       const SizedBox(width: 8),
                       FilledButton(
-                        onPressed:
-                            _isSaving ? null : () => _save(status: 'scheduled'),
+                        onPressed: _isSaving
+                            ? null
+                            : () => _save(status: 'scheduled'),
                         style: FilledButton.styleFrom(
-                            backgroundColor: Colors.orange),
+                          backgroundColor: Colors.orange,
+                        ),
                         child: const Text('Zamanla'),
                       ),
                     ],

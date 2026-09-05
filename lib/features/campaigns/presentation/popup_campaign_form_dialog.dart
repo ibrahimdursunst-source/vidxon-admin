@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../application/campaign_image_controller.dart';
 import '../data/campaign_repository.dart';
@@ -10,7 +11,7 @@ import '../domain/admin_campaign.dart';
 import 'locale_translation_fields.dart';
 
 /// Supported Vidxon app locales for campaign targeting.
-const kSupportedLocales = ['tr', 'en', 'es', 'pt', 'pt_BR', 'ar', 'id'];
+const List<String> kSupportedLocales = VidxonProductLocales.all;
 
 class PopupCampaignFormDialog extends StatefulWidget {
   const PopupCampaignFormDialog({
@@ -62,36 +63,42 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _imageController = widget.imageController ??
+    _imageController =
+        widget.imageController ??
         CampaignImageController(
           imageUploadRepository: widget.imageUploadRepository,
           initialObjectPath: e?.imagePath,
         );
-    _seriesIdController =
-        TextEditingController(text: e?.destinationSeriesId ?? '');
-    _episodeIdController =
-        TextEditingController(text: e?.destinationEpisodeId ?? '');
-    _priorityController =
-        TextEditingController(text: (e?.priority ?? 0).toString());
+    _seriesIdController = TextEditingController(
+      text: e?.destinationSeriesId ?? '',
+    );
+    _episodeIdController = TextEditingController(
+      text: e?.destinationEpisodeId ?? '',
+    );
+    _priorityController = TextEditingController(
+      text: (e?.priority ?? 0).toString(),
+    );
     _destinationType = e?.destinationType ?? 'none';
     _isActive = e?.isActive ?? false;
     _startsAt = e?.startsAt ?? DateTime.now();
     _endsAt = e?.endsAt;
 
-    _selectedLocales = e != null
-        ? Set<String>.from(e.targetLocales)
-        : {'tr'};
+    _selectedLocales = e != null ? Set<String>.from(e.targetLocales) : {'tr'};
 
     // Initialize translation controllers
     for (final locale in kSupportedLocales) {
-      final existing =
-          e?.translations.where((t) => t.locale == locale).firstOrNull;
-      _titleControllers[locale] =
-          TextEditingController(text: existing?.title ?? '');
-      _descriptionControllers[locale] =
-          TextEditingController(text: existing?.description ?? '');
-      _ctaControllers[locale] =
-          TextEditingController(text: existing?.ctaLabel ?? '');
+      final existing = e?.translations
+          .where((t) => t.locale == locale)
+          .firstOrNull;
+      _titleControllers[locale] = TextEditingController(
+        text: existing?.title ?? '',
+      );
+      _descriptionControllers[locale] = TextEditingController(
+        text: existing?.description ?? '',
+      );
+      _ctaControllers[locale] = TextEditingController(
+        text: existing?.ctaLabel ?? '',
+      );
     }
   }
 
@@ -119,7 +126,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         _errorMessage = _imageController.uploading
             ? 'Görsel yükleniyor, lütfen bekleyin.'
             : (_imageController.errorMessage ??
-                'Görsel yüklemesi tamamlanmadan kaydedilemez.');
+                  'Görsel yüklemesi tamamlanmadan kaydedilemez.');
       });
       return;
     }
@@ -189,8 +196,13 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
     );
     if (time == null || !mounted) return;
 
-    final dt =
-        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     setState(() {
       if (isStart) {
         _startsAt = dt;
@@ -216,10 +228,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
               children: [
                 Text(
                   _isEditing ? 'Pop-up Düzenle' : 'Yeni Pop-up',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
 
@@ -244,14 +255,19 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                   decoration: const InputDecoration(labelText: 'Hedef Türü'),
                   items: const [
                     DropdownMenuItem(
-                        value: 'none', child: Text('Bilgilendirme')),
+                      value: 'none',
+                      child: Text('Bilgilendirme'),
+                    ),
                     DropdownMenuItem(value: 'series', child: Text('Dizi')),
                     DropdownMenuItem(value: 'episode', child: Text('Bölüm')),
                     DropdownMenuItem(
-                        value: 'coin_purchase',
-                        child: Text('Jeton Satın Al')),
+                      value: 'coin_purchase',
+                      child: Text('Jeton Satın Al'),
+                    ),
                     DropdownMenuItem(
-                        value: 'membership', child: Text('Üyelik')),
+                      value: 'membership',
+                      child: Text('Üyelik'),
+                    ),
                   ],
                   onChanged: (v) =>
                       setState(() => _destinationType = v ?? 'none'),
@@ -262,12 +278,14 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                   TextFormField(
                     controller: _seriesIdController,
                     decoration: const InputDecoration(
-                        labelText: 'Dizi ID *', hintText: 'UUID'),
+                      labelText: 'Dizi ID *',
+                      hintText: 'UUID',
+                    ),
                     validator: (v) =>
                         _destinationType == 'series' &&
-                                (v == null || v.trim().isEmpty)
-                            ? 'Dizi ID zorunlu'
-                            : null,
+                            (v == null || v.trim().isEmpty)
+                        ? 'Dizi ID zorunlu'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -276,12 +294,14 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                   TextFormField(
                     controller: _episodeIdController,
                     decoration: const InputDecoration(
-                        labelText: 'Bölüm ID *', hintText: 'UUID'),
+                      labelText: 'Bölüm ID *',
+                      hintText: 'UUID',
+                    ),
                     validator: (v) =>
                         _destinationType == 'episode' &&
-                                (v == null || v.trim().isEmpty)
-                            ? 'Bölüm ID zorunlu'
-                            : null,
+                            (v == null || v.trim().isEmpty)
+                        ? 'Bölüm ID zorunlu'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -300,7 +320,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                   children: kSupportedLocales.map((locale) {
                     final selected = _selectedLocales.contains(locale);
                     return FilterChip(
-                      label: Text(locale.toUpperCase()),
+                      label: Text(VidxonProductLocales.displayName(locale)),
                       selected: selected,
                       onSelected: (v) {
                         setState(() {
@@ -366,8 +386,10 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
 
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
-                  Text(_errorMessage!,
-                      style: const TextStyle(color: Colors.red)),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ],
 
                 const SizedBox(height: 20),
@@ -385,13 +407,13 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                     FilledButton(
                       onPressed: _isSaving ? null : _save,
                       style: FilledButton.styleFrom(
-                          backgroundColor: _primaryColor),
+                        backgroundColor: _primaryColor,
+                      ),
                       child: _isSaving
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(_isEditing ? 'Güncelle' : 'Oluştur'),
                     ),
@@ -493,26 +515,26 @@ class _CampaignImageField extends StatelessWidget {
           child: controller.uploading
               ? const Center(child: CircularProgressIndicator())
               : controller.previewBytes != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.memory(
-                        controller.previewBytes!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 140,
-                        errorBuilder: (_, error, stackTrace) => const Center(
-                          child: Icon(Icons.image, color: Colors.white70, size: 48),
-                        ),
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        controller.hasImage
-                            ? 'Görsel yüklendi'
-                            : 'Görsel seçilmedi (opsiyonel)',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    controller.previewBytes!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 140,
+                    errorBuilder: (_, error, stackTrace) => const Center(
+                      child: Icon(Icons.image, color: Colors.white70, size: 48),
                     ),
+                  ),
+                )
+              : Center(
+                  child: Text(
+                    controller.hasImage
+                        ? 'Görsel yüklendi'
+                        : 'Görsel seçilmedi (opsiyonel)',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -521,7 +543,9 @@ class _CampaignImageField extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: controller.uploading ? null : onPick,
               icon: const Icon(Icons.upload_file, size: 18),
-              label: Text(controller.hasImage ? 'Görseli Değiştir' : 'Görsel Yükle'),
+              label: Text(
+                controller.hasImage ? 'Görseli Değiştir' : 'Görsel Yükle',
+              ),
             ),
             if (controller.hasImage || controller.previewBytes != null)
               TextButton(
@@ -555,7 +579,7 @@ class _DateTimeField extends StatelessWidget {
   Widget build(BuildContext context) {
     final formatted = value != null
         ? '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')} '
-            '${value!.hour.toString().padLeft(2, '0')}:${value!.minute.toString().padLeft(2, '0')}'
+              '${value!.hour.toString().padLeft(2, '0')}:${value!.minute.toString().padLeft(2, '0')}'
         : '—';
 
     return InkWell(
