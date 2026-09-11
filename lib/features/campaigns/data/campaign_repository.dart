@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_campaign.dart';
+import '../domain/campaign_test_targeting.dart';
 
 class CampaignException implements Exception {
   CampaignException(this.message);
@@ -45,7 +46,21 @@ class CampaignRepository {
     required DateTime startsAt,
     DateTime? endsAt,
     required List<AdminCampaignTranslation> translations,
+    bool testOnly = false,
+    String? testUserId,
   }) async {
+    final targeting = CampaignTestTargeting.persist(
+      testOnly: testOnly,
+      testUserId: testUserId,
+    );
+    final targetingError = CampaignTestTargeting.validate(
+      testOnly: targeting.testOnly,
+      testUserId: targeting.testUserId,
+    );
+    if (targetingError != null) {
+      throw CampaignException(_humanizeError(targetingError));
+    }
+
     final params = <String, dynamic>{
       'p_image_path': imagePath,
       'p_destination_type': destinationType,
@@ -57,6 +72,8 @@ class CampaignRepository {
       'p_starts_at': startsAt.toUtc().toIso8601String(),
       'p_ends_at': endsAt?.toUtc().toIso8601String(),
       'p_translations': translations.map((t) => t.toMap()).toList(),
+      'p_test_only': targeting.testOnly,
+      'p_test_user_id': targeting.testUserId,
     };
 
     if (id != null) {
@@ -104,6 +121,10 @@ class CampaignRepository {
         return 'Seçilen bölüm yayında değil.';
       case 'invalid_date_range':
         return 'Bitiş tarihi, başlangıçtan sonra olmalıdır.';
+      case 'test_user_required':
+        return 'Test kampanyası için bir kullanıcı seçilmelidir.';
+      case 'test_user_not_found':
+        return 'Seçilen test kullanıcısı bulunamadı.';
       default:
         return 'İşlem başarısız: $error';
     }

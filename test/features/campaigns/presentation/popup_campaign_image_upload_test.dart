@@ -29,6 +29,8 @@ class _FakeCampaignRepository extends CampaignRepository {
     required DateTime startsAt,
     DateTime? endsAt,
     required List<AdminCampaignTranslation> translations,
+    bool testOnly = false,
+    String? testUserId,
   }) async {
     upsertCalls += 1;
     lastImagePath = imagePath;

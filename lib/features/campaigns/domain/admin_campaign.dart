@@ -45,6 +45,8 @@ class AdminCampaign {
     required this.createdAt,
     required this.updatedAt,
     required this.translations,
+    this.testOnly = false,
+    this.testUserId,
   });
 
   final String id;
@@ -60,6 +62,8 @@ class AdminCampaign {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<AdminCampaignTranslation> translations;
+  final bool testOnly;
+  final String? testUserId;
 
   /// Display title: first translation title or campaign ID.
   String get displayTitle {
@@ -100,6 +104,8 @@ class AdminCampaign {
       updatedAt: DateTime.tryParse(map['updated_at']?.toString() ?? '') ??
           DateTime.now(),
       translations: translations,
+      testOnly: map['test_only'] == true,
+      testUserId: map['test_user_id']?.toString(),
     );
   }
 

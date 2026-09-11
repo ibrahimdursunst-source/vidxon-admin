@@ -80,6 +80,8 @@ class _FakeCampaignRepository extends CampaignRepository {
   String? lastSeriesId;
   String? lastEpisodeId;
   int? lastPriority;
+  bool? lastTestOnly;
+  String? lastTestUserId;
 
   @override
   Future<AdminCampaign> upsert({
@@ -94,11 +96,15 @@ class _FakeCampaignRepository extends CampaignRepository {
     required DateTime startsAt,
     DateTime? endsAt,
     required List<AdminCampaignTranslation> translations,
+    bool testOnly = false,
+    String? testUserId,
   }) async {
     lastDestinationType = destinationType;
     lastSeriesId = destinationSeriesId;
     lastEpisodeId = destinationEpisodeId;
     lastPriority = priority;
+    lastTestOnly = testOnly;
+    lastTestUserId = testUserId;
     return AdminCampaign(
       id: id ?? 'camp-1',
       imagePath: imagePath,

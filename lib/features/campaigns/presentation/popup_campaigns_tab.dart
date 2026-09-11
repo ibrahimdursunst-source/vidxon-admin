@@ -169,10 +169,31 @@ class PopupCampaignsTabState extends State<PopupCampaignsTab>
           ),
         ),
         DataCell(
-          Text(
-            campaign.displayTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              if (campaign.testOnly) ...[
+                Container(
+                  key: Key('campaign-test-only-badge-${campaign.id}'),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'TEST',
+                    style: TextStyle(color: Colors.orange, fontSize: 11),
+                  ),
+                ),
+              ],
+              Expanded(
+                child: Text(
+                  campaign.displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
         DataCell(Text(campaign.targetLocales.join(', '))),

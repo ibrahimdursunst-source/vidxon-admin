@@ -8,12 +8,16 @@ import '../../../l10n/admin_l10n.dart';
 import '../../episodes/data/episode_repository.dart';
 import '../../media/data/image_upload_repository.dart';
 import '../../series/data/series_repository.dart';
+import '../../users/data/admin_user_wallet_repository.dart';
+import '../../users/domain/admin_user_summary.dart';
 import '../application/campaign_destination_controller.dart';
 import '../application/campaign_image_controller.dart';
 import '../data/campaign_repository.dart';
 import '../domain/admin_campaign.dart';
 import '../domain/campaign_destination.dart';
+import '../domain/campaign_test_targeting.dart';
 import 'campaign_destination_fields.dart';
+import 'campaign_test_user_picker.dart';
 import 'locale_translation_fields.dart';
 
 /// Supported Vidxon app locales for campaign targeting.
@@ -29,6 +33,7 @@ class PopupCampaignFormDialog extends StatefulWidget {
     this.filePicker,
     this.seriesRepository,
     this.episodeRepository,
+    this.userRepository,
   });
 
   final CampaignRepository repository;
@@ -38,6 +43,7 @@ class PopupCampaignFormDialog extends StatefulWidget {
   final Future<({Uint8List bytes, String fileName})?> Function()? filePicker;
   final SeriesRepository? seriesRepository;
   final EpisodeRepository? episodeRepository;
+  final AdminUserWalletRepository? userRepository;
 
   @override
   State<PopupCampaignFormDialog> createState() =>
@@ -54,6 +60,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
 
   late String _destinationType;
   late bool _isActive;
+  late bool _testOnly;
+  String? _testUserId;
+  String? _testUserLabel;
   late DateTime _startsAt;
   DateTime? _endsAt;
   late Set<String> _selectedLocales;
@@ -91,6 +100,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
     );
     _destinationController.initialize();
     _isActive = e?.isActive ?? false;
+    _testOnly = e?.testOnly ?? false;
+    _testUserId = e?.testUserId;
+    _testUserLabel = e?.testUserId;
     _startsAt = e?.startsAt ?? DateTime.now();
     _endsAt = e?.endsAt;
 
@@ -131,6 +143,18 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final targetingError = CampaignTestTargeting.validate(
+      testOnly: _testOnly,
+      testUserId: _testUserId,
+    );
+    if (targetingError != null) {
+      setState(() {
+        _errorMessage = targetingError == 'test_user_required'
+            ? 'Test kampanyası için bir kullanıcı seçilmelidir.'
+            : targetingError;
+      });
+      return;
+    }
     if (!_imageController.canSave) {
       setState(() {
         _errorMessage = _imageController.uploading
@@ -170,6 +194,8 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         startsAt: _startsAt,
         endsAt: _endsAt,
         translations: translations,
+        testOnly: _testOnly,
+        testUserId: _testUserId,
       );
 
       if (mounted) Navigator.of(context).pop(true);
@@ -348,6 +374,44 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                   activeTrackColor: _primaryColor,
                   contentPadding: EdgeInsets.zero,
                 ),
+                SwitchListTile(
+                  key: const Key('campaign-test-only-toggle'),
+                  title: const Text('Yalnızca test'),
+                  subtitle: const Text(
+                    'Açıkken kampanya yalnızca seçilen kullanıcıya gösterilir.',
+                  ),
+                  value: _testOnly,
+                  onChanged: (v) {
+                    setState(() {
+                      _testOnly = v;
+                      if (!v) {
+                        _testUserId = null;
+                        _testUserLabel = null;
+                      }
+                    });
+                  },
+                  activeTrackColor: _primaryColor,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (_testOnly) ...[
+                  CampaignTestUserPicker(
+                    selectedUserId: _testUserId,
+                    selectedLabel: _testUserLabel,
+                    userRepository: widget.userRepository,
+                    onSelected: (AdminUserSummary user) {
+                      setState(() {
+                        _testUserId = user.userId;
+                        _testUserLabel = user.resolvedEmailLabel;
+                      });
+                    },
+                    onCleared: () {
+                      setState(() {
+                        _testUserId = null;
+                        _testUserLabel = null;
+                      });
+                    },
+                  ),
+                ],
 
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
