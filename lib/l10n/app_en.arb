@@ -139,6 +139,9 @@
   "sendTestHint": "Delivers only to the selected user's eligible devices. Send Now delivers to the full campaign audience.",
   "sendNowHint": "Send Now delivers to every opted-in device matching the campaign languages.",
   "sendTestStarted": "Test send started.",
+  "sendTestFailed": "The test notification could not be sent. Check delivery status before trying again.",
+  "sendNowFailed": "Notification delivery could not be completed. Check the campaign delivery status before sending again.",
+  "pushReadinessLoadFailed": "Device readiness could not be loaded.",
   "pushEligibleDevices": "Eligible devices: {count}",
   "@pushEligibleDevices": {
     "placeholders": {

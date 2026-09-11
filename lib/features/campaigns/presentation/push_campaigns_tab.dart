@@ -101,8 +101,14 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
       _load();
     } catch (e) {
       if (mounted) {
+        debugPrint('push send now failed');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.errorPrefixed('$e'))),
+          SnackBar(
+            content: Text(
+              context.l10n.sendNowFailed,
+              key: const Key('campaign-push-send-now-error'),
+            ),
+          ),
         );
       }
     }

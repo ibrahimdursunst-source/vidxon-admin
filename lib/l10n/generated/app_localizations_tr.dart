@@ -451,6 +451,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get sendTestStarted => 'Test gönderimi başlatıldı.';
 
   @override
+  String get sendTestFailed =>
+      'Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.';
+
+  @override
+  String get sendNowFailed =>
+      'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.';
+
+  @override
+  String get pushReadinessLoadFailed => 'Cihaz uygunluğu yüklenemedi.';
+
+  @override
   String pushEligibleDevices(int count) {
     return 'Uygun cihaz: $count';
   }

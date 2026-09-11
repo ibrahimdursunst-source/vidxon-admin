@@ -207,10 +207,20 @@ class PushCampaignRepository {
     );
     if (response.status != 200) {
       throw PushCampaignException(
-        'Bildirim gönderimi başlatılamadı. Lütfen tekrar deneyin.',
+        testUserId != null && testUserId.isNotEmpty
+            ? deliveryStartFailedMessage
+            : sendNowDeliveryFailedMessage,
       );
     }
   }
+
+  @visibleForTesting
+  static const deliveryStartFailedMessage =
+      'Bildirim gönderimi başlatılamadı. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.';
+
+  @visibleForTesting
+  static const sendNowDeliveryFailedMessage =
+      'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.';
 
   String _humanizeError(String error) {
     if (error.startsWith('missing_title_for_')) {

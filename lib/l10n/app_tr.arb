@@ -180,6 +180,9 @@
   "sendTestHint": "Yalnızca seçilen kullanıcının uygun cihazlarına gider. Şimdi Gönder kampanyanın tüm hedef kitlesine gider.",
   "sendNowHint": "Şimdi Gönder, kampanya dillerine uyan tüm uygun cihazlara gider.",
   "sendTestStarted": "Test gönderimi başlatıldı.",
+  "sendTestFailed": "Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.",
+  "sendNowFailed": "Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.",
+  "pushReadinessLoadFailed": "Cihaz uygunluğu yüklenemedi.",
   "pushEligibleDevices": "Uygun cihaz: {count}",
   "@pushEligibleDevices": {
     "placeholders": {

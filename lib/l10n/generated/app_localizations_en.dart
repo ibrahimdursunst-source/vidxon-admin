@@ -452,6 +452,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendTestStarted => 'Test send started.';
 
   @override
+  String get sendTestFailed =>
+      'The test notification could not be sent. Check delivery status before trying again.';
+
+  @override
+  String get sendNowFailed =>
+      'Notification delivery could not be completed. Check the campaign delivery status before sending again.';
+
+  @override
+  String get pushReadinessLoadFailed => 'Device readiness could not be loaded.';
+
+  @override
   String pushEligibleDevices(int count) {
     return 'Eligible devices: $count';
   }

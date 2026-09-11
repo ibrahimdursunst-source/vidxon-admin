@@ -79,9 +79,10 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
       });
     } catch (error) {
       if (!mounted) return;
+      debugPrint('push test readiness failed');
       setState(() {
         _loadingReadiness = false;
-        _error = error.toString();
+        _error = context.l10n.pushReadinessLoadFailed;
       });
     }
   }
@@ -110,9 +111,10 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
+      debugPrint('push test send failed');
       setState(() {
         _sending = false;
-        _error = error.toString();
+        _error = context.l10n.sendTestFailed;
       });
     }
   }
@@ -201,7 +203,11 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
                 ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _error!,
+                  key: const Key('push-test-send-error'),
+                  style: const TextStyle(color: Colors.red),
+                ),
               ],
             ],
           ),

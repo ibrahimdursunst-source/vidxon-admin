@@ -932,6 +932,24 @@ abstract class AppLocalizations {
   /// **'Test gönderimi başlatıldı.'**
   String get sendTestStarted;
 
+  /// No description provided for @sendTestFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.'**
+  String get sendTestFailed;
+
+  /// No description provided for @sendNowFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.'**
+  String get sendNowFailed;
+
+  /// No description provided for @pushReadinessLoadFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Cihaz uygunluğu yüklenemedi.'**
+  String get pushReadinessLoadFailed;
+
   /// No description provided for @pushEligibleDevices.
   ///
   /// In tr, this message translates to:

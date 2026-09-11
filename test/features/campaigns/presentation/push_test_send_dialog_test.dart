@@ -60,11 +60,15 @@ class _FakePushRepo extends PushCampaignRepository {
     this.campaigns = const [],
     this.readiness,
     this.localeReadiness,
+    this.testSendError,
+    this.sendNowError,
   }) : super(client: null);
 
   final List<AdminPushCampaign> campaigns;
   PushUserReadiness? readiness;
   PushUserReadiness? localeReadiness;
+  final Object? testSendError;
+  final Object? sendNowError;
   final List<String> readinessLocales = [];
   int sendNowCalls = 0;
   int testSendCalls = 0;
@@ -76,6 +80,9 @@ class _FakePushRepo extends PushCampaignRepository {
   @override
   Future<void> sendNow(String campaignId) async {
     sendNowCalls += 1;
+    if (sendNowError != null) {
+      throw sendNowError!;
+    }
   }
 
   @override
@@ -85,6 +92,9 @@ class _FakePushRepo extends PushCampaignRepository {
   }) async {
     testSendCalls += 1;
     lastTestUserId = testUserId;
+    if (testSendError != null) {
+      throw testSendError!;
+    }
   }
 
   @override
@@ -314,6 +324,192 @@ void main() {
     expect(repo.testSendCalls, 1);
     expect(repo.lastTestUserId, _testUserId);
     expect(repo.sendNowCalls, 0);
+    expect(find.byKey(const Key('push-test-send-error')), findsNothing);
+  });
+
+  testWidgets('failed Test Send shows localized safe error, not ClientException', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const leak =
+        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
+    final repo = _FakePushRepo(
+      readiness: const PushUserReadiness(
+        userId: _testUserId,
+        eligibleDeviceCount: 1,
+        androidCount: 1,
+        iosCount: 0,
+      ),
+      testSendError: Exception(leak),
+    );
+    await tester.pumpWidget(
+      _app(
+        PushTestSendDialog(
+          campaign: _campaign(),
+          repository: repo,
+          userRepository: _FakeUsers([_testUser()]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _selectQaUser(tester);
+    await tester.tap(find.byKey(const Key('push-test-send-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(repo.testSendCalls, 1);
+    expect(repo.lastTestUserId, _testUserId);
+    expect(repo.sendNowCalls, 0);
+    expect(find.byKey(const Key('push-test-send-error')), findsOneWidget);
+    expect(
+      find.text(
+        'Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ClientException'), findsNothing);
+    expect(find.textContaining('Failed to fetch'), findsNothing);
+    expect(find.textContaining('supabase.co'), findsNothing);
+    expect(find.textContaining('send-push-campaign'), findsNothing);
+    expect(find.textContaining('Lütfen tekrar deneyin'), findsNothing);
+    expect(find.byKey(const Key('push-test-send-confirm')), findsOneWidget);
+  });
+
+  testWidgets('failed Test Send English copy avoids raw infrastructure errors', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const leak =
+        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
+    final repo = _FakePushRepo(
+      readiness: const PushUserReadiness(
+        userId: _testUserId,
+        eligibleDeviceCount: 1,
+        androidCount: 1,
+        iosCount: 0,
+      ),
+      testSendError: Exception(leak),
+    );
+    await tester.pumpWidget(
+      _app(
+        PushTestSendDialog(
+          campaign: _campaign(),
+          repository: repo,
+          userRepository: _FakeUsers([_testUser()]),
+        ),
+        locale: const Locale('en'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _selectQaUser(tester);
+    await tester.tap(find.byKey(const Key('push-test-send-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'The test notification could not be sent. Check delivery status before trying again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ClientException'), findsNothing);
+    expect(find.textContaining('supabase.co'), findsNothing);
+    expect(find.textContaining('Please try again.'), findsNothing);
+  });
+
+  test('function invoke failure copy does not ask for a blind retry', () {
+    expect(
+      PushCampaignRepository.deliveryStartFailedMessage.contains(
+        'Lütfen tekrar deneyin',
+      ),
+      isFalse,
+    );
+    expect(
+      PushCampaignRepository.deliveryStartFailedMessage.contains(
+        'gönderim durumunu kontrol edin',
+      ),
+      isTrue,
+    );
+    expect(
+      PushCampaignRepository.sendNowDeliveryFailedMessage.contains(
+        'Lütfen tekrar deneyin',
+      ),
+      isFalse,
+    );
+    expect(
+      PushCampaignRepository.sendNowDeliveryFailedMessage.contains(
+        'gönderim durumunu kontrol edin',
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('failed Send Now shows localized safe error, not ClientException', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(2400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const leak =
+        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
+    final repo = _FakePushRepo(
+      campaigns: [_campaign()],
+      sendNowError: Exception(leak),
+    );
+    await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
+    await tester.tap(find.byKey(const Key('campaign-push-send-now')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('campaign-push-send-now-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(repo.sendNowCalls, 1);
+    expect(repo.testSendCalls, 0);
+    expect(find.byKey(const Key('campaign-push-send-now-error')), findsOneWidget);
+    expect(
+      find.text(
+        'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ClientException'), findsNothing);
+    expect(find.textContaining('Failed to fetch'), findsNothing);
+    expect(find.textContaining('supabase.co'), findsNothing);
+    expect(find.textContaining('send-push-campaign'), findsNothing);
+    expect(find.textContaining('Lütfen tekrar deneyin'), findsNothing);
+  });
+
+  testWidgets('failed Send Now English copy avoids raw infrastructure errors', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(2400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const leak =
+        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
+    final repo = _FakePushRepo(
+      campaigns: [_campaign()],
+      sendNowError: Exception(leak),
+    );
+    await tester.pumpWidget(
+      _app(PushCampaignsTab(repository: repo), locale: const Locale('en')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
+    await tester.tap(find.byKey(const Key('campaign-push-send-now')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('campaign-push-send-now-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Notification delivery could not be completed. Check the campaign delivery status before sending again.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ClientException'), findsNothing);
+    expect(find.textContaining('supabase.co'), findsNothing);
   });
 
   testWidgets('English copy uses Send Test', (tester) async {
