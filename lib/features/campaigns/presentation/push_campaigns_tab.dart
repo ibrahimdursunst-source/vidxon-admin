@@ -4,6 +4,7 @@ import '../../../l10n/admin_l10n.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
 import 'push_campaign_form_dialog.dart';
+import 'push_test_send_dialog.dart';
 
 class PushCampaignsTab extends StatefulWidget {
   const PushCampaignsTab({super.key, this.repository});
@@ -80,6 +81,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             child: Text(context.l10n.cancel),
           ),
           FilledButton(
+            key: const Key('campaign-push-send-now-confirm'),
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: _primaryColor),
             child: Text(context.l10n.send),
@@ -103,6 +105,22 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
           SnackBar(content: Text(context.l10n.errorPrefixed('$e'))),
         );
       }
+    }
+  }
+
+  Future<void> _sendTest(AdminPushCampaign campaign) async {
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (_) => PushTestSendDialog(
+        campaign: campaign,
+        repository: _repository,
+      ),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.sendTestStarted)));
+      _load();
     }
   }
 
@@ -256,8 +274,16 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
                   onPressed: () => _openForm(existing: campaign),
                   tooltip: context.l10n.edit,
                 ),
+              if (campaign.canTestSend)
+                IconButton(
+                  key: const Key('campaign-push-test-send'),
+                  icon: const Icon(Icons.science_outlined, size: 18),
+                  onPressed: () => _sendTest(campaign),
+                  tooltip: context.l10n.sendTest,
+                ),
               if (campaign.canSend)
                 IconButton(
+                  key: const Key('campaign-push-send-now'),
                   icon: const Icon(Icons.send_outlined, size: 18),
                   onPressed: () => _sendNow(campaign),
                   tooltip: context.l10n.sendNow,

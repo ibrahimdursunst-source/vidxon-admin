@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/admin_push_campaign.dart';
@@ -7,6 +10,39 @@ class PushCampaignException implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+class PushUserReadiness {
+  const PushUserReadiness({
+    required this.userId,
+    required this.eligibleDeviceCount,
+    required this.androidCount,
+    required this.iosCount,
+    this.latestLastSeenAt,
+  });
+
+  final String userId;
+  final int eligibleDeviceCount;
+  final int androidCount;
+  final int iosCount;
+  final DateTime? latestLastSeenAt;
+
+  factory PushUserReadiness.fromMap(Map<String, dynamic> map) {
+    return PushUserReadiness(
+      userId: map['user_id']?.toString() ?? '',
+      eligibleDeviceCount: _asInt(map['eligible_device_count']),
+      androidCount: _asInt(map['android_count']),
+      iosCount: _asInt(map['ios_count']),
+      latestLastSeenAt: map['latest_last_seen_at'] != null
+          ? DateTime.tryParse(map['latest_last_seen_at'].toString())
+          : null,
+    );
+  }
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
 }
 
 class PushCampaignRepository {
@@ -86,6 +122,46 @@ class PushCampaignRepository {
     await _invokeFcmDelivery(campaignId);
   }
 
+  Future<PushUserReadiness> fetchUserReadiness({
+    required String userId,
+    String? locale,
+  }) async {
+    final params = <String, dynamic>{'p_user_id': userId};
+    if (locale != null && locale.isNotEmpty) {
+      params['p_locale'] = locale;
+    }
+    final response = await _resolvedClient.rpc(
+      'admin_get_push_user_readiness_v1',
+      params: params,
+    );
+    final data = response as Map<String, dynamic>;
+    if (data['ok'] != true) {
+      throw PushCampaignException(
+        _humanizeError(data['error']?.toString() ?? 'unknown'),
+      );
+    }
+    assertSafeReadinessPayload(data);
+    return PushUserReadiness.fromMap(data);
+  }
+
+  @visibleForTesting
+  static void assertSafeReadinessPayload(Map<String, dynamic> data) {
+    final encoded = jsonEncode(data).toLowerCase();
+    const forbidden = [
+      'fcm_token',
+      'fcmtoken',
+      'access_token',
+      'service_role',
+      'private_key',
+      'authorization',
+    ];
+    for (final needle in forbidden) {
+      if (encoded.contains(needle)) {
+        throw PushCampaignException('Güvenli olmayan cihaz yanıtı.');
+      }
+    }
+  }
+
   Future<void> testSend({
     required String campaignId,
     required String testUserId,
@@ -103,7 +179,7 @@ class PushCampaignRepository {
         _humanizeError(data['error']?.toString() ?? 'unknown'),
       );
     }
-    await _invokeFcmDelivery(campaignId);
+    await _invokeFcmDelivery(campaignId, testUserId: testUserId);
   }
 
   Future<void> cancel(String campaignId) async {
@@ -117,10 +193,17 @@ class PushCampaignRepository {
     }
   }
 
-  Future<void> _invokeFcmDelivery(String campaignId) async {
+  Future<void> _invokeFcmDelivery(
+    String campaignId, {
+    String? testUserId,
+  }) async {
+    final body = <String, dynamic>{'campaign_id': campaignId};
+    if (testUserId != null && testUserId.isNotEmpty) {
+      body['test_user_id'] = testUserId;
+    }
     final response = await _resolvedClient.functions.invoke(
       'send-push-campaign',
-      body: {'campaign_id': campaignId},
+      body: body,
     );
     if (response.status != 200) {
       throw PushCampaignException(

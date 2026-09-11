@@ -139,5 +139,6 @@ class AdminPushCampaign {
 
   bool get canEdit => status == 'draft' || status == 'scheduled';
   bool get canSend => status == 'draft' || status == 'scheduled';
+  bool get canTestSend => status == 'draft';
   bool get canCancel => status == 'draft' || status == 'scheduled';
 }

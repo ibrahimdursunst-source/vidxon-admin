@@ -908,6 +908,66 @@ abstract class AppLocalizations {
   /// **'Şimdi Gönder'**
   String get sendNow;
 
+  /// No description provided for @sendTest.
+  ///
+  /// In tr, this message translates to:
+  /// **'Test Gönder'**
+  String get sendTest;
+
+  /// No description provided for @sendTestHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnızca seçilen kullanıcının uygun cihazlarına gider. Şimdi Gönder kampanyanın tüm hedef kitlesine gider.'**
+  String get sendTestHint;
+
+  /// No description provided for @sendNowHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şimdi Gönder, kampanya dillerine uyan tüm uygun cihazlara gider.'**
+  String get sendNowHint;
+
+  /// No description provided for @sendTestStarted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Test gönderimi başlatıldı.'**
+  String get sendTestStarted;
+
+  /// No description provided for @pushEligibleDevices.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygun cihaz: {count}'**
+  String pushEligibleDevices(int count);
+
+  /// No description provided for @pushAndroidCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Android: {count}'**
+  String pushAndroidCount(int count);
+
+  /// No description provided for @pushIosCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'iOS: {count}'**
+  String pushIosCount(int count);
+
+  /// No description provided for @pushLastSeen.
+  ///
+  /// In tr, this message translates to:
+  /// **'Son görülme: {when}'**
+  String pushLastSeen(String when);
+
+  /// No description provided for @pushNoEligibleDevices.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kullanıcının gönderime uygun cihazı yok.'**
+  String get pushNoEligibleDevices;
+
+  /// No description provided for @pushLocaleMismatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcının uygun cihaz dilleri bu kampanyanın hedef dilleriyle eşleşmiyor.'**
+  String get pushLocaleMismatch;
+
   /// No description provided for @cancelAction.
   ///
   /// In tr, this message translates to:

@@ -135,6 +135,36 @@
   "sent": "Sent",
   "failed": "Failed",
   "sendNow": "Send Now",
+  "sendTest": "Send Test",
+  "sendTestHint": "Delivers only to the selected user's eligible devices. Send Now delivers to the full campaign audience.",
+  "sendNowHint": "Send Now delivers to every opted-in device matching the campaign languages.",
+  "sendTestStarted": "Test send started.",
+  "pushEligibleDevices": "Eligible devices: {count}",
+  "@pushEligibleDevices": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushAndroidCount": "Android: {count}",
+  "@pushAndroidCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushIosCount": "iOS: {count}",
+  "@pushIosCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushLastSeen": "Last seen: {when}",
+  "@pushLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "pushNoEligibleDevices": "This user has no eligible devices for delivery.",
+  "pushLocaleMismatch": "This user's eligible devices do not match the campaign target languages.",
   "cancelAction": "Cancel",
   "contentRating": "Content Rating",
   "contentRatingDisclaimer": "These are in-app Vidxon suitability labels; they do not replace App Store / Google Play ratings.",

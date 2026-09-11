@@ -438,6 +438,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendNow => 'Send Now';
 
   @override
+  String get sendTest => 'Send Test';
+
+  @override
+  String get sendTestHint =>
+      'Delivers only to the selected user\'s eligible devices. Send Now delivers to the full campaign audience.';
+
+  @override
+  String get sendNowHint =>
+      'Send Now delivers to every opted-in device matching the campaign languages.';
+
+  @override
+  String get sendTestStarted => 'Test send started.';
+
+  @override
+  String pushEligibleDevices(int count) {
+    return 'Eligible devices: $count';
+  }
+
+  @override
+  String pushAndroidCount(int count) {
+    return 'Android: $count';
+  }
+
+  @override
+  String pushIosCount(int count) {
+    return 'iOS: $count';
+  }
+
+  @override
+  String pushLastSeen(String when) {
+    return 'Last seen: $when';
+  }
+
+  @override
+  String get pushNoEligibleDevices =>
+      'This user has no eligible devices for delivery.';
+
+  @override
+  String get pushLocaleMismatch =>
+      'This user\'s eligible devices do not match the campaign target languages.';
+
+  @override
   String get cancelAction => 'Cancel';
 
   @override

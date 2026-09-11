@@ -437,6 +437,48 @@ class AppLocalizationsTr extends AppLocalizations {
   String get sendNow => 'Şimdi Gönder';
 
   @override
+  String get sendTest => 'Test Gönder';
+
+  @override
+  String get sendTestHint =>
+      'Yalnızca seçilen kullanıcının uygun cihazlarına gider. Şimdi Gönder kampanyanın tüm hedef kitlesine gider.';
+
+  @override
+  String get sendNowHint =>
+      'Şimdi Gönder, kampanya dillerine uyan tüm uygun cihazlara gider.';
+
+  @override
+  String get sendTestStarted => 'Test gönderimi başlatıldı.';
+
+  @override
+  String pushEligibleDevices(int count) {
+    return 'Uygun cihaz: $count';
+  }
+
+  @override
+  String pushAndroidCount(int count) {
+    return 'Android: $count';
+  }
+
+  @override
+  String pushIosCount(int count) {
+    return 'iOS: $count';
+  }
+
+  @override
+  String pushLastSeen(String when) {
+    return 'Son görülme: $when';
+  }
+
+  @override
+  String get pushNoEligibleDevices =>
+      'Bu kullanıcının gönderime uygun cihazı yok.';
+
+  @override
+  String get pushLocaleMismatch =>
+      'Kullanıcının uygun cihaz dilleri bu kampanyanın hedef dilleriyle eşleşmiyor.';
+
+  @override
   String get cancelAction => 'İptal Et';
 
   @override

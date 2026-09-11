@@ -176,6 +176,36 @@
   "sent": "Gönderildi",
   "failed": "Başarısız",
   "sendNow": "Şimdi Gönder",
+  "sendTest": "Test Gönder",
+  "sendTestHint": "Yalnızca seçilen kullanıcının uygun cihazlarına gider. Şimdi Gönder kampanyanın tüm hedef kitlesine gider.",
+  "sendNowHint": "Şimdi Gönder, kampanya dillerine uyan tüm uygun cihazlara gider.",
+  "sendTestStarted": "Test gönderimi başlatıldı.",
+  "pushEligibleDevices": "Uygun cihaz: {count}",
+  "@pushEligibleDevices": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushAndroidCount": "Android: {count}",
+  "@pushAndroidCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushIosCount": "iOS: {count}",
+  "@pushIosCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushLastSeen": "Son görülme: {when}",
+  "@pushLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "pushNoEligibleDevices": "Bu kullanıcının gönderime uygun cihazı yok.",
+  "pushLocaleMismatch": "Kullanıcının uygun cihaz dilleri bu kampanyanın hedef dilleriyle eşleşmiyor.",
   "cancelAction": "İptal Et",
   "contentRating": "İçerik Derecelendirmesi",
   "contentRatingDisclaimer": "Bunlar Vidxon uygulama içi uygunluk etiketleridir; App Store / Google Play derecelendirmelerinin yerine geçmez.",
