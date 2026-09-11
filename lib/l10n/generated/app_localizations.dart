@@ -944,6 +944,150 @@ abstract class AppLocalizations {
   /// **'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.'**
   String get sendNowFailed;
 
+  /// No description provided for @createPushCampaign.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kampanyayı Oluştur'**
+  String get createPushCampaign;
+
+  /// No description provided for @savePushChanges.
+  ///
+  /// In tr, this message translates to:
+  /// **'Değişiklikleri Kaydet'**
+  String get savePushChanges;
+
+  /// No description provided for @sendToSpecificUser.
+  ///
+  /// In tr, this message translates to:
+  /// **'Belirli Kullanıcıya Gönder'**
+  String get sendToSpecificUser;
+
+  /// No description provided for @sendToAllUsers.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tüm Kullanıcılara Gönder'**
+  String get sendToAllUsers;
+
+  /// No description provided for @schedulePushSend.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderimi Zamanla'**
+  String get schedulePushSend;
+
+  /// No description provided for @sendToSpecificUserHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yalnızca seçilen kullanıcının uygun cihazlarına gider. Kampanya Hazır kalır; tüm kullanıcılara gönderim yapılmaz.'**
+  String get sendToSpecificUserHint;
+
+  /// No description provided for @sendToAllUsersHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kampanya dillerine uyan tüm uygun kullanıcılara bildirim gider.'**
+  String get sendToAllUsersHint;
+
+  /// No description provided for @sendToAllUsersWarning.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu işlem, kampanyayla eşleşen tüm uygun kullanıcılara bildirim gönderebilir.'**
+  String get sendToAllUsersWarning;
+
+  /// No description provided for @sendToAllUsersConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'\"{title}\" kampanyasını tüm uygun kullanıcılara göndermek istiyor musunuz?'**
+  String sendToAllUsersConfirm(String title);
+
+  /// No description provided for @pushAudienceAllEligible.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hedef kitle: kampanya dillerine uyan tüm uygun kullanıcılar'**
+  String get pushAudienceAllEligible;
+
+  /// No description provided for @pushSendFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirim gönderilemedi.'**
+  String get pushSendFailed;
+
+  /// No description provided for @pushDeliverySummary.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bekleyen: {pending} · Gönderilen: {sent} · Başarısız: {failed}'**
+  String pushDeliverySummary(int pending, int sent, int failed);
+
+  /// No description provided for @pushStatusScheduled.
+  ///
+  /// In tr, this message translates to:
+  /// **'Planlandı'**
+  String get pushStatusScheduled;
+
+  /// No description provided for @pushStatusCancelled.
+  ///
+  /// In tr, this message translates to:
+  /// **'İptal'**
+  String get pushStatusCancelled;
+
+  /// No description provided for @pushFormSaveFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kampanya kaydedilemedi.'**
+  String get pushFormSaveFailed;
+
+  /// No description provided for @searchPushUser.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcı ara'**
+  String get searchPushUser;
+
+  /// No description provided for @searchPushUserHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'E-posta veya ad'**
+  String get searchPushUserHint;
+
+  /// No description provided for @removeSelectedUser.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcıyı kaldır'**
+  String get removeSelectedUser;
+
+  /// No description provided for @chooseScheduleTime.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yerel tarih ve saat seç'**
+  String get chooseScheduleTime;
+
+  /// No description provided for @schedulePushConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderimi seçilen yerel saatte zamanla'**
+  String get schedulePushConfirm;
+
+  /// No description provided for @pushScheduleRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderim için bir tarih ve saat seçin.'**
+  String get pushScheduleRequired;
+
+  /// No description provided for @pushSpecificUserStarted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Belirli kullanıcıya gönderim başlatıldı.'**
+  String get pushSpecificUserStarted;
+
+  /// No description provided for @pushAllUsersStarted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tüm kullanıcılara gönderim başlatıldı.'**
+  String get pushAllUsersStarted;
+
+  /// No description provided for @pushScheduledStarted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderim zamanlandı.'**
+  String get pushScheduledStarted;
+
   /// No description provided for @pushReadinessLoadFailed.
   ///
   /// In tr, this message translates to:

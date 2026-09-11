@@ -460,6 +460,87 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notification delivery could not be completed. Check the campaign delivery status before sending again.';
 
   @override
+  String get createPushCampaign => 'Create Campaign';
+
+  @override
+  String get savePushChanges => 'Save Changes';
+
+  @override
+  String get sendToSpecificUser => 'Send to Specific User';
+
+  @override
+  String get sendToAllUsers => 'Send to All Users';
+
+  @override
+  String get schedulePushSend => 'Schedule Send';
+
+  @override
+  String get sendToSpecificUserHint =>
+      'Delivers only to the selected user\'s eligible devices. The campaign stays Ready and is not broadcast.';
+
+  @override
+  String get sendToAllUsersHint =>
+      'Delivers to every eligible user matching the campaign languages.';
+
+  @override
+  String get sendToAllUsersWarning =>
+      'This can notify all eligible users matching the campaign.';
+
+  @override
+  String sendToAllUsersConfirm(String title) {
+    return 'Send the \"$title\" campaign to all eligible users?';
+  }
+
+  @override
+  String get pushAudienceAllEligible =>
+      'Audience: all eligible users matching the campaign languages';
+
+  @override
+  String get pushSendFailed => 'Notification could not be sent.';
+
+  @override
+  String pushDeliverySummary(int pending, int sent, int failed) {
+    return 'Pending: $pending · Sent: $sent · Failed: $failed';
+  }
+
+  @override
+  String get pushStatusScheduled => 'Scheduled';
+
+  @override
+  String get pushStatusCancelled => 'Cancelled';
+
+  @override
+  String get pushFormSaveFailed => 'The campaign could not be saved.';
+
+  @override
+  String get searchPushUser => 'Search user';
+
+  @override
+  String get searchPushUserHint => 'Email or name';
+
+  @override
+  String get removeSelectedUser => 'Remove user';
+
+  @override
+  String get chooseScheduleTime => 'Choose local date and time';
+
+  @override
+  String get schedulePushConfirm => 'Schedule send at the selected local time';
+
+  @override
+  String get pushScheduleRequired =>
+      'Choose a date and time to schedule delivery.';
+
+  @override
+  String get pushSpecificUserStarted => 'Send to specific user started.';
+
+  @override
+  String get pushAllUsersStarted => 'Send to all users started.';
+
+  @override
+  String get pushScheduledStarted => 'Send has been scheduled.';
+
+  @override
   String get pushReadinessLoadFailed => 'Device readiness could not be loaded.';
 
   @override

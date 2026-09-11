@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vidxon_admin/core/time/admin_local_time.dart';
 import 'package:vidxon_admin/features/campaigns/data/push_campaign_repository.dart';
 import 'package:vidxon_admin/features/campaigns/domain/admin_push_campaign.dart';
 import 'package:vidxon_admin/features/campaigns/presentation/push_campaigns_tab.dart';
+import 'package:vidxon_admin/features/campaigns/presentation/push_schedule_dialog.dart';
 import 'package:vidxon_admin/features/campaigns/presentation/push_test_send_dialog.dart';
 import 'package:vidxon_admin/features/users/data/admin_user_wallet_repository.dart';
 import 'package:vidxon_admin/features/users/domain/admin_user_summary.dart';
@@ -11,13 +15,13 @@ import 'package:vidxon_admin/l10n/generated/app_localizations.dart';
 
 import '../../content/content_test_helpers.dart';
 
-const _testUserId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const _testUserId = '03a499ec-638c-4a48-b2b6-32ad49f00fae';
 
 AdminUserSummary _testUser() {
   return AdminUserSummary.fromMap({
     'user_id': _testUserId,
-    'email': 'qa@vidxon.test',
-    'display_name': 'QA User',
+    'email': 'selim@example.com',
+    'display_name': 'Selim2',
     'account_status': 'active',
     'coin_balance': 0,
     'account_created_at': '2026-07-27T17:14:20.106837+00:00',
@@ -26,17 +30,30 @@ AdminUserSummary _testUser() {
   });
 }
 
-AdminPushCampaign _campaign({String status = 'draft'}) {
+AdminPushCampaign _campaign({
+  String status = 'draft',
+  DateTime? scheduledAt,
+  DateTime? sentAt,
+  DateTime? createdAt,
+  int sentCount = 0,
+  int failedCount = 0,
+  int pendingCount = 0,
+}) {
   return AdminPushCampaign(
     id: 'push-1',
     status: status,
     destinationType: 'none',
     targetLocales: const ['tr'],
-    createdAt: DateTime.utc(2026, 1, 1),
-    updatedAt: DateTime.utc(2026, 1, 1),
+    scheduledAt: scheduledAt,
+    sentAt: sentAt,
+    createdAt: createdAt ?? DateTime.utc(2026, 9, 11, 12, 15, 54),
+    updatedAt: DateTime.utc(2026, 9, 11, 12, 15, 54),
     translations: const [
       AdminPushTranslation(locale: 'tr', title: 'Promo', body: 'Body'),
     ],
+    sentCount: sentCount,
+    failedCount: failedCount,
+    pendingCount: pendingCount,
   );
 }
 
@@ -62,20 +79,51 @@ class _FakePushRepo extends PushCampaignRepository {
     this.localeReadiness,
     this.testSendError,
     this.sendNowError,
+    this.testSendGate,
   }) : super(client: null);
 
-  final List<AdminPushCampaign> campaigns;
+  List<AdminPushCampaign> campaigns;
   PushUserReadiness? readiness;
   PushUserReadiness? localeReadiness;
   final Object? testSendError;
   final Object? sendNowError;
+  final Completer<void>? testSendGate;
   final List<String> readinessLocales = [];
   int sendNowCalls = 0;
   int testSendCalls = 0;
+  int upsertCalls = 0;
   String? lastTestUserId;
+  String? lastUpsertStatus;
+  DateTime? lastScheduledAt;
 
   @override
   Future<List<AdminPushCampaign>> fetchAll() async => campaigns;
+
+  @override
+  Future<AdminPushCampaign> upsert({
+    String? id,
+    String status = 'draft',
+    String destinationType = 'none',
+    String? destinationSeriesId,
+    String? destinationEpisodeId,
+    List<String> targetLocales = const [],
+    DateTime? scheduledAt,
+    required List<AdminPushTranslation> translations,
+  }) async {
+    upsertCalls += 1;
+    lastUpsertStatus = status;
+    lastScheduledAt = scheduledAt;
+    return AdminPushCampaign(
+      id: id ?? 'push-1',
+      status: status,
+      destinationType: destinationType,
+      targetLocales: targetLocales,
+      scheduledAt: scheduledAt,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      translations: translations,
+    );
+  }
 
   @override
   Future<void> sendNow(String campaignId) async {
@@ -92,6 +140,9 @@ class _FakePushRepo extends PushCampaignRepository {
   }) async {
     testSendCalls += 1;
     lastTestUserId = testUserId;
+    if (testSendGate != null) {
+      await testSendGate!.future;
+    }
     if (testSendError != null) {
       throw testSendError!;
     }
@@ -139,14 +190,14 @@ Widget _app(Widget child, {Locale locale = const Locale('tr')}) {
   );
 }
 
-Future<void> _selectQaUser(WidgetTester tester) async {
+Future<void> _selectUser(WidgetTester tester) async {
   await tester.enterText(
     find.byKey(const Key('campaign-test-user-search')),
-    'qa@vidxon.test',
+    'selim@example.com',
   );
   await tester.tap(find.byKey(const Key('campaign-test-user-search-button')));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('QA User'));
+  await tester.tap(find.text('Selim2'));
   await tester.pumpAndSettle();
 }
 
@@ -174,30 +225,82 @@ void main() {
     );
   });
 
-  testWidgets('Test Gönder and Şimdi Gönder are separate actions', (tester) async {
+  testWidgets('specific-user, all-users, and schedule stay separate', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(2400, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repo = _FakePushRepo(campaigns: [_campaign()]);
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
 
+    expect(find.text('Taslak Kaydet'), findsNothing);
+    expect(find.text('Save Draft'), findsNothing);
+    expect(find.text('Test Gönder'), findsNothing);
+    expect(find.text('Şimdi Gönder'), findsNothing);
+    expect(find.text('Hazır'), findsOneWidget);
+    expect(find.byTooltip('Belirli Kullanıcıya Gönder'), findsOneWidget);
+    expect(find.byTooltip('Tüm Kullanıcılara Gönder'), findsOneWidget);
+    expect(find.byTooltip('Gönderimi Zamanla'), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-test-send')), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-send-now')), findsOneWidget);
-    expect(find.byTooltip('Test Gönder'), findsOneWidget);
-    expect(find.byTooltip('Şimdi Gönder'), findsOneWidget);
+    expect(find.byKey(const Key('campaign-push-schedule')), findsOneWidget);
   });
 
-  testWidgets('scheduled campaign has Send Now but not Test Send', (tester) async {
+  testWidgets('English labels use the product send actions', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(2400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repo = _FakePushRepo(campaigns: [_campaign()]);
+    await tester.pumpWidget(
+      _app(PushCampaignsTab(repository: repo), locale: const Locale('en')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ready'), findsOneWidget);
+    expect(find.text('Draft'), findsNothing);
+    expect(find.text('Save Draft'), findsNothing);
+    expect(find.text('Send Test'), findsNothing);
+    expect(find.text('Send Now'), findsNothing);
+    expect(find.byTooltip('Send to Specific User'), findsOneWidget);
+    expect(find.byTooltip('Send to All Users'), findsOneWidget);
+    expect(find.byTooltip('Schedule Send'), findsOneWidget);
+  });
+
+  testWidgets('scheduled campaign has all-users and schedule, not specific-user', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(2400, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repo = _FakePushRepo(campaigns: [_campaign(status: 'scheduled')]);
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
+    expect(find.text('Planlandı'), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-test-send')), findsNothing);
     expect(find.byKey(const Key('campaign-push-send-now')), findsOneWidget);
+    expect(find.byKey(const Key('campaign-push-schedule')), findsOneWidget);
   });
 
-  testWidgets('Send Now stays broadcast and does not call testSend', (tester) async {
+  testWidgets('sent and cancelled states remain localized and not sendable', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(2400, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repo = _FakePushRepo(
+      campaigns: [
+        _campaign(status: 'sent'),
+        _campaign(status: 'cancelled'),
+      ],
+    );
+    await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
+    await tester.pumpAndSettle();
+    expect(find.text('Gönderildi'), findsWidgets);
+    expect(find.text('İptal'), findsOneWidget);
+    expect(find.byKey(const Key('campaign-push-send-now')), findsNothing);
+    expect(find.byKey(const Key('campaign-push-test-send')), findsNothing);
+  });
+
+  testWidgets('all-users stays broadcast and does not call testSend', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(2400, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repo = _FakePushRepo(campaigns: [_campaign()]);
@@ -207,6 +310,7 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
     await tester.tap(find.byKey(const Key('campaign-push-send-now')));
     await tester.pumpAndSettle();
+    expect(find.textContaining('tüm uygun kullanıcılara'), findsWidgets);
     await tester.tap(find.byKey(const Key('campaign-push-send-now-confirm')));
     await tester.pumpAndSettle();
 
@@ -214,7 +318,25 @@ void main() {
     expect(repo.testSendCalls, 0);
   });
 
-  testWidgets('zero eligible devices disables test send confirm', (tester) async {
+  testWidgets('list timestamps are local, not raw UTC ISO', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(2400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final sentAt = DateTime.utc(2026, 9, 11, 12, 15, 54);
+    final repo = _FakePushRepo(
+      campaigns: [_campaign(status: 'sent', sentAt: sentAt)],
+    );
+    await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
+    await tester.pumpAndSettle();
+
+    final formatted = AdminLocalTime.format(sentAt, const Locale('tr'));
+    expect(find.text(formatted), findsOneWidget);
+    expect(find.textContaining('2026-09-11T12:15:54'), findsNothing);
+    expect(find.textContaining('12:15:54.000Z'), findsNothing);
+  });
+
+  testWidgets('zero eligible devices disables specific-user confirm', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repo = _FakePushRepo(
@@ -235,8 +357,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _selectQaUser(tester);
+    await _selectUser(tester);
 
+    expect(find.byKey(const Key('push-selected-user-name')), findsOneWidget);
+    expect(find.text('Selim2'), findsWidgets);
+    expect(find.text('selim@example.com'), findsOneWidget);
+    expect(find.text(_testUserId), findsOneWidget);
     expect(find.byKey(const Key('push-readiness-eligible-count')), findsOneWidget);
     expect(find.byKey(const Key('push-readiness-blocked')), findsOneWidget);
     expect(find.textContaining('fcm'), findsNothing);
@@ -275,7 +401,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _selectQaUser(tester);
+    await _selectUser(tester);
 
     expect(find.byKey(const Key('push-readiness-blocked')), findsOneWidget);
     expect(
@@ -290,16 +416,19 @@ void main() {
     expect(confirm.onPressed, isNull);
   });
 
-  testWidgets('eligible android device enables isolated test send', (tester) async {
+  testWidgets('eligible android device enables isolated specific-user send', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    final lastSeen = DateTime.utc(2026, 9, 11, 12, 15, 54);
     final repo = _FakePushRepo(
       readiness: PushUserReadiness(
         userId: _testUserId,
         eligibleDeviceCount: 1,
         androidCount: 1,
         iosCount: 0,
-        latestLastSeenAt: DateTime.utc(2026, 9, 11),
+        latestLastSeenAt: lastSeen,
       ),
     );
     await tester.pumpWidget(
@@ -312,12 +441,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _selectQaUser(tester);
+    await _selectUser(tester);
 
-    expect(find.byKey(const Key('push-test-send-campaign-title')), findsOneWidget);
-    expect(find.text('Promo'), findsWidgets);
-    expect(find.byKey(const Key('push-test-send-campaign-locales')), findsOneWidget);
+    expect(find.text('Selim2'), findsWidgets);
+    expect(find.text('selim@example.com'), findsOneWidget);
+    expect(find.text(_testUserId), findsOneWidget);
+    expect(find.text('Test Gönder'), findsNothing);
     expect(find.byKey(const Key('push-readiness-android')), findsOneWidget);
+    expect(
+      find.textContaining(AdminLocalTime.format(lastSeen, const Locale('tr'))),
+      findsOneWidget,
+    );
+    expect(find.textContaining('2026-09-11T12:15:54'), findsNothing);
     expect(find.textContaining('fcm_token'), findsNothing);
     await tester.tap(find.byKey(const Key('push-test-send-confirm')));
     await tester.pumpAndSettle();
@@ -327,7 +462,7 @@ void main() {
     expect(find.byKey(const Key('push-test-send-error')), findsNothing);
   });
 
-  testWidgets('failed Test Send shows localized safe error, not ClientException', (
+  testWidgets('failed specific-user send shows safe status and summary', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1600));
@@ -341,7 +476,12 @@ void main() {
         androidCount: 1,
         iosCount: 0,
       ),
-      testSendError: Exception(leak),
+      testSendError: PushDeliveryFailure(
+        message: leak,
+        pendingCount: 1,
+        sentCount: 0,
+        failedCount: 0,
+      ),
     );
     await tester.pumpWidget(
       _app(
@@ -353,35 +493,26 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _selectQaUser(tester);
+    await _selectUser(tester);
     await tester.tap(find.byKey(const Key('push-test-send-confirm')));
     await tester.pumpAndSettle();
 
     expect(repo.testSendCalls, 1);
     expect(repo.lastTestUserId, _testUserId);
     expect(repo.sendNowCalls, 0);
-    expect(find.byKey(const Key('push-test-send-error')), findsOneWidget);
-    expect(
-      find.text(
-        'Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Bildirim gönderilemedi.'), findsOneWidget);
+    expect(find.text('Bekleyen: 1 · Gönderilen: 0 · Başarısız: 0'), findsOneWidget);
     expect(find.textContaining('ClientException'), findsNothing);
     expect(find.textContaining('Failed to fetch'), findsNothing);
     expect(find.textContaining('supabase.co'), findsNothing);
     expect(find.textContaining('send-push-campaign'), findsNothing);
     expect(find.textContaining('Lütfen tekrar deneyin'), findsNothing);
-    expect(find.byKey(const Key('push-test-send-confirm')), findsOneWidget);
+    expect(find.textContaining('kampanyanın durumunu kontrol edin'), findsNothing);
   });
 
-  testWidgets('failed Test Send English copy avoids raw infrastructure errors', (
-    tester,
-  ) async {
+  testWidgets('failed specific-user English copy stays safe', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    const leak =
-        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
     final repo = _FakePushRepo(
       readiness: const PushUserReadiness(
         userId: _testUserId,
@@ -389,7 +520,9 @@ void main() {
         androidCount: 1,
         iosCount: 0,
       ),
-      testSendError: Exception(leak),
+      testSendError: Exception(
+        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign',
+      ),
     );
     await tester.pumpWidget(
       _app(
@@ -402,58 +535,69 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _selectQaUser(tester);
+    await _selectUser(tester);
     await tester.tap(find.byKey(const Key('push-test-send-confirm')));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        'The test notification could not be sent. Check delivery status before trying again.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Notification could not be sent.'), findsOneWidget);
     expect(find.textContaining('ClientException'), findsNothing);
     expect(find.textContaining('supabase.co'), findsNothing);
     expect(find.textContaining('Please try again.'), findsNothing);
   });
 
-  test('function invoke failure copy does not ask for a blind retry', () {
-    expect(
-      PushCampaignRepository.deliveryStartFailedMessage.contains(
-        'Lütfen tekrar deneyin',
+  testWidgets('in-flight specific-user confirm cannot double-submit', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final gate = Completer<void>();
+    final repo = _FakePushRepo(
+      readiness: const PushUserReadiness(
+        userId: _testUserId,
+        eligibleDeviceCount: 1,
+        androidCount: 1,
+        iosCount: 0,
       ),
-      isFalse,
+      testSendGate: gate,
     );
-    expect(
-      PushCampaignRepository.deliveryStartFailedMessage.contains(
-        'gönderim durumunu kontrol edin',
+    await tester.pumpWidget(
+      _app(
+        PushTestSendDialog(
+          campaign: _campaign(),
+          repository: repo,
+          userRepository: _FakeUsers([_testUser()]),
+        ),
       ),
-      isTrue,
     );
-    expect(
-      PushCampaignRepository.sendNowDeliveryFailedMessage.contains(
-        'Lütfen tekrar deneyin',
-      ),
-      isFalse,
+    await tester.pumpAndSettle();
+    await _selectUser(tester);
+    await tester.tap(find.byKey(const Key('push-test-send-confirm')));
+    await tester.pump();
+    final confirm = tester.widget<FilledButton>(
+      find.byKey(const Key('push-test-send-confirm')),
     );
-    expect(
-      PushCampaignRepository.sendNowDeliveryFailedMessage.contains(
-        'gönderim durumunu kontrol edin',
-      ),
-      isTrue,
-    );
+    expect(confirm.onPressed, isNull);
+    await tester.tap(find.byKey(const Key('push-test-send-confirm')));
+    await tester.pump();
+    expect(repo.testSendCalls, 1);
+    gate.complete();
+    await tester.pumpAndSettle();
   });
 
-  testWidgets('failed Send Now shows localized safe error, not ClientException', (
+  testWidgets('failed all-users send shows safe summary, not ClientException', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(2400, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    const leak =
-        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
     final repo = _FakePushRepo(
-      campaigns: [_campaign()],
-      sendNowError: Exception(leak),
+      campaigns: [_campaign(pendingCount: 1)],
+      sendNowError: PushDeliveryFailure(
+        message:
+            'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign',
+        pendingCount: 1,
+        sentCount: 0,
+        failedCount: 0,
+      ),
     );
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
@@ -466,61 +610,41 @@ void main() {
 
     expect(repo.sendNowCalls, 1);
     expect(repo.testSendCalls, 0);
-    expect(find.byKey(const Key('campaign-push-send-now-error')), findsOneWidget);
-    expect(
-      find.text(
-        'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Bildirim gönderilemedi.'), findsOneWidget);
+    expect(find.text('Bekleyen: 1 · Gönderilen: 0 · Başarısız: 0'), findsOneWidget);
     expect(find.textContaining('ClientException'), findsNothing);
-    expect(find.textContaining('Failed to fetch'), findsNothing);
     expect(find.textContaining('supabase.co'), findsNothing);
     expect(find.textContaining('send-push-campaign'), findsNothing);
-    expect(find.textContaining('Lütfen tekrar deneyin'), findsNothing);
   });
 
-  testWidgets('failed Send Now English copy avoids raw infrastructure errors', (
+  testWidgets('schedule dialog converts local wall time to UTC once', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(2400, 1000));
+    await tester.binding.setSurfaceSize(const Size(1200, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    const leak =
-        'ClientException: Failed to fetch, uri=https://example.supabase.co/functions/v1/send-push-campaign';
-    final repo = _FakePushRepo(
-      campaigns: [_campaign()],
-      sendNowError: Exception(leak),
-    );
+    final existingUtc = DateTime.utc(2026, 9, 11, 16, 30);
+    final repo = _FakePushRepo();
     await tester.pumpWidget(
-      _app(PushCampaignsTab(repository: repo), locale: const Locale('en')),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
-    await tester.tap(find.byKey(const Key('campaign-push-send-now')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('campaign-push-send-now-confirm')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        'Notification delivery could not be completed. Check the campaign delivery status before sending again.',
+      _app(
+        PushScheduleDialog(
+          campaign: _campaign(status: 'draft', scheduledAt: existingUtc),
+          repository: repo,
+        ),
       ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('ClientException'), findsNothing);
-    expect(find.textContaining('supabase.co'), findsNothing);
-  });
-
-  testWidgets('English copy uses Send Test', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(2400, 1000));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final repo = _FakePushRepo(campaigns: [_campaign()]);
-    await tester.pumpWidget(
-      _app(PushCampaignsTab(repository: repo), locale: const Locale('en')),
     );
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Send Test'), findsOneWidget);
-    expect(find.byTooltip('Send Now'), findsOneWidget);
+
+    final preview = AdminLocalTime.format(existingUtc, const Locale('tr'));
+    expect(find.text(preview), findsOneWidget);
+    expect(find.textContaining('2026-09-11T16:30:00'), findsNothing);
+    expect(find.textContaining('16:30:00.000Z'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('push-schedule-confirm')));
+    await tester.pumpAndSettle();
+    expect(repo.upsertCalls, 1);
+    expect(repo.lastUpsertStatus, 'scheduled');
+    expect(repo.lastScheduledAt, existingUtc);
+    expect(repo.sendNowCalls, 0);
+    expect(repo.testSendCalls, 0);
   });
 }

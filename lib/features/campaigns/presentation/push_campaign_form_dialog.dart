@@ -38,7 +38,6 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
 
   late String _destinationType;
   late Set<String> _selectedLocales;
-  DateTime? _scheduledAt;
 
   final Map<String, TextEditingController> _titleControllers = {};
   final Map<String, TextEditingController> _bodyControllers = {};
@@ -61,7 +60,6 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
       initialEpisodeId: e?.destinationEpisodeId,
     );
     _destinationController.initialize();
-    _scheduledAt = e?.scheduledAt;
 
     _selectedLocales = e != null ? Set<String>.from(e.targetLocales) : {'tr'};
 
@@ -90,8 +88,9 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
     super.dispose();
   }
 
-  Future<void> _save({String status = 'draft'}) async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isSaving) return;
 
     setState(() {
       _isSaving = true;
@@ -107,54 +106,34 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
         );
       }).toList();
 
+      final existing = widget.existing;
+      final keepScheduled = existing?.status == 'scheduled';
+
       await widget.repository.upsert(
-        id: widget.existing?.id,
-        status: status,
+        id: existing?.id,
+        status: keepScheduled ? 'scheduled' : 'draft',
         destinationType: _destinationType,
         destinationSeriesId: _destinationController.seriesIdForSave,
         destinationEpisodeId: _destinationController.episodeIdForSave,
         targetLocales: _selectedLocales.toList(),
-        scheduledAt: status == 'scheduled' ? _scheduledAt : null,
+        scheduledAt: keepScheduled ? existing?.scheduledAt : null,
         translations: translations,
       );
 
       if (mounted) Navigator.of(context).pop(true);
     } on PushCampaignException catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.message;
         _isSaving = false;
       });
-    } catch (e) {
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = context.l10n.pushFormSaveFailed;
         _isSaving = false;
       });
     }
-  }
-
-  Future<void> _pickSchedule() async {
-    final initial = _scheduledAt ?? DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initial),
-    );
-    if (time == null || !mounted) return;
-    setState(() {
-      _scheduledAt = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
   }
 
   @override
@@ -178,8 +157,6 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-
-                // === Hedef ===
                 _sectionLabel(context.l10n.target),
                 CampaignDestinationFields(
                   controller: _destinationController,
@@ -189,8 +166,6 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                     _destinationController.setDestinationType(type);
                   },
                 ),
-
-                // === Diller ===
                 _sectionLabel(context.l10n.targetLanguages),
                 Wrap(
                   spacing: 8,
@@ -213,7 +188,6 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
-
                 ..._selectedLocales.map((locale) {
                   return LocaleTranslationFields(
                     locale: locale,
@@ -222,38 +196,15 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                     showBody: true,
                   );
                 }),
-
-                // === Gönderim ===
-                _sectionLabel(context.l10n.delivery),
-                if (_scheduledAt != null)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule),
-                    title: Text(
-                      '${_scheduledAt!.year}-${_scheduledAt!.month.toString().padLeft(2, '0')}-${_scheduledAt!.day.toString().padLeft(2, '0')} '
-                      '${_scheduledAt!.hour.toString().padLeft(2, '0')}:${_scheduledAt!.minute.toString().padLeft(2, '0')} UTC',
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setState(() => _scheduledAt = null),
-                    ),
-                  ),
-                TextButton.icon(
-                  onPressed: _pickSchedule,
-                  icon: const Icon(Icons.schedule),
-                  label: Text(context.l10n.chooseSchedule),
-                ),
-
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 12),
                   Text(
                     _errorMessage!,
+                    key: const Key('campaign-push-form-error'),
                     style: const TextStyle(color: Colors.red),
                   ),
                 ],
-
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -264,24 +215,22 @@ class _PushCampaignFormDialogState extends State<PushCampaignFormDialog> {
                       child: Text(context.l10n.cancel),
                     ),
                     const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: _isSaving
-                          ? null
-                          : () => _save(status: 'draft'),
-                      child: Text(context.l10n.saveDraft),
-                    ),
-                    if (_scheduledAt != null) ...[
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _isSaving
-                            ? null
-                            : () => _save(status: 'scheduled'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                        ),
-                        child: Text(context.l10n.schedule),
+                    FilledButton(
+                      key: Key(
+                        _isEditing
+                            ? 'campaign-push-save-changes'
+                            : 'campaign-push-create',
                       ),
-                    ],
+                      onPressed: _isSaving ? null : _save,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _primaryColor,
+                      ),
+                      child: Text(
+                        _isEditing
+                            ? context.l10n.savePushChanges
+                            : context.l10n.createPushCampaign,
+                      ),
+                    ),
                   ],
                 ),
               ],

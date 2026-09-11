@@ -182,6 +182,42 @@
   "sendTestStarted": "Test gönderimi başlatıldı.",
   "sendTestFailed": "Test bildirimi gönderilemedi. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.",
   "sendNowFailed": "Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.",
+  "createPushCampaign": "Kampanyayı Oluştur",
+  "savePushChanges": "Değişiklikleri Kaydet",
+  "sendToSpecificUser": "Belirli Kullanıcıya Gönder",
+  "sendToAllUsers": "Tüm Kullanıcılara Gönder",
+  "schedulePushSend": "Gönderimi Zamanla",
+  "sendToSpecificUserHint": "Yalnızca seçilen kullanıcının uygun cihazlarına gider. Kampanya Hazır kalır; tüm kullanıcılara gönderim yapılmaz.",
+  "sendToAllUsersHint": "Kampanya dillerine uyan tüm uygun kullanıcılara bildirim gider.",
+  "sendToAllUsersWarning": "Bu işlem, kampanyayla eşleşen tüm uygun kullanıcılara bildirim gönderebilir.",
+  "sendToAllUsersConfirm": "\"{title}\" kampanyasını tüm uygun kullanıcılara göndermek istiyor musunuz?",
+  "@sendToAllUsersConfirm": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "pushAudienceAllEligible": "Hedef kitle: kampanya dillerine uyan tüm uygun kullanıcılar",
+  "pushSendFailed": "Bildirim gönderilemedi.",
+  "pushDeliverySummary": "Bekleyen: {pending} · Gönderilen: {sent} · Başarısız: {failed}",
+  "@pushDeliverySummary": {
+    "placeholders": {
+      "pending": {"type": "int"},
+      "sent": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "pushStatusScheduled": "Planlandı",
+  "pushStatusCancelled": "İptal",
+  "pushFormSaveFailed": "Kampanya kaydedilemedi.",
+  "searchPushUser": "Kullanıcı ara",
+  "searchPushUserHint": "E-posta veya ad",
+  "removeSelectedUser": "Kullanıcıyı kaldır",
+  "chooseScheduleTime": "Yerel tarih ve saat seç",
+  "schedulePushConfirm": "Gönderimi seçilen yerel saatte zamanla",
+  "pushScheduleRequired": "Gönderim için bir tarih ve saat seçin.",
+  "pushSpecificUserStarted": "Belirli kullanıcıya gönderim başlatıldı.",
+  "pushAllUsersStarted": "Tüm kullanıcılara gönderim başlatıldı.",
+  "pushScheduledStarted": "Gönderim zamanlandı.",
   "pushReadinessLoadFailed": "Cihaz uygunluğu yüklenemedi.",
   "pushEligibleDevices": "Uygun cihaz: {count}",
   "@pushEligibleDevices": {

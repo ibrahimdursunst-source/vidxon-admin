@@ -1,3 +1,5 @@
+import '../../../core/time/admin_local_time.dart';
+
 /// Translation for a single locale in a push campaign.
 class AdminPushTranslation {
   const AdminPushTranslation({
@@ -41,6 +43,7 @@ class AdminPushCampaign {
     required this.translations,
     this.sentCount = 0,
     this.failedCount = 0,
+    this.pendingCount = 0,
   });
 
   final String id;
@@ -56,6 +59,7 @@ class AdminPushCampaign {
   final List<AdminPushTranslation> translations;
   final int sentCount;
   final int failedCount;
+  final int pendingCount;
 
   /// Display title: first translation title or campaign ID.
   String get displayTitle {
@@ -84,20 +88,16 @@ class AdminPushCampaign {
       destinationSeriesId: map['destination_series_id']?.toString(),
       destinationEpisodeId: map['destination_episode_id']?.toString(),
       targetLocales: locales,
-      scheduledAt: map['scheduled_at'] != null
-          ? DateTime.tryParse(map['scheduled_at'].toString())
-          : null,
-      sentAt: map['sent_at'] != null
-          ? DateTime.tryParse(map['sent_at'].toString())
-          : null,
-      createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ??
-          DateTime.now(),
-      updatedAt: DateTime.tryParse(map['updated_at']?.toString() ?? '') ??
-          DateTime.now(),
+      scheduledAt: AdminLocalTime.tryParseUtc(map['scheduled_at']),
+      sentAt: AdminLocalTime.tryParseUtc(map['sent_at']),
+      createdAt: AdminLocalTime.tryParseUtc(map['created_at']) ??
+          DateTime.now().toUtc(),
+      updatedAt: AdminLocalTime.tryParseUtc(map['updated_at']) ??
+          DateTime.now().toUtc(),
       translations: translations,
-      sentCount: (map['sent_count'] is int) ? map['sent_count'] as int : 0,
-      failedCount:
-          (map['failed_count'] is int) ? map['failed_count'] as int : 0,
+      sentCount: _asInt(map['sent_count']),
+      failedCount: _asInt(map['failed_count']),
+      pendingCount: _asInt(map['pending_count']),
     );
   }
 
@@ -140,5 +140,11 @@ class AdminPushCampaign {
   bool get canEdit => status == 'draft' || status == 'scheduled';
   bool get canSend => status == 'draft' || status == 'scheduled';
   bool get canTestSend => status == 'draft';
+  bool get canSchedule => status == 'draft' || status == 'scheduled';
   bool get canCancel => status == 'draft' || status == 'scheduled';
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
 }

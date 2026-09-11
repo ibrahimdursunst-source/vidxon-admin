@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/time/admin_local_time.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
 import 'push_campaign_form_dialog.dart';
+import 'push_schedule_dialog.dart';
 import 'push_test_send_dialog.dart';
 
 class PushCampaignsTab extends StatefulWidget {
@@ -25,6 +27,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
   List<AdminPushCampaign>? _campaigns;
   bool _isLoading = true;
   Object? _error;
+  bool _actionInFlight = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -47,10 +50,10 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
         _campaigns = campaigns;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = e;
+        _error = 'load_failed';
         _isLoading = false;
       });
     }
@@ -59,6 +62,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
   void refresh() => _load();
 
   Future<void> _openForm({AdminPushCampaign? existing}) async {
+    if (_actionInFlight) return;
     final result = await showDialog<bool>(
       context: context,
       builder: (_) =>
@@ -69,78 +73,165 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     }
   }
 
-  Future<void> _sendNow(AdminPushCampaign campaign) async {
+  Future<void> _sendToAllUsers(AdminPushCampaign campaign) async {
+    if (_actionInFlight) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.sendPush),
-        content: Text(context.l10n.sendPushConfirm(campaign.displayTitle)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.cancel),
+      builder: (ctx) {
+        final l10n = ctx.l10n;
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1212),
+          title: Text(l10n.sendToAllUsers),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                campaign.displayTitle,
+                key: const Key('push-all-users-campaign-title'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                campaign.targetLocales.join(', '),
+                key: const Key('push-all-users-campaign-locales'),
+              ),
+              const SizedBox(height: 8),
+              Text(l10n.pushAudienceAllEligible),
+              const SizedBox(height: 12),
+              Text(
+                l10n.sendToAllUsersWarning,
+                style: const TextStyle(color: Color(0xFFFFB4AB)),
+              ),
+              const SizedBox(height: 8),
+              Text(l10n.sendToAllUsersConfirm(campaign.displayTitle)),
+            ],
           ),
-          FilledButton(
-            key: const Key('campaign-push-send-now-confirm'),
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-            child: Text(context.l10n.send),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              key: const Key('campaign-push-send-now-confirm'),
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: _primaryColor),
+              child: Text(l10n.sendToAllUsers),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
 
+    setState(() => _actionInFlight = true);
     try {
       await _repository.sendNow(campaign.id);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(context.l10n.pushSendStarted)));
-      }
-      _load();
-    } catch (e) {
-      if (mounted) {
-        debugPrint('push send now failed');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.sendNowFailed,
-              key: const Key('campaign-push-send-now-error'),
-            ),
-          ),
+          SnackBar(content: Text(context.l10n.pushAllUsersStarted)),
         );
       }
+      await _load();
+    } on PushDeliveryFailure catch (failure) {
+      await _load();
+      if (!mounted) return;
+      debugPrint('push send all users failed');
+      _showDeliveryFailure(failure);
+    } catch (_) {
+      await _load();
+      if (!mounted) return;
+      debugPrint('push send all users failed');
+      _showSafeSendFailure();
+    } finally {
+      if (mounted) setState(() => _actionInFlight = false);
     }
   }
 
-  Future<void> _sendTest(AdminPushCampaign campaign) async {
-    final sent = await showDialog<bool>(
+  Future<void> _sendToSpecificUser(AdminPushCampaign campaign) async {
+    if (_actionInFlight) return;
+    setState(() => _actionInFlight = true);
+    try {
+      final sent = await showDialog<bool>(
+        context: context,
+        builder: (_) => PushTestSendDialog(
+          campaign: campaign,
+          repository: _repository,
+        ),
+      );
+      if (sent == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.pushSpecificUserStarted)),
+        );
+        await _load();
+      }
+    } finally {
+      if (mounted) setState(() => _actionInFlight = false);
+    }
+  }
+
+  Future<void> _schedule(AdminPushCampaign campaign) async {
+    if (_actionInFlight) return;
+    final scheduled = await showDialog<bool>(
       context: context,
-      builder: (_) => PushTestSendDialog(
+      builder: (_) => PushScheduleDialog(
         campaign: campaign,
         repository: _repository,
       ),
     );
-    if (sent == true && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.sendTestStarted)));
-      _load();
+    if (scheduled == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.pushScheduledStarted)),
+      );
+      await _load();
     }
   }
 
   Future<void> _cancel(AdminPushCampaign campaign) async {
+    if (_actionInFlight) return;
     try {
       await _repository.cancel(campaign.id);
       _load();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.errorPrefixed('$e'))),
+          SnackBar(content: Text(context.l10n.pushFormSaveFailed)),
         );
       }
     }
+  }
+
+  void _showDeliveryFailure(PushDeliveryFailure failure) {
+    final l10n = context.l10n;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.pushSendFailed, key: const Key('campaign-push-send-now-error')),
+            Text(
+              l10n.pushDeliverySummary(
+                failure.pendingCount,
+                failure.sentCount,
+                failure.failedCount,
+              ),
+              key: const Key('campaign-push-delivery-summary'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSafeSendFailure() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.l10n.pushSendFailed,
+          key: const Key('campaign-push-send-now-error'),
+        ),
+      ),
+    );
   }
 
   @override
@@ -155,7 +246,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             children: [
               const Spacer(),
               FilledButton.icon(
-                onPressed: () => _openForm(),
+                onPressed: _actionInFlight ? null : () => _openForm(),
                 icon: const Icon(Icons.add),
                 label: Text(context.l10n.newPush),
                 style: FilledButton.styleFrom(backgroundColor: _primaryColor),
@@ -180,7 +271,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
           children: [
             const Icon(Icons.error_outline, size: 48, color: _primaryColor),
             const SizedBox(height: 16),
-            Text(_error.toString()),
+            Text(context.l10n.pushFormSaveFailed),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _load,
@@ -230,6 +321,8 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
       'cancelled' => Colors.grey,
       _ => Colors.grey,
     };
+    final locale = Localizations.localeOf(context);
+    final when = campaign.sentAt ?? campaign.scheduledAt;
 
     return DataRow(
       cells: [
@@ -241,7 +334,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              adminCampaignStatusLabel(context.l10n, campaign.statusLabel),
+              adminPushCampaignStatusLabel(context.l10n, campaign.status),
               style: TextStyle(color: statusColor, fontSize: 12),
             ),
           ),
@@ -261,11 +354,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
         ),
         DataCell(
           Text(
-            campaign.sentAt != null
-                ? _formatDate(campaign.sentAt!)
-                : campaign.scheduledAt != null
-                ? _formatDate(campaign.scheduledAt!)
-                : '—',
+            when == null ? '—' : AdminLocalTime.format(when, locale),
           ),
         ),
         DataCell(Text(campaign.sentCount.toString())),
@@ -277,27 +366,40 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
               if (campaign.canEdit)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
-                  onPressed: () => _openForm(existing: campaign),
+                  onPressed: _actionInFlight
+                      ? null
+                      : () => _openForm(existing: campaign),
                   tooltip: context.l10n.edit,
                 ),
               if (campaign.canTestSend)
                 IconButton(
                   key: const Key('campaign-push-test-send'),
-                  icon: const Icon(Icons.science_outlined, size: 18),
-                  onPressed: () => _sendTest(campaign),
-                  tooltip: context.l10n.sendTest,
+                  icon: const Icon(Icons.person_pin_circle_outlined, size: 18),
+                  onPressed: _actionInFlight
+                      ? null
+                      : () => _sendToSpecificUser(campaign),
+                  tooltip: context.l10n.sendToSpecificUser,
                 ),
               if (campaign.canSend)
                 IconButton(
                   key: const Key('campaign-push-send-now'),
-                  icon: const Icon(Icons.send_outlined, size: 18),
-                  onPressed: () => _sendNow(campaign),
-                  tooltip: context.l10n.sendNow,
+                  icon: const Icon(Icons.campaign_outlined, size: 18),
+                  onPressed: _actionInFlight
+                      ? null
+                      : () => _sendToAllUsers(campaign),
+                  tooltip: context.l10n.sendToAllUsers,
+                ),
+              if (campaign.canSchedule)
+                IconButton(
+                  key: const Key('campaign-push-schedule'),
+                  icon: const Icon(Icons.schedule, size: 18),
+                  onPressed: _actionInFlight ? null : () => _schedule(campaign),
+                  tooltip: context.l10n.schedulePushSend,
                 ),
               if (campaign.canCancel)
                 IconButton(
                   icon: const Icon(Icons.cancel_outlined, size: 18),
-                  onPressed: () => _cancel(campaign),
+                  onPressed: _actionInFlight ? null : () => _cancel(campaign),
                   tooltip: context.l10n.cancelAction,
                 ),
             ],
@@ -305,10 +407,5 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
         ),
       ],
     );
-  }
-
-  String _formatDate(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

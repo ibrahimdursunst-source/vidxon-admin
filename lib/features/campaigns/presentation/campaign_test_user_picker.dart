@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/admin_l10n.dart';
 import '../../users/data/admin_user_wallet_repository.dart';
 import '../../users/domain/admin_user_summary.dart';
 
@@ -40,7 +41,7 @@ class _CampaignTestUserPickerState extends State<CampaignTestUserPicker> {
   Future<void> _search() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) {
-      setState(() => _error = 'E-posta veya ad girin.');
+      setState(() => _error = context.l10n.searchPushUserHint);
       return;
     }
 
@@ -70,24 +71,24 @@ class _CampaignTestUserPickerState extends State<CampaignTestUserPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final selectedId = widget.selectedUserId;
-    final selectedLabel = widget.selectedLabel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (selectedId != null && selectedId.isNotEmpty) ...[
           Text(
-            selectedLabel == null || selectedLabel.isEmpty
+            widget.selectedLabel == null || widget.selectedLabel!.isEmpty
                 ? selectedId
-                : '$selectedLabel · $selectedId',
+                : '${widget.selectedLabel} · $selectedId',
             key: const Key('campaign-test-user-selected'),
           ),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: widget.onCleared,
-              child: const Text('Kullanıcıyı kaldır'),
+              child: Text(l10n.removeSelectedUser),
             ),
           ),
         ] else ...[
@@ -97,9 +98,9 @@ class _CampaignTestUserPickerState extends State<CampaignTestUserPicker> {
                 child: TextField(
                   key: const Key('campaign-test-user-search'),
                   controller: _queryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Test kullanıcısı ara',
-                    hintText: 'E-posta veya ad',
+                  decoration: InputDecoration(
+                    labelText: l10n.searchPushUser,
+                    hintText: l10n.searchPushUserHint,
                   ),
                   onSubmitted: (_) => _search(),
                 ),

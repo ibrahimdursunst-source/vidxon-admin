@@ -459,6 +459,87 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.';
 
   @override
+  String get createPushCampaign => 'Kampanyayı Oluştur';
+
+  @override
+  String get savePushChanges => 'Değişiklikleri Kaydet';
+
+  @override
+  String get sendToSpecificUser => 'Belirli Kullanıcıya Gönder';
+
+  @override
+  String get sendToAllUsers => 'Tüm Kullanıcılara Gönder';
+
+  @override
+  String get schedulePushSend => 'Gönderimi Zamanla';
+
+  @override
+  String get sendToSpecificUserHint =>
+      'Yalnızca seçilen kullanıcının uygun cihazlarına gider. Kampanya Hazır kalır; tüm kullanıcılara gönderim yapılmaz.';
+
+  @override
+  String get sendToAllUsersHint =>
+      'Kampanya dillerine uyan tüm uygun kullanıcılara bildirim gider.';
+
+  @override
+  String get sendToAllUsersWarning =>
+      'Bu işlem, kampanyayla eşleşen tüm uygun kullanıcılara bildirim gönderebilir.';
+
+  @override
+  String sendToAllUsersConfirm(String title) {
+    return '\"$title\" kampanyasını tüm uygun kullanıcılara göndermek istiyor musunuz?';
+  }
+
+  @override
+  String get pushAudienceAllEligible =>
+      'Hedef kitle: kampanya dillerine uyan tüm uygun kullanıcılar';
+
+  @override
+  String get pushSendFailed => 'Bildirim gönderilemedi.';
+
+  @override
+  String pushDeliverySummary(int pending, int sent, int failed) {
+    return 'Bekleyen: $pending · Gönderilen: $sent · Başarısız: $failed';
+  }
+
+  @override
+  String get pushStatusScheduled => 'Planlandı';
+
+  @override
+  String get pushStatusCancelled => 'İptal';
+
+  @override
+  String get pushFormSaveFailed => 'Kampanya kaydedilemedi.';
+
+  @override
+  String get searchPushUser => 'Kullanıcı ara';
+
+  @override
+  String get searchPushUserHint => 'E-posta veya ad';
+
+  @override
+  String get removeSelectedUser => 'Kullanıcıyı kaldır';
+
+  @override
+  String get chooseScheduleTime => 'Yerel tarih ve saat seç';
+
+  @override
+  String get schedulePushConfirm => 'Gönderimi seçilen yerel saatte zamanla';
+
+  @override
+  String get pushScheduleRequired => 'Gönderim için bir tarih ve saat seçin.';
+
+  @override
+  String get pushSpecificUserStarted =>
+      'Belirli kullanıcıya gönderim başlatıldı.';
+
+  @override
+  String get pushAllUsersStarted => 'Tüm kullanıcılara gönderim başlatıldı.';
+
+  @override
+  String get pushScheduledStarted => 'Gönderim zamanlandı.';
+
+  @override
   String get pushReadinessLoadFailed => 'Cihaz uygunluğu yüklenemedi.';
 
   @override

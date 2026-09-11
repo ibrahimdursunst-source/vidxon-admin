@@ -47,6 +47,18 @@ String adminCampaignStatusLabel(AppLocalizations l10n, String statusLabel) {
   };
 }
 
+String adminPushCampaignStatusLabel(AppLocalizations l10n, String status) {
+  return switch (status) {
+    'draft' => l10n.ready,
+    'scheduled' => l10n.pushStatusScheduled,
+    'sending' => l10n.pushSending,
+    'sent' => l10n.sent,
+    'failed' => l10n.failed,
+    'cancelled' => l10n.pushStatusCancelled,
+    _ => status,
+  };
+}
+
 String adminSeriesStatusLabel(AppLocalizations l10n, String status) {
   return switch (status) {
     'ongoing' || 'Devam Ediyor' => l10n.statusOngoing,

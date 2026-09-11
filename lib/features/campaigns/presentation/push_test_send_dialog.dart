@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/time/admin_local_time.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../../users/data/admin_user_wallet_repository.dart';
 import '../../users/domain/admin_user_summary.dart';
@@ -26,21 +27,23 @@ class PushTestSendDialog extends StatefulWidget {
 class _PushTestSendDialogState extends State<PushTestSendDialog> {
   static const _primaryColor = Color(0xFFE50914);
 
-  String? _selectedUserId;
-  String? _selectedLabel;
+  AdminUserSummary? _selectedUser;
   PushUserReadiness? _matchingReadiness;
   PushUserReadiness? _overallReadiness;
   bool _loadingReadiness = false;
   bool _sending = false;
   String? _error;
+  String? _deliverySummary;
+
+  String? get _selectedUserId => _selectedUser?.userId;
 
   Future<void> _onUserSelected(AdminUserSummary user) async {
     setState(() {
-      _selectedUserId = user.userId;
-      _selectedLabel = user.resolvedDisplayName;
+      _selectedUser = user;
       _matchingReadiness = null;
       _overallReadiness = null;
       _error = null;
+      _deliverySummary = null;
       _loadingReadiness = true;
     });
 
@@ -77,9 +80,9 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
         );
         _loadingReadiness = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
-      debugPrint('push test readiness failed');
+      debugPrint('push specific-user readiness failed');
       setState(() {
         _loadingReadiness = false;
         _error = context.l10n.pushReadinessLoadFailed;
@@ -97,24 +100,43 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
   }
 
   Future<void> _confirm() async {
-    final userId = _selectedUserId;
+    final user = _selectedUser;
     final readiness = _matchingReadiness;
-    if (userId == null || readiness == null || readiness.eligibleDeviceCount < 1) {
+    if (_sending ||
+        user == null ||
+        readiness == null ||
+        readiness.eligibleDeviceCount < 1) {
       return;
     }
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _error = null;
+      _deliverySummary = null;
+    });
     try {
       await widget.repository.testSend(
         campaignId: widget.campaign.id,
-        testUserId: userId,
+        testUserId: user.userId,
       );
       if (mounted) Navigator.of(context).pop(true);
-    } catch (error) {
+    } on PushDeliveryFailure catch (failure) {
       if (!mounted) return;
-      debugPrint('push test send failed');
+      debugPrint('push specific-user send failed');
       setState(() {
         _sending = false;
-        _error = context.l10n.sendTestFailed;
+        _error = context.l10n.pushSendFailed;
+        _deliverySummary = context.l10n.pushDeliverySummary(
+          failure.pendingCount,
+          failure.sentCount,
+          failure.failedCount,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      debugPrint('push specific-user send failed');
+      setState(() {
+        _sending = false;
+        _error = context.l10n.pushSendFailed;
       });
     }
   }
@@ -122,8 +144,10 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final locale = Localizations.localeOf(context);
     final matching = _matchingReadiness;
     final overall = _overallReadiness;
+    final selected = _selectedUser;
     final localeMismatch =
         overall != null &&
         overall.eligibleDeviceCount > 0 &&
@@ -131,7 +155,7 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
 
     return AlertDialog(
       backgroundColor: const Color(0xFF111111),
-      title: Text(l10n.sendTest),
+      title: Text(l10n.sendToSpecificUser),
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
@@ -140,11 +164,9 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                l10n.sendTestHint,
+                l10n.sendToSpecificUserHint,
                 key: const Key('push-test-send-hint'),
               ),
-              const SizedBox(height: 12),
-              Text(l10n.sendNowHint),
               const SizedBox(height: 12),
               Text(
                 widget.campaign.displayTitle,
@@ -157,18 +179,34 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
               const SizedBox(height: 16),
               CampaignTestUserPicker(
                 selectedUserId: _selectedUserId,
-                selectedLabel: _selectedLabel,
+                selectedLabel: selected?.resolvedDisplayName,
                 onSelected: _onUserSelected,
                 onCleared: () {
                   setState(() {
-                    _selectedUserId = null;
-                    _selectedLabel = null;
+                    _selectedUser = null;
                     _matchingReadiness = null;
                     _overallReadiness = null;
+                    _error = null;
+                    _deliverySummary = null;
                   });
                 },
                 userRepository: widget.userRepository,
               ),
+              if (selected != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  selected.resolvedDisplayName,
+                  key: const Key('push-selected-user-name'),
+                ),
+                Text(
+                  selected.resolvedEmailLabel,
+                  key: const Key('push-selected-user-email'),
+                ),
+                Text(
+                  selected.userId,
+                  key: const Key('push-selected-user-uuid'),
+                ),
+              ],
               if (_loadingReadiness) ...[
                 const SizedBox(height: 16),
                 const Center(child: CircularProgressIndicator()),
@@ -188,7 +226,12 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
                   key: const Key('push-readiness-ios'),
                 ),
                 if (matching.latestLastSeenAt != null)
-                  Text(l10n.pushLastSeen(matching.latestLastSeenAt!.toIso8601String())),
+                  Text(
+                    l10n.pushLastSeen(
+                      AdminLocalTime.format(matching.latestLastSeenAt!, locale),
+                    ),
+                    key: const Key('push-readiness-last-seen'),
+                  ),
               ],
               if (matching != null && matching.eligibleDeviceCount == 0)
                 Padding(
@@ -208,6 +251,12 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
                   key: const Key('push-test-send-error'),
                   style: const TextStyle(color: Colors.red),
                 ),
+                if (_deliverySummary != null)
+                  Text(
+                    _deliverySummary!,
+                    key: const Key('campaign-push-delivery-summary'),
+                    style: const TextStyle(color: Colors.red),
+                  ),
               ],
             ],
           ),
@@ -222,7 +271,7 @@ class _PushTestSendDialogState extends State<PushTestSendDialog> {
           key: const Key('push-test-send-confirm'),
           onPressed: _canConfirm ? _confirm : null,
           style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-          child: Text(l10n.sendTest),
+          child: Text(l10n.sendToSpecificUser),
         ),
       ],
     );

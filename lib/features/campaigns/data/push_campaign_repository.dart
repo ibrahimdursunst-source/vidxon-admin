@@ -3,11 +3,32 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/time/admin_local_time.dart';
 import '../domain/admin_push_campaign.dart';
 
 class PushCampaignException implements Exception {
   PushCampaignException(this.message);
   final String message;
+  @override
+  String toString() => message;
+}
+
+class PushDeliveryFailure implements Exception {
+  PushDeliveryFailure({
+    required this.message,
+    this.pendingCount = 0,
+    this.sentCount = 0,
+    this.failedCount = 0,
+  });
+
+  final String message;
+  final int pendingCount;
+  final int sentCount;
+  final int failedCount;
+
+  String get summary =>
+      'Bekleyen: $pendingCount · Gönderilen: $sentCount · Başarısız: $failedCount';
+
   @override
   String toString() => message;
 }
@@ -33,9 +54,7 @@ class PushUserReadiness {
       eligibleDeviceCount: _asInt(map['eligible_device_count']),
       androidCount: _asInt(map['android_count']),
       iosCount: _asInt(map['ios_count']),
-      latestLastSeenAt: map['latest_last_seen_at'] != null
-          ? DateTime.tryParse(map['latest_last_seen_at'].toString())
-          : null,
+      latestLastSeenAt: AdminLocalTime.tryParseUtc(map['latest_last_seen_at']),
     );
   }
 
@@ -119,7 +138,11 @@ class PushCampaignRepository {
         _humanizeError(data['error']?.toString() ?? 'unknown'),
       );
     }
-    await _invokeFcmDelivery(campaignId);
+    final queued = _asInt(data['delivery_count']);
+    await _invokeFcmDelivery(
+      campaignId,
+      queuedCount: queued,
+    );
   }
 
   Future<PushUserReadiness> fetchUserReadiness({
@@ -179,7 +202,12 @@ class PushCampaignRepository {
         _humanizeError(data['error']?.toString() ?? 'unknown'),
       );
     }
-    await _invokeFcmDelivery(campaignId, testUserId: testUserId);
+    final queued = _asInt(data['test_delivery_count']);
+    await _invokeFcmDelivery(
+      campaignId,
+      testUserId: testUserId,
+      queuedCount: queued,
+    );
   }
 
   Future<void> cancel(String campaignId) async {
@@ -196,31 +224,79 @@ class PushCampaignRepository {
   Future<void> _invokeFcmDelivery(
     String campaignId, {
     String? testUserId,
+    int queuedCount = 0,
   }) async {
-    final body = <String, dynamic>{'campaign_id': campaignId};
-    if (testUserId != null && testUserId.isNotEmpty) {
-      body['test_user_id'] = testUserId;
-    }
+    final body = buildDeliveryInvokeBody(
+      campaignId: campaignId,
+      testUserId: testUserId,
+    );
     final response = await _resolvedClient.functions.invoke(
       'send-push-campaign',
       body: body,
     );
     if (response.status != 200) {
-      throw PushCampaignException(
-        testUserId != null && testUserId.isNotEmpty
-            ? deliveryStartFailedMessage
-            : sendNowDeliveryFailedMessage,
+      throw await _deliveryFailure(
+        campaignId: campaignId,
+        queuedCount: queuedCount,
+        specificUser: testUserId != null && testUserId.isNotEmpty,
       );
     }
   }
 
-  @visibleForTesting
-  static const deliveryStartFailedMessage =
-      'Bildirim gönderimi başlatılamadı. Lütfen tekrar denemeden önce gönderim durumunu kontrol edin.';
+  Future<PushDeliveryFailure> _deliveryFailure({
+    required String campaignId,
+    required int queuedCount,
+    required bool specificUser,
+  }) async {
+    var pending = queuedCount;
+    var sent = 0;
+    var failed = 0;
+    try {
+      final campaigns = await fetchAll();
+      final match = campaigns.where((item) => item.id == campaignId);
+      if (match.isNotEmpty) {
+        final campaign = match.first;
+        sent = campaign.sentCount;
+        failed = campaign.failedCount;
+        if (campaign.pendingCount > 0) {
+          pending = campaign.pendingCount;
+        }
+      }
+    } catch (_) {
+      // Keep the RPC queue count when the list refresh is unavailable.
+    }
+    return PushDeliveryFailure(
+      message: specificUser
+          ? deliveryStartFailedMessage
+          : sendNowDeliveryFailedMessage,
+      pendingCount: pending,
+      sentCount: sent,
+      failedCount: failed,
+    );
+  }
 
   @visibleForTesting
-  static const sendNowDeliveryFailedMessage =
-      'Bildirim gönderimi tamamlanamadı. Tekrar göndermeden önce kampanyanın gönderim durumunu kontrol edin.';
+  static Map<String, dynamic> buildDeliveryInvokeBody({
+    required String campaignId,
+    String? testUserId,
+  }) {
+    final body = <String, dynamic>{'campaign_id': campaignId};
+    if (testUserId != null && testUserId.isNotEmpty) {
+      body['test_user_id'] = testUserId;
+    }
+    return body;
+  }
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  @visibleForTesting
+  static const deliveryStartFailedMessage = 'Bildirim gönderilemedi.';
+
+  @visibleForTesting
+  static const sendNowDeliveryFailedMessage = 'Bildirim gönderilemedi.';
 
   String _humanizeError(String error) {
     if (error.startsWith('missing_title_for_')) {
