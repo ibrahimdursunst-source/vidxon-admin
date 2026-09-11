@@ -206,8 +206,9 @@
       "failed": {"type": "int"}
     }
   },
-  "pushStatusScheduled": "Planlandı",
+  "pushStatusScheduled": "Planlanmış",
   "pushStatusCancelled": "İptal",
+  "pushCampaignActions": "İşlemler",
   "pushFormSaveFailed": "Kampanya kaydedilemedi.",
   "searchPushUser": "Kullanıcı ara",
   "searchPushUserHint": "E-posta veya ad",

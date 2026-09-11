@@ -355,55 +355,77 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
         DataCell(
           Text(
             when == null ? '—' : AdminLocalTime.format(when, locale),
+            key: const Key('campaign-plan-or-delivery'),
           ),
         ),
         DataCell(Text(campaign.sentCount.toString())),
         DataCell(Text(campaign.failedCount.toString())),
         DataCell(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          (campaign.canEdit ||
+                  campaign.canTestSend ||
+                  campaign.canSend ||
+                  campaign.canSchedule ||
+                  campaign.canCancel)
+              ? PopupMenuButton<String>(
+            key: const Key('campaign-push-actions'),
+            enabled: !_actionInFlight,
+            tooltip: context.l10n.pushCampaignActions,
+            onSelected: (value) {
+              switch (value) {
+                case 'edit':
+                  _openForm(existing: campaign);
+                case 'specific':
+                  _sendToSpecificUser(campaign);
+                case 'all':
+                  _sendToAllUsers(campaign);
+                case 'schedule':
+                  _schedule(campaign);
+                case 'cancel':
+                  _cancel(campaign);
+              }
+            },
+            itemBuilder: (ctx) => [
               if (campaign.canEdit)
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  onPressed: _actionInFlight
-                      ? null
-                      : () => _openForm(existing: campaign),
-                  tooltip: context.l10n.edit,
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Text(ctx.l10n.edit),
                 ),
               if (campaign.canTestSend)
-                IconButton(
+                PopupMenuItem(
                   key: const Key('campaign-push-test-send'),
-                  icon: const Icon(Icons.person_pin_circle_outlined, size: 18),
-                  onPressed: _actionInFlight
-                      ? null
-                      : () => _sendToSpecificUser(campaign),
-                  tooltip: context.l10n.sendToSpecificUser,
+                  value: 'specific',
+                  child: Text(ctx.l10n.sendToSpecificUser),
                 ),
               if (campaign.canSend)
-                IconButton(
+                PopupMenuItem(
                   key: const Key('campaign-push-send-now'),
-                  icon: const Icon(Icons.campaign_outlined, size: 18),
-                  onPressed: _actionInFlight
-                      ? null
-                      : () => _sendToAllUsers(campaign),
-                  tooltip: context.l10n.sendToAllUsers,
+                  value: 'all',
+                  child: Text(ctx.l10n.sendToAllUsers),
                 ),
               if (campaign.canSchedule)
-                IconButton(
+                PopupMenuItem(
                   key: const Key('campaign-push-schedule'),
-                  icon: const Icon(Icons.schedule, size: 18),
-                  onPressed: _actionInFlight ? null : () => _schedule(campaign),
-                  tooltip: context.l10n.schedulePushSend,
+                  value: 'schedule',
+                  child: Text(ctx.l10n.schedulePushSend),
                 ),
               if (campaign.canCancel)
-                IconButton(
-                  icon: const Icon(Icons.cancel_outlined, size: 18),
-                  onPressed: _actionInFlight ? null : () => _cancel(campaign),
-                  tooltip: context.l10n.cancelAction,
+                PopupMenuItem(
+                  value: 'cancel',
+                  child: Text(ctx.l10n.cancelAction),
                 ),
             ],
-          ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(
+                context.l10n.pushCampaignActions,
+                style: const TextStyle(
+                  color: Color(0xFFE50914),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          )
+              : const SizedBox.shrink(),
         ),
       ],
     );

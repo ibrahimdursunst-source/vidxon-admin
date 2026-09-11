@@ -510,6 +510,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pushStatusCancelled => 'Cancelled';
 
   @override
+  String get pushCampaignActions => 'Actions';
+
+  @override
   String get pushFormSaveFailed => 'The campaign could not be saved.';
 
   @override

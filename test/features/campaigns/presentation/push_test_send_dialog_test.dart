@@ -239,9 +239,12 @@ void main() {
     expect(find.text('Test Gönder'), findsNothing);
     expect(find.text('Şimdi Gönder'), findsNothing);
     expect(find.text('Hazır'), findsOneWidget);
-    expect(find.byTooltip('Belirli Kullanıcıya Gönder'), findsOneWidget);
-    expect(find.byTooltip('Tüm Kullanıcılara Gönder'), findsOneWidget);
-    expect(find.byTooltip('Gönderimi Zamanla'), findsOneWidget);
+    expect(find.text('İşlemler'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('campaign-push-actions')));
+    await tester.pumpAndSettle();
+    expect(find.text('Belirli Kullanıcıya Gönder'), findsOneWidget);
+    expect(find.text('Tüm Kullanıcılara Gönder'), findsOneWidget);
+    expect(find.text('Gönderimi Zamanla'), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-test-send')), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-send-now')), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-schedule')), findsOneWidget);
@@ -256,13 +259,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Ready'), findsOneWidget);
-    expect(find.text('Draft'), findsNothing);
-    expect(find.text('Save Draft'), findsNothing);
-    expect(find.text('Send Test'), findsNothing);
-    expect(find.text('Send Now'), findsNothing);
-    expect(find.byTooltip('Send to Specific User'), findsOneWidget);
-    expect(find.byTooltip('Send to All Users'), findsOneWidget);
-    expect(find.byTooltip('Schedule Send'), findsOneWidget);
+    expect(find.text('Actions'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('campaign-push-actions')));
+    await tester.pumpAndSettle();
+    expect(find.text('Send to Specific User'), findsOneWidget);
+    expect(find.text('Send to All Users'), findsOneWidget);
+    expect(find.text('Schedule Send'), findsOneWidget);
   });
 
   testWidgets('scheduled campaign has all-users and schedule, not specific-user', (
@@ -273,7 +275,9 @@ void main() {
     final repo = _FakePushRepo(campaigns: [_campaign(status: 'scheduled')]);
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
-    expect(find.text('Planlandı'), findsOneWidget);
+    expect(find.text('Planlanmış'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('campaign-push-actions')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('campaign-push-test-send')), findsNothing);
     expect(find.byKey(const Key('campaign-push-send-now')), findsOneWidget);
     expect(find.byKey(const Key('campaign-push-schedule')), findsOneWidget);
@@ -307,7 +311,8 @@ void main() {
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
+    await tester.tap(find.byKey(const Key('campaign-push-actions')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('campaign-push-send-now')));
     await tester.pumpAndSettle();
     expect(find.textContaining('tüm uygun kullanıcılara'), findsWidgets);
@@ -329,9 +334,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final formatted = AdminLocalTime.format(sentAt, const Locale('tr'));
+    expect(find.byKey(const Key('campaign-plan-or-delivery')), findsOneWidget);
     expect(find.text(formatted), findsOneWidget);
     expect(find.textContaining('2026-09-11T12:15:54'), findsNothing);
     expect(find.textContaining('12:15:54.000Z'), findsNothing);
+
+    final screenshotUtc = AdminLocalTime.tryParseUtc('2026-09-11T16:06:00+00:00')!;
+    expect(screenshotUtc.hour, 16);
+    expect(
+      AdminLocalTime.format(screenshotUtc, const Locale('tr')),
+      isNot('11.09.2026 16:06Z'),
+    );
   });
 
   testWidgets('zero eligible devices disables specific-user confirm', (
@@ -602,7 +615,8 @@ void main() {
     await tester.pumpWidget(_app(PushCampaignsTab(repository: repo)));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.byKey(const Key('campaign-push-send-now')));
+    await tester.tap(find.byKey(const Key('campaign-push-actions')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('campaign-push-send-now')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('campaign-push-send-now-confirm')));

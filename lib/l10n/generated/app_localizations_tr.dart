@@ -503,10 +503,13 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get pushStatusScheduled => 'Planlandı';
+  String get pushStatusScheduled => 'Planlanmış';
 
   @override
   String get pushStatusCancelled => 'İptal';
+
+  @override
+  String get pushCampaignActions => 'İşlemler';
 
   @override
   String get pushFormSaveFailed => 'Kampanya kaydedilemedi.';

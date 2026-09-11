@@ -162,6 +162,7 @@
   },
   "pushStatusScheduled": "Scheduled",
   "pushStatusCancelled": "Cancelled",
+  "pushCampaignActions": "Actions",
   "pushFormSaveFailed": "The campaign could not be saved.",
   "searchPushUser": "Search user",
   "searchPushUserHint": "Email or name",

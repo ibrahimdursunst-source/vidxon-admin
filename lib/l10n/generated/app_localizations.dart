@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @pushStatusScheduled.
   ///
   /// In tr, this message translates to:
-  /// **'Planlandı'**
+  /// **'Planlanmış'**
   String get pushStatusScheduled;
 
   /// No description provided for @pushStatusCancelled.
@@ -1027,6 +1027,12 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'İptal'**
   String get pushStatusCancelled;
+
+  /// No description provided for @pushCampaignActions.
+  ///
+  /// In tr, this message translates to:
+  /// **'İşlemler'**
+  String get pushCampaignActions;
 
   /// No description provided for @pushFormSaveFailed.
   ///
