@@ -48,6 +48,7 @@ class CampaignRepository {
     required List<AdminCampaignTranslation> translations,
     bool testOnly = false,
     String? testUserId,
+    String displayMode = 'once',
   }) async {
     final targeting = CampaignTestTargeting.persist(
       testOnly: testOnly,
@@ -74,6 +75,7 @@ class CampaignRepository {
       'p_translations': translations.map((t) => t.toMap()).toList(),
       'p_test_only': targeting.testOnly,
       'p_test_user_id': targeting.testUserId,
+      'p_display_mode': displayMode == 'recurring' ? 'recurring' : 'once',
     };
 
     if (id != null) {
@@ -125,6 +127,8 @@ class CampaignRepository {
         return 'Test kampanyası için bir kullanıcı seçilmelidir.';
       case 'test_user_not_found':
         return 'Seçilen test kullanıcısı bulunamadı.';
+      case 'invalid_display_mode':
+        return 'Geçersiz gösterim değeri.';
       default:
         return 'İşlem başarısız: $error';
     }

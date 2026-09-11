@@ -892,5 +892,22 @@
       "before": {"type": "String"},
       "after": {"type": "String"}
     }
-  }
+  },
+  "campaignDisplayMode": "Gösterim",
+  "campaignDisplayModeOnce": "Bir kez",
+  "campaignDisplayModeRecurring": "Tekrarlanabilir",
+  "campaignDisplayModeHelper": "Tekrarlanabilir kampanyalar dönüşümlü gösterilir. Bir pop-up gösterildikten sonraki uygulama açılışında hiçbir tanıtım pop-up'ı gösterilmez.",
+  "popupImageRecommended": "Önerilen görsel",
+  "popupImageRecommendedSize": "1080 × 1350 px (4:5, dikey)",
+  "popupImageTransparencyHint": "PNG veya WebP ile şeffaf arka plan kullanabilirsiniz.",
+  "popupImageSupportedFormats": "Desteklenen formatlar: JPG, PNG, WebP",
+  "popupImageMaxSize": "Maksimum: 10 MB",
+  "popupSelectedImageSize": "Seçilen görsel: {width} × {height} px",
+  "@popupSelectedImageSize": {
+    "placeholders": {
+      "width": {"type": "int"},
+      "height": {"type": "int"}
+    }
+  },
+  "invalidDisplayMode": "Geçersiz gösterim değeri."
 }

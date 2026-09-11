@@ -3871,6 +3871,72 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Bakiye: {before} → {after}'**
   String balanceArrow(String before, String after);
+
+  /// No description provided for @campaignDisplayMode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gösterim'**
+  String get campaignDisplayMode;
+
+  /// No description provided for @campaignDisplayModeOnce.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir kez'**
+  String get campaignDisplayModeOnce;
+
+  /// No description provided for @campaignDisplayModeRecurring.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tekrarlanabilir'**
+  String get campaignDisplayModeRecurring;
+
+  /// No description provided for @campaignDisplayModeHelper.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tekrarlanabilir kampanyalar dönüşümlü gösterilir. Bir pop-up gösterildikten sonraki uygulama açılışında hiçbir tanıtım pop-up\'ı gösterilmez.'**
+  String get campaignDisplayModeHelper;
+
+  /// No description provided for @popupImageRecommended.
+  ///
+  /// In tr, this message translates to:
+  /// **'Önerilen görsel'**
+  String get popupImageRecommended;
+
+  /// No description provided for @popupImageRecommendedSize.
+  ///
+  /// In tr, this message translates to:
+  /// **'1080 × 1350 px (4:5, dikey)'**
+  String get popupImageRecommendedSize;
+
+  /// No description provided for @popupImageTransparencyHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'PNG veya WebP ile şeffaf arka plan kullanabilirsiniz.'**
+  String get popupImageTransparencyHint;
+
+  /// No description provided for @popupImageSupportedFormats.
+  ///
+  /// In tr, this message translates to:
+  /// **'Desteklenen formatlar: JPG, PNG, WebP'**
+  String get popupImageSupportedFormats;
+
+  /// No description provided for @popupImageMaxSize.
+  ///
+  /// In tr, this message translates to:
+  /// **'Maksimum: 10 MB'**
+  String get popupImageMaxSize;
+
+  /// No description provided for @popupSelectedImageSize.
+  ///
+  /// In tr, this message translates to:
+  /// **'Seçilen görsel: {width} × {height} px'**
+  String popupSelectedImageSize(int width, int height);
+
+  /// No description provided for @invalidDisplayMode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geçersiz gösterim değeri.'**
+  String get invalidDisplayMode;
 }
 
 class _AppLocalizationsDelegate

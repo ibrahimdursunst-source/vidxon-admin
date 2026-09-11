@@ -98,6 +98,7 @@ class _FakeCampaignRepository extends CampaignRepository {
     required List<AdminCampaignTranslation> translations,
     bool testOnly = false,
     String? testUserId,
+    String displayMode = 'once',
   }) async {
     lastDestinationType = destinationType;
     lastSeriesId = destinationSeriesId;
@@ -226,9 +227,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> selectDestination(WidgetTester tester, String label) async {
-    await tester.tap(find.byKey(const Key('campaign-destination-type')));
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> selectDestination(WidgetTester tester, String label) async {
+    await tapVisible(tester, find.byKey(const Key('campaign-destination-type')));
     await tester.tap(find.text(label).last);
     await tester.pumpAndSettle();
   }
@@ -261,8 +268,7 @@ void main() {
     expect(find.byKey(const Key('campaign-series-search')), findsOneWidget);
     expect(find.byKey(const Key('campaign-series-results')), findsOneWidget);
 
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
 
     expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
     expect(find.byKey(const Key('campaign-series-search')), findsNothing);
@@ -270,23 +276,19 @@ void main() {
     expect(find.text('Kuzey Yıldızı'), findsWidgets);
     expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
 
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byType(DropdownButtonFormField<String>).last);
     expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
 
     await tester.tap(find.text('Bölüm 1 · Başlangıç').last);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('campaign-episode-selected')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('campaign-series-change')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(const Key('campaign-series-change')));
     expect(find.byKey(const Key('campaign-series-results')), findsOneWidget);
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesB')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesB')));
     expect(find.text('Bölüm 1 · Başlangıç'), findsNothing);
     expect(find.byKey(const Key('campaign-episode-selected')), findsNothing);
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byType(DropdownButtonFormField<String>).last);
     expect(find.text('Bölüm 1 · Giriş'), findsWidgets);
   });
 
@@ -294,25 +296,8 @@ void main() {
     final repo = _FakeCampaignRepository();
     await pumpPopup(tester, repo: repo);
     await selectDestination(tester, 'Dizi');
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
 
-    await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.labelText == 'Başlık (tr) *',
-      ),
-      'Kampanya',
-    );
-    await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.labelText == 'CTA Butonu (tr) *',
-      ),
-      'İzle',
-    );
     await tester.ensureVisible(find.text('Oluştur'));
     await tester.tap(find.text('Oluştur'));
     await tester.pumpAndSettle();
@@ -373,7 +358,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('campaign-episode-loading')), findsNothing);
     expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tapVisible(tester, find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
   });
@@ -387,8 +372,7 @@ void main() {
       episodeRepository: _EpisodeCatalog(const []),
     );
     await selectDestination(tester, 'Bölüm');
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
     expect(find.byKey(const Key('campaign-episode-empty')), findsOneWidget);
     expect(find.text('Bu dizide henüz bölüm bulunmuyor.'), findsOneWidget);
   });
@@ -406,14 +390,12 @@ void main() {
       episodeRepository: episodesRepo,
     );
     await selectDestination(tester, 'Bölüm');
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
     expect(find.byKey(const Key('campaign-episode-error')), findsOneWidget);
     expect(find.text('Bölümler yüklenemedi.'), findsOneWidget);
 
     episodesRepo.fetchError = null;
-    await tester.tap(find.byKey(const Key('campaign-episode-retry')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(const Key('campaign-episode-retry')));
     expect(find.byKey(const Key('campaign-episode-error')), findsNothing);
     expect(episodesRepo.fetchedSeriesIds, [seriesA, seriesA]);
   });
@@ -546,8 +528,7 @@ void main() {
 
   testWidgets('campaign destinations do not include Home or URL', (tester) async {
     await pumpPopup(tester, repo: _FakeCampaignRepository());
-    await tester.tap(find.byKey(const Key('campaign-destination-type')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(const Key('campaign-destination-type')));
 
     expect(find.text('Bilgilendirme'), findsWidgets);
     expect(find.text('Dizi'), findsWidgets);
@@ -605,8 +586,7 @@ void main() {
     expect(find.text('Dizi ID *'), findsNothing);
     expect(find.byKey(const Key('campaign-priority-field')), findsNothing);
 
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
     expect(find.byKey(const Key('campaign-series-selected')), findsOneWidget);
     expect(find.byKey(const Key('campaign-series-search')), findsNothing);
     expect(find.byKey(const Key('campaign-series-results')), findsNothing);
@@ -632,11 +612,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     await selectDestination(tester, 'Bölüm');
-    await tester.tap(find.byKey(Key('campaign-series-option-$seriesA')));
-    await tester.pumpAndSettle();
+    await tapVisible(tester, find.byKey(Key('campaign-series-option-$seriesA')));
     expect(episodesRepo.fetchedSeriesIds, [seriesA]);
     expect(find.byType(DropdownButtonFormField<String>), findsWidgets);
-    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tapVisible(tester, find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
     expect(find.text(episodeA1), findsNothing);

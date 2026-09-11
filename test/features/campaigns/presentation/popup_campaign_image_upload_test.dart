@@ -31,6 +31,7 @@ class _FakeCampaignRepository extends CampaignRepository {
     required List<AdminCampaignTranslation> translations,
     bool testOnly = false,
     String? testUserId,
+    String displayMode = 'once',
   }) async {
     upsertCalls += 1;
     lastImagePath = imagePath;

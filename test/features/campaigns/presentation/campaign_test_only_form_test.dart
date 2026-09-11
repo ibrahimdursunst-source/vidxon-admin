@@ -77,6 +77,7 @@ class _FakeCampaigns extends CampaignRepository {
     required List<AdminCampaignTranslation> translations,
     bool testOnly = false,
     String? testUserId,
+    String displayMode = 'once',
   }) async {
     upsertCalls += 1;
     lastTestOnly = testOnly;
@@ -154,17 +155,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> fillRequiredTitle(WidgetTester tester) async {
-    await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.labelText == 'Başlık (tr) *',
-      ),
-      'Kampanya',
-    );
-  }
-
   testWidgets('test-only cannot save without a selected user', (tester) async {
     final repo = _FakeCampaigns();
     await pumpForm(tester, repo: repo, users: _FakeUsers([_testUser()]));
@@ -173,7 +163,6 @@ void main() {
     await tester.tap(find.byKey(const Key('campaign-test-only-toggle')));
     await tester.pumpAndSettle();
 
-    await fillRequiredTitle(tester);
     await tester.ensureVisible(find.text('Oluştur'));
     await tester.tap(find.text('Oluştur'));
     await tester.pumpAndSettle();
@@ -202,7 +191,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('campaign-test-user-selected')), findsOneWidget);
 
-    await fillRequiredTitle(tester);
     await tester.ensureVisible(find.text('Oluştur'));
     await tester.tap(find.text('Oluştur'));
     await tester.pumpAndSettle();
@@ -253,7 +241,6 @@ void main() {
     await pumpForm(tester, repo: repo, users: _FakeUsers([_testUser()]));
 
     expect(find.byKey(const Key('campaign-test-user-search')), findsNothing);
-    await fillRequiredTitle(tester);
     await tester.ensureVisible(find.text('Oluştur'));
     await tester.tap(find.text('Oluştur'));
     await tester.pumpAndSettle();

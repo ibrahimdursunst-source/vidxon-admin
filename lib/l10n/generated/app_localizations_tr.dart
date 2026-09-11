@@ -2077,4 +2077,42 @@ class AppLocalizationsTr extends AppLocalizations {
   String balanceArrow(String before, String after) {
     return 'Bakiye: $before → $after';
   }
+
+  @override
+  String get campaignDisplayMode => 'Gösterim';
+
+  @override
+  String get campaignDisplayModeOnce => 'Bir kez';
+
+  @override
+  String get campaignDisplayModeRecurring => 'Tekrarlanabilir';
+
+  @override
+  String get campaignDisplayModeHelper =>
+      'Tekrarlanabilir kampanyalar dönüşümlü gösterilir. Bir pop-up gösterildikten sonraki uygulama açılışında hiçbir tanıtım pop-up\'ı gösterilmez.';
+
+  @override
+  String get popupImageRecommended => 'Önerilen görsel';
+
+  @override
+  String get popupImageRecommendedSize => '1080 × 1350 px (4:5, dikey)';
+
+  @override
+  String get popupImageTransparencyHint =>
+      'PNG veya WebP ile şeffaf arka plan kullanabilirsiniz.';
+
+  @override
+  String get popupImageSupportedFormats =>
+      'Desteklenen formatlar: JPG, PNG, WebP';
+
+  @override
+  String get popupImageMaxSize => 'Maksimum: 10 MB';
+
+  @override
+  String popupSelectedImageSize(int width, int height) {
+    return 'Seçilen görsel: $width × $height px';
+  }
+
+  @override
+  String get invalidDisplayMode => 'Geçersiz gösterim değeri.';
 }

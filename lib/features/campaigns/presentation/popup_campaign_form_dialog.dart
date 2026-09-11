@@ -12,13 +12,14 @@ import '../../users/data/admin_user_wallet_repository.dart';
 import '../../users/domain/admin_user_summary.dart';
 import '../application/campaign_destination_controller.dart';
 import '../application/campaign_image_controller.dart';
+import '../application/popup_image_dimensions.dart';
 import '../data/campaign_repository.dart';
 import '../domain/admin_campaign.dart';
 import '../domain/campaign_destination.dart';
+import '../domain/campaign_display_mode.dart';
 import '../domain/campaign_test_targeting.dart';
 import 'campaign_destination_fields.dart';
 import 'campaign_test_user_picker.dart';
-import 'locale_translation_fields.dart';
 
 /// Supported Vidxon app locales for campaign targeting.
 const List<String> kSupportedLocales = VidxonProductLocales.all;
@@ -34,6 +35,7 @@ class PopupCampaignFormDialog extends StatefulWidget {
     this.seriesRepository,
     this.episodeRepository,
     this.userRepository,
+    this.imageSizeDecoder,
   });
 
   final CampaignRepository repository;
@@ -44,6 +46,7 @@ class PopupCampaignFormDialog extends StatefulWidget {
   final SeriesRepository? seriesRepository;
   final EpisodeRepository? episodeRepository;
   final AdminUserWalletRepository? userRepository;
+  final Future<PopupImagePixelSize?> Function(Uint8List bytes)? imageSizeDecoder;
 
   @override
   State<PopupCampaignFormDialog> createState() =>
@@ -61,6 +64,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
   late String _destinationType;
   late bool _isActive;
   late bool _testOnly;
+  late String _displayMode;
+  int? _localImageWidth;
+  int? _localImageHeight;
   String? _testUserId;
   String? _testUserLabel;
   late DateTime _startsAt;
@@ -101,6 +107,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
     _destinationController.initialize();
     _isActive = e?.isActive ?? false;
     _testOnly = e?.testOnly ?? false;
+    _displayMode = CampaignDisplayMode.normalize(e?.displayMode);
     _testUserId = e?.testUserId;
     _testUserLabel = e?.testUserId;
     _startsAt = e?.startsAt ?? DateTime.now();
@@ -174,11 +181,9 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
       final translations = _selectedLocales.map((locale) {
         return AdminCampaignTranslation(
           locale: locale,
-          title: _titleControllers[locale]!.text.trim(),
+          title: _compatTitle(locale),
           description: _descriptionControllers[locale]!.text.trim(),
-          ctaLabel: _ctaControllers[locale]!.text.trim().isEmpty
-              ? null
-              : _ctaControllers[locale]!.text.trim(),
+          ctaLabel: _compatCtaLabel(locale),
         );
       }).toList();
 
@@ -196,6 +201,7 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         translations: translations,
         testOnly: _testOnly,
         testUserId: _testUserId,
+        displayMode: _displayMode,
       );
 
       if (mounted) Navigator.of(context).pop(true);
@@ -210,6 +216,19 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         _isSaving = false;
       });
     }
+  }
+
+  String _compatTitle(String locale) {
+    final raw = _titleControllers[locale]?.text.trim() ?? '';
+    if (raw.isNotEmpty) return raw;
+    return 'Popup';
+  }
+
+  String? _compatCtaLabel(String locale) {
+    if (_destinationType == CampaignDestinationType.none) return null;
+    final raw = _ctaControllers[locale]?.text.trim() ?? '';
+    if (raw.isNotEmpty) return raw;
+    return 'Open';
   }
 
   Future<void> _pickDateTime({required bool isStart}) async {
@@ -271,7 +290,15 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 _CampaignImageField(
                   controller: _imageController,
                   onPick: _pickAndUploadImage,
-                  onChanged: () => setState(() {}),
+                  onChanged: () => setState(() {
+                    if (!_imageController.hasImage &&
+                        _imageController.previewBytes == null) {
+                      _localImageWidth = null;
+                      _localImageHeight = null;
+                    }
+                  }),
+                  localImageWidth: _localImageWidth,
+                  localImageHeight: _localImageHeight,
                 ),
                 if (_imageController.errorMessage != null) ...[
                   const SizedBox(height: 8),
@@ -328,16 +355,31 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // Per-locale translation fields
-                ..._selectedLocales.map((locale) {
-                  return LocaleTranslationFields(
-                    locale: locale,
-                    titleController: _titleControllers[locale]!,
-                    descriptionController: _descriptionControllers[locale]!,
-                    ctaController: _ctaControllers[locale]!,
-                    ctaRequired: _destinationType != 'none',
-                  );
-                }),
+                _sectionLabel(context.l10n.campaignDisplayMode),
+                SegmentedButton<String>(
+                  key: const Key('campaign-display-mode'),
+                  segments: [
+                    ButtonSegment<String>(
+                      value: CampaignDisplayMode.once,
+                      label: Text(context.l10n.campaignDisplayModeOnce),
+                    ),
+                    ButtonSegment<String>(
+                      value: CampaignDisplayMode.recurring,
+                      label: Text(context.l10n.campaignDisplayModeRecurring),
+                    ),
+                  ],
+                  selected: {_displayMode},
+                  onSelectionChanged: (selected) {
+                    setState(() => _displayMode = selected.first);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  key: const Key('campaign-display-mode-helper'),
+                  context.l10n.campaignDisplayModeHelper,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
 
                 // === Zamanlama ===
                 _sectionLabel(context.l10n.schedule),
@@ -489,9 +531,14 @@ class _PopupCampaignFormDialogState extends State<PopupCampaignFormDialog> {
         fileName = file.name;
       }
 
+      final decoded = await (widget.imageSizeDecoder ?? decodePopupImagePixelSize)(
+        bytes,
+      );
       setState(() {
         _imageController.uploading = true;
         _imageController.errorMessage = null;
+        _localImageWidth = decoded?.width;
+        _localImageHeight = decoded?.height;
       });
       await _imageController.applyPickedBytes(bytes: bytes, fileName: fileName);
       if (mounted) setState(() {});
@@ -526,11 +573,15 @@ class _CampaignImageField extends StatelessWidget {
     required this.controller,
     required this.onPick,
     required this.onChanged,
+    this.localImageWidth,
+    this.localImageHeight,
   });
 
   final CampaignImageController controller;
   final Future<void> Function() onPick;
   final VoidCallback onChanged;
+  final int? localImageWidth;
+  final int? localImageHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -538,6 +589,7 @@ class _CampaignImageField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
+          key: const Key('campaign-image-preview'),
           width: double.infinity,
           height: 140,
           decoration: BoxDecoration(
@@ -548,16 +600,13 @@ class _CampaignImageField extends StatelessWidget {
           child: controller.uploading
               ? const Center(child: CircularProgressIndicator())
               : controller.previewBytes != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(
-                    controller.previewBytes!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 140,
-                    errorBuilder: (_, error, stackTrace) => const Center(
-                      child: Icon(Icons.image, color: Colors.white70, size: 48),
-                    ),
+              ? Image.memory(
+                  controller.previewBytes!,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: 140,
+                  errorBuilder: (_, error, stackTrace) => const Center(
+                    child: Icon(Icons.image, color: Colors.white70, size: 48),
                   ),
                 )
               : Center(
@@ -569,6 +618,17 @@ class _CampaignImageField extends StatelessWidget {
                   ),
                 ),
         ),
+        if (localImageWidth != null && localImageHeight != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            key: const Key('campaign-selected-image-size'),
+            context.l10n.popupSelectedImageSize(
+              localImageWidth!,
+              localImageHeight!,
+            ),
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ],
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -593,6 +653,47 @@ class _CampaignImageField extends StatelessWidget {
                 child: Text(context.l10n.removeImage),
               ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          key: const Key('campaign-image-guidance'),
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${context.l10n.popupImageRecommended}:',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                context.l10n.popupImageRecommendedSize,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.popupImageTransparencyHint,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.popupImageSupportedFormats,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              Text(
+                context.l10n.popupImageMaxSize,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ],
     );

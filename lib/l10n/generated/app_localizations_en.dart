@@ -2084,4 +2084,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String balanceArrow(String before, String after) {
     return 'Balance: $before → $after';
   }
+
+  @override
+  String get campaignDisplayMode => 'Display';
+
+  @override
+  String get campaignDisplayModeOnce => 'Once';
+
+  @override
+  String get campaignDisplayModeRecurring => 'Recurring';
+
+  @override
+  String get campaignDisplayModeHelper =>
+      'Recurring campaigns rotate fairly. After a popup is shown, no promotional popup is shown on the next app launch.';
+
+  @override
+  String get popupImageRecommended => 'Recommended artwork';
+
+  @override
+  String get popupImageRecommendedSize => '1080 × 1350 px (4:5, portrait)';
+
+  @override
+  String get popupImageTransparencyHint =>
+      'You can use PNG or WebP with a transparent background.';
+
+  @override
+  String get popupImageSupportedFormats => 'Supported formats: JPG, PNG, WebP';
+
+  @override
+  String get popupImageMaxSize => 'Maximum: 10 MB';
+
+  @override
+  String popupSelectedImageSize(int width, int height) {
+    return 'Selected image: $width × $height px';
+  }
+
+  @override
+  String get invalidDisplayMode => 'Invalid display mode.';
 }

@@ -628,5 +628,22 @@
   "pushSending": "Sending",
   "pushCancelled": "Cancelled",
   "coinsDebited": "{amount} coins were debited. New balance: {balance}",
-  "balanceArrow": "Balance: {before} → {after}"
+  "balanceArrow": "Balance: {before} → {after}",
+  "campaignDisplayMode": "Display",
+  "campaignDisplayModeOnce": "Once",
+  "campaignDisplayModeRecurring": "Recurring",
+  "campaignDisplayModeHelper": "Recurring campaigns rotate fairly. After a popup is shown, no promotional popup is shown on the next app launch.",
+  "popupImageRecommended": "Recommended artwork",
+  "popupImageRecommendedSize": "1080 × 1350 px (4:5, portrait)",
+  "popupImageTransparencyHint": "You can use PNG or WebP with a transparent background.",
+  "popupImageSupportedFormats": "Supported formats: JPG, PNG, WebP",
+  "popupImageMaxSize": "Maximum: 10 MB",
+  "popupSelectedImageSize": "Selected image: {width} × {height} px",
+  "@popupSelectedImageSize": {
+    "placeholders": {
+      "width": {"type": "int"},
+      "height": {"type": "int"}
+    }
+  },
+  "invalidDisplayMode": "Invalid display mode."
 }
