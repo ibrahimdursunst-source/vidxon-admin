@@ -434,6 +434,50 @@ class AppLocalizationsTr extends AppLocalizations {
   String get failed => 'Başarısız';
 
   @override
+  String get messageColumn => 'Mesaj';
+
+  @override
+  String get sentDevices => 'Gönderildi (Cihaz)';
+
+  @override
+  String get failedDevices => 'Başarısız (Cihaz)';
+
+  @override
+  String get pushAudienceTitle => 'Push Kitlesi';
+
+  @override
+  String get pushEnabledAccounts => 'Bildirimleri Açık Hesaplar';
+
+  @override
+  String get pushEligibleUsers => 'Uygun Kullanıcılar';
+
+  @override
+  String get pushEligibleDevicesLabel => 'Uygun Cihazlar';
+
+  @override
+  String get pushAndroidLabel => 'Android';
+
+  @override
+  String get pushIosLabel => 'iOS';
+
+  @override
+  String pushEligibleUserCount(int count) {
+    return 'Uygun kullanıcı: $count';
+  }
+
+  @override
+  String get pushAudienceCurrentNote =>
+      'Bu sayı mevcut uygun kitleyi gösterir.';
+
+  @override
+  String get pushAudienceScheduleEstimateNote =>
+      'Bu, şu anki uygun kitle tahminidir. Gerçek alıcılar gönderim anında yeniden hesaplanır.';
+
+  @override
+  String get pushNoEligibleAudience =>
+      'Gönderime uygun cihaz yok. Bildirim gönderilemez.';
+
+  @override
   String get sendNow => 'Şimdi Gönder';
 
   @override

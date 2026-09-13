@@ -4,6 +4,7 @@ import '../../../core/time/admin_local_time.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
+import 'push_audience_readiness_lines.dart';
 
 class PushScheduleDialog extends StatefulWidget {
   const PushScheduleDialog({
@@ -25,6 +26,9 @@ class _PushScheduleDialogState extends State<PushScheduleDialog> {
   late DateTime _localScheduledAt;
   bool _saving = false;
   String? _error;
+  PushAudienceSummary? _summary;
+  bool _audienceLoading = true;
+  Object? _audienceError;
 
   @override
   void initState() {
@@ -33,6 +37,27 @@ class _PushScheduleDialogState extends State<PushScheduleDialog> {
     _localScheduledAt = existing != null
         ? AdminLocalTime.utcToLocalPicker(existing)
         : DateTime.now();
+    _loadAudience();
+  }
+
+  Future<void> _loadAudience() async {
+    try {
+      final summary = await widget.repository.fetchAudienceSummary(
+        locales: widget.campaign.targetLocales,
+      );
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+        _audienceLoading = false;
+        _audienceError = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _audienceLoading = false;
+        _audienceError = 'load_failed';
+      });
+    }
   }
 
   Future<void> _pick() async {
@@ -109,32 +134,50 @@ class _PushScheduleDialogState extends State<PushScheduleDialog> {
       title: Text(l10n.schedulePushSend),
       content: SizedBox(
         width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.campaign.displayTitle,
-              key: const Key('push-schedule-campaign-title'),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              AdminLocalTime.format(previewUtc, locale),
-              key: const Key('push-schedule-local-preview'),
-            ),
-            TextButton.icon(
-              key: const Key('push-schedule-pick'),
-              onPressed: _saving ? null : _pick,
-              icon: const Icon(Icons.schedule),
-              label: Text(l10n.chooseScheduleTime),
-            ),
-            if (_error != null)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                _error!,
-                key: const Key('push-schedule-error'),
-                style: const TextStyle(color: Colors.red),
+                widget.campaign.displayTitle,
+                key: const Key('push-schedule-campaign-title'),
               ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                AdminLocalTime.format(previewUtc, locale),
+                key: const Key('push-schedule-local-preview'),
+              ),
+              TextButton.icon(
+                key: const Key('push-schedule-pick'),
+                onPressed: _saving ? null : _pick,
+                icon: const Icon(Icons.schedule),
+                label: Text(l10n.chooseScheduleTime),
+              ),
+              const SizedBox(height: 12),
+              if (_audienceLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_audienceError != null)
+                Text(
+                  l10n.pushReadinessLoadFailed,
+                  key: const Key('push-schedule-audience-error'),
+                )
+              else if (_summary != null)
+                PushAudienceReadinessLines(
+                  summary: _summary!,
+                  note: l10n.pushAudienceScheduleEstimateNote,
+                ),
+              if (_error != null)
+                Text(
+                  _error!,
+                  key: const Key('push-schedule-error'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+            ],
+          ),
         ),
       ),
       actions: [

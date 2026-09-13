@@ -63,4 +63,26 @@ void main() {
     expect(iso.endsWith('Z'), isTrue);
     expect(AdminLocalTime.localToUtc(AdminLocalTime.utcToLocalPicker(utc)), utc);
   });
+
+  test('audience summary parser keeps users and devices distinct', () {
+    final summary = PushAudienceSummary.fromMap({
+      'ok': true,
+      'enabled_account_count': 5,
+      'eligible_user_count': 2,
+      'eligible_device_count': 3,
+      'android_device_count': 2,
+      'ios_device_count': 1,
+    });
+    expect(summary.enabledAccountCount, 5);
+    expect(summary.eligibleUserCount, 2);
+    expect(summary.eligibleDeviceCount, 3);
+    expect(summary.androidDeviceCount + summary.iosDeviceCount, 3);
+    expect(
+      () => PushCampaignRepository.assertSafeReadinessPayload({
+        'ok': true,
+        'fcm_token': 'should-not-pass',
+      }),
+      throwsA(isA<PushCampaignException>()),
+    );
+  });
 }

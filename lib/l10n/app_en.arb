@@ -134,6 +134,24 @@
   "planOrDelivery": "Schedule/Delivery",
   "sent": "Sent",
   "failed": "Failed",
+  "messageColumn": "Message",
+  "sentDevices": "Sent (Devices)",
+  "failedDevices": "Failed (Devices)",
+  "pushAudienceTitle": "Push Audience",
+  "pushEnabledAccounts": "Notifications Enabled Accounts",
+  "pushEligibleUsers": "Eligible Users",
+  "pushEligibleDevicesLabel": "Eligible Devices",
+  "pushAndroidLabel": "Android",
+  "pushIosLabel": "iOS",
+  "pushEligibleUserCount": "Eligible users: {count}",
+  "@pushEligibleUserCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushAudienceCurrentNote": "These numbers show the current eligible audience.",
+  "pushAudienceScheduleEstimateNote": "This is the current eligible-audience estimate. Actual recipients are recalculated at send time.",
+  "pushNoEligibleAudience": "There are no eligible devices. The notification cannot be sent.",
   "sendNow": "Send Now",
   "sendTest": "Send Test",
   "sendTestHint": "Delivers only to the selected user's eligible devices. Send Now delivers to the full campaign audience.",

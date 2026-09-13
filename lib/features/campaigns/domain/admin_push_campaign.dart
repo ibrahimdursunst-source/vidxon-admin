@@ -1,3 +1,4 @@
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../../core/time/admin_local_time.dart';
 
 /// Translation for a single locale in a push campaign.
@@ -65,6 +66,25 @@ class AdminPushCampaign {
   String get displayTitle {
     if (translations.isNotEmpty) return translations.first.title;
     return id;
+  }
+
+  /// Admin list/preview body: UI locale if present, else product-locale order.
+  String displayBodyForUi(String uiLocale) {
+    final withBody = translations
+        .where((item) => item.body.trim().isNotEmpty)
+        .toList();
+    if (withBody.isEmpty) return '';
+
+    for (final item in withBody) {
+      if (item.locale == uiLocale) return item.body;
+    }
+    for (final locale in VidxonProductLocales.all) {
+      for (final item in withBody) {
+        if (item.locale == locale) return item.body;
+      }
+    }
+    withBody.sort((a, b) => a.locale.compareTo(b.locale));
+    return withBody.first.body;
   }
 
   factory AdminPushCampaign.fromMap(Map<String, dynamic> map) {

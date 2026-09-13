@@ -902,6 +902,84 @@ abstract class AppLocalizations {
   /// **'Başarısız'**
   String get failed;
 
+  /// No description provided for @messageColumn.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj'**
+  String get messageColumn;
+
+  /// No description provided for @sentDevices.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderildi (Cihaz)'**
+  String get sentDevices;
+
+  /// No description provided for @failedDevices.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başarısız (Cihaz)'**
+  String get failedDevices;
+
+  /// No description provided for @pushAudienceTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Push Kitlesi'**
+  String get pushAudienceTitle;
+
+  /// No description provided for @pushEnabledAccounts.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimleri Açık Hesaplar'**
+  String get pushEnabledAccounts;
+
+  /// No description provided for @pushEligibleUsers.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygun Kullanıcılar'**
+  String get pushEligibleUsers;
+
+  /// No description provided for @pushEligibleDevicesLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygun Cihazlar'**
+  String get pushEligibleDevicesLabel;
+
+  /// No description provided for @pushAndroidLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Android'**
+  String get pushAndroidLabel;
+
+  /// No description provided for @pushIosLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'iOS'**
+  String get pushIosLabel;
+
+  /// No description provided for @pushEligibleUserCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygun kullanıcı: {count}'**
+  String pushEligibleUserCount(int count);
+
+  /// No description provided for @pushAudienceCurrentNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu sayı mevcut uygun kitleyi gösterir.'**
+  String get pushAudienceCurrentNote;
+
+  /// No description provided for @pushAudienceScheduleEstimateNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu, şu anki uygun kitle tahminidir. Gerçek alıcılar gönderim anında yeniden hesaplanır.'**
+  String get pushAudienceScheduleEstimateNote;
+
+  /// No description provided for @pushNoEligibleAudience.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gönderime uygun cihaz yok. Bildirim gönderilemez.'**
+  String get pushNoEligibleAudience;
+
   /// No description provided for @sendNow.
   ///
   /// In tr, this message translates to:

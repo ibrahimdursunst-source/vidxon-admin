@@ -64,6 +64,37 @@ class PushUserReadiness {
   }
 }
 
+class PushAudienceSummary {
+  const PushAudienceSummary({
+    required this.enabledAccountCount,
+    required this.eligibleUserCount,
+    required this.eligibleDeviceCount,
+    required this.androidDeviceCount,
+    required this.iosDeviceCount,
+  });
+
+  final int enabledAccountCount;
+  final int eligibleUserCount;
+  final int eligibleDeviceCount;
+  final int androidDeviceCount;
+  final int iosDeviceCount;
+
+  factory PushAudienceSummary.fromMap(Map<String, dynamic> map) {
+    return PushAudienceSummary(
+      enabledAccountCount: _asInt(map['enabled_account_count']),
+      eligibleUserCount: _asInt(map['eligible_user_count']),
+      eligibleDeviceCount: _asInt(map['eligible_device_count']),
+      androidDeviceCount: _asInt(map['android_device_count']),
+      iosDeviceCount: _asInt(map['ios_device_count']),
+    );
+  }
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+}
+
 class PushCampaignRepository {
   PushCampaignRepository({this._client});
 
@@ -165,6 +196,26 @@ class PushCampaignRepository {
     }
     assertSafeReadinessPayload(data);
     return PushUserReadiness.fromMap(data);
+  }
+
+  Future<PushAudienceSummary> fetchAudienceSummary({
+    List<String>? locales,
+  }) async {
+    final params = <String, dynamic>{
+      'p_locales': (locales != null && locales.isNotEmpty) ? locales : null,
+    };
+    final response = await _resolvedClient.rpc(
+      'admin_get_push_audience_summary_v1',
+      params: params,
+    );
+    final data = response as Map<String, dynamic>;
+    if (data['ok'] != true) {
+      throw PushCampaignException(
+        _humanizeError(data['error']?.toString() ?? 'unknown'),
+      );
+    }
+    assertSafeReadinessPayload(data);
+    return PushAudienceSummary.fromMap(data);
   }
 
   @visibleForTesting

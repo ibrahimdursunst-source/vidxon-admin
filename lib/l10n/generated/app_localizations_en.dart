@@ -435,6 +435,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failed => 'Failed';
 
   @override
+  String get messageColumn => 'Message';
+
+  @override
+  String get sentDevices => 'Sent (Devices)';
+
+  @override
+  String get failedDevices => 'Failed (Devices)';
+
+  @override
+  String get pushAudienceTitle => 'Push Audience';
+
+  @override
+  String get pushEnabledAccounts => 'Notifications Enabled Accounts';
+
+  @override
+  String get pushEligibleUsers => 'Eligible Users';
+
+  @override
+  String get pushEligibleDevicesLabel => 'Eligible Devices';
+
+  @override
+  String get pushAndroidLabel => 'Android';
+
+  @override
+  String get pushIosLabel => 'iOS';
+
+  @override
+  String pushEligibleUserCount(int count) {
+    return 'Eligible users: $count';
+  }
+
+  @override
+  String get pushAudienceCurrentNote =>
+      'These numbers show the current eligible audience.';
+
+  @override
+  String get pushAudienceScheduleEstimateNote =>
+      'This is the current eligible-audience estimate. Actual recipients are recalculated at send time.';
+
+  @override
+  String get pushNoEligibleAudience =>
+      'There are no eligible devices. The notification cannot be sent.';
+
+  @override
   String get sendNow => 'Send Now';
 
   @override

@@ -175,6 +175,24 @@
   "planOrDelivery": "Plan/Gönderim",
   "sent": "Gönderildi",
   "failed": "Başarısız",
+  "messageColumn": "Mesaj",
+  "sentDevices": "Gönderildi (Cihaz)",
+  "failedDevices": "Başarısız (Cihaz)",
+  "pushAudienceTitle": "Push Kitlesi",
+  "pushEnabledAccounts": "Bildirimleri Açık Hesaplar",
+  "pushEligibleUsers": "Uygun Kullanıcılar",
+  "pushEligibleDevicesLabel": "Uygun Cihazlar",
+  "pushAndroidLabel": "Android",
+  "pushIosLabel": "iOS",
+  "pushEligibleUserCount": "Uygun kullanıcı: {count}",
+  "@pushEligibleUserCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pushAudienceCurrentNote": "Bu sayı mevcut uygun kitleyi gösterir.",
+  "pushAudienceScheduleEstimateNote": "Bu, şu anki uygun kitle tahminidir. Gerçek alıcılar gönderim anında yeniden hesaplanır.",
+  "pushNoEligibleAudience": "Gönderime uygun cihaz yok. Bildirim gönderilemez.",
   "sendNow": "Şimdi Gönder",
   "sendTest": "Test Gönder",
   "sendTestHint": "Yalnızca seçilen kullanıcının uygun cihazlarına gider. Şimdi Gönder kampanyanın tüm hedef kitlesine gider.",

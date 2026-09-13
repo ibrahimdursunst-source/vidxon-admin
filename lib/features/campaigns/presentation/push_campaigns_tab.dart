@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../../core/time/admin_local_time.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../data/push_campaign_repository.dart';
 import '../domain/admin_push_campaign.dart';
 import 'push_campaign_form_dialog.dart';
 import 'push_schedule_dialog.dart';
+import 'push_send_all_dialog.dart';
 import 'push_test_send_dialog.dart';
 
 class PushCampaignsTab extends StatefulWidget {
@@ -29,6 +31,11 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
   Object? _error;
   bool _actionInFlight = false;
 
+  PushAudienceSummary? _audience;
+  bool _audienceLoading = true;
+  Object? _audienceError;
+  String? _audienceLocale;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -36,6 +43,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
   void initState() {
     super.initState();
     _load();
+    _loadAudience();
   }
 
   Future<void> _load() async {
@@ -59,7 +67,37 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     }
   }
 
+  Future<void> _loadAudience() async {
+    setState(() {
+      _audienceLoading = true;
+      _audienceError = null;
+    });
+    try {
+      final locales = _audienceLocale == null
+          ? null
+          : <String>[_audienceLocale!];
+      final summary = await _repository.fetchAudienceSummary(locales: locales);
+      if (!mounted) return;
+      setState(() {
+        _audience = summary;
+        _audienceLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _audienceError = 'load_failed';
+        _audienceLoading = false;
+      });
+    }
+  }
+
   void refresh() => _load();
+
+  void _selectAudienceLocale(String? locale) {
+    if (_audienceLocale == locale) return;
+    setState(() => _audienceLocale = locale);
+    _loadAudience();
+  }
 
   Future<void> _openForm({AdminPushCampaign? existing}) async {
     if (_actionInFlight) return;
@@ -77,49 +115,8 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     if (_actionInFlight) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        final l10n = ctx.l10n;
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1A1212),
-          title: Text(l10n.sendToAllUsers),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                campaign.displayTitle,
-                key: const Key('push-all-users-campaign-title'),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                campaign.targetLocales.join(', '),
-                key: const Key('push-all-users-campaign-locales'),
-              ),
-              const SizedBox(height: 8),
-              Text(l10n.pushAudienceAllEligible),
-              const SizedBox(height: 12),
-              Text(
-                l10n.sendToAllUsersWarning,
-                style: const TextStyle(color: Color(0xFFFFB4AB)),
-              ),
-              const SizedBox(height: 8),
-              Text(l10n.sendToAllUsersConfirm(campaign.displayTitle)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              key: const Key('campaign-push-send-now-confirm'),
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: Text(l10n.sendToAllUsers),
-            ),
-          ],
-        );
-      },
+      builder: (_) =>
+          PushSendAllDialog(campaign: campaign, repository: _repository),
     );
     if (confirmed != true) return;
 
@@ -132,6 +129,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
         );
       }
       await _load();
+      await _loadAudience();
     } on PushDeliveryFailure catch (failure) {
       await _load();
       if (!mounted) return;
@@ -153,10 +151,8 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     try {
       final sent = await showDialog<bool>(
         context: context,
-        builder: (_) => PushTestSendDialog(
-          campaign: campaign,
-          repository: _repository,
-        ),
+        builder: (_) =>
+            PushTestSendDialog(campaign: campaign, repository: _repository),
       );
       if (sent == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,10 +169,8 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     if (_actionInFlight) return;
     final scheduled = await showDialog<bool>(
       context: context,
-      builder: (_) => PushScheduleDialog(
-        campaign: campaign,
-        repository: _repository,
-      ),
+      builder: (_) =>
+          PushScheduleDialog(campaign: campaign, repository: _repository),
     );
     if (scheduled == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -208,7 +202,10 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.pushSendFailed, key: const Key('campaign-push-send-now-error')),
+            Text(
+              l10n.pushSendFailed,
+              key: const Key('campaign-push-send-now-error'),
+            ),
             Text(
               l10n.pushDeliverySummary(
                 failure.pendingCount,
@@ -254,8 +251,125 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             ],
           ),
         ),
+        _buildAudiencePanel(),
         Expanded(child: _buildBody()),
       ],
+    );
+  }
+
+  Widget _buildAudiencePanel() {
+    final l10n = context.l10n;
+    final summary = _audience;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.pushAudienceTitle,
+            key: const Key('campaign-push-audience-title'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                key: const Key('campaign-push-audience-locale-all'),
+                label: Text(l10n.all),
+                selected: _audienceLocale == null,
+                onSelected: (_) => _selectAudienceLocale(null),
+              ),
+              for (final locale in VidxonProductLocales.all)
+                ChoiceChip(
+                  key: Key('campaign-push-audience-locale-$locale'),
+                  label: Text(locale),
+                  selected: _audienceLocale == locale,
+                  onSelected: (_) => _selectAudienceLocale(locale),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_audienceLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (_audienceError != null)
+            Text(
+              l10n.pushReadinessLoadFailed,
+              key: const Key('campaign-push-audience-error'),
+            )
+          else if (summary != null)
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _metricCard(
+                  key: const Key('campaign-push-audience-enabled'),
+                  label: l10n.pushEnabledAccounts,
+                  value: summary.enabledAccountCount,
+                ),
+                _metricCard(
+                  key: const Key('campaign-push-audience-users'),
+                  label: l10n.pushEligibleUsers,
+                  value: summary.eligibleUserCount,
+                ),
+                _metricCard(
+                  key: const Key('campaign-push-audience-devices'),
+                  label: l10n.pushEligibleDevicesLabel,
+                  value: summary.eligibleDeviceCount,
+                ),
+                _metricCard(
+                  key: const Key('campaign-push-audience-android'),
+                  label: l10n.pushAndroidLabel,
+                  value: summary.androidDeviceCount,
+                ),
+                _metricCard(
+                  key: const Key('campaign-push-audience-ios'),
+                  label: l10n.pushIosLabel,
+                  value: summary.iosDeviceCount,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCard({
+    required Key key,
+    required String label,
+    required int value,
+  }) {
+    return Container(
+      key: key,
+      width: 180,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1212),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0x33FFFFFF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFFB3B3B3)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value.toString(),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 
@@ -295,18 +409,22 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: DataTable(
-        columns: [
-          DataColumn(label: Text(context.l10n.status)),
-          DataColumn(label: Text(context.l10n.title)),
-          DataColumn(label: Text(context.l10n.languages)),
-          DataColumn(label: Text(context.l10n.target)),
-          DataColumn(label: Text(context.l10n.planOrDelivery)),
-          DataColumn(label: Text(context.l10n.sent)),
-          DataColumn(label: Text(context.l10n.failed)),
-          const DataColumn(label: Text('')),
-        ],
-        rows: campaigns.map((c) => _buildRow(c)).toList(),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: [
+            DataColumn(label: Text(context.l10n.status)),
+            DataColumn(label: Text(context.l10n.title)),
+            DataColumn(label: Text(context.l10n.messageColumn)),
+            DataColumn(label: Text(context.l10n.languages)),
+            DataColumn(label: Text(context.l10n.target)),
+            DataColumn(label: Text(context.l10n.planOrDelivery)),
+            DataColumn(label: Text(context.l10n.sentDevices)),
+            DataColumn(label: Text(context.l10n.failedDevices)),
+            DataColumn(label: Text(context.l10n.pushCampaignActions)),
+          ],
+          rows: campaigns.map((c) => _buildRow(c)).toList(),
+        ),
       ),
     );
   }
@@ -323,6 +441,7 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
     };
     final locale = Localizations.localeOf(context);
     final when = campaign.sentAt ?? campaign.scheduledAt;
+    final message = campaign.displayBodyForUi(locale.languageCode);
 
     return DataRow(
       cells: [
@@ -346,6 +465,20 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        DataCell(
+          Tooltip(
+            message: message,
+            child: SizedBox(
+              width: 220,
+              child: Text(
+                message,
+                key: const Key('campaign-push-message'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
         DataCell(Text(campaign.targetLocales.join(', '))),
         DataCell(
           Text(
@@ -358,8 +491,18 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
             key: const Key('campaign-plan-or-delivery'),
           ),
         ),
-        DataCell(Text(campaign.sentCount.toString())),
-        DataCell(Text(campaign.failedCount.toString())),
+        DataCell(
+          Text(
+            campaign.sentCount.toString(),
+            key: const Key('campaign-push-sent-devices'),
+          ),
+        ),
+        DataCell(
+          Text(
+            campaign.failedCount.toString(),
+            key: const Key('campaign-push-failed-devices'),
+          ),
+        ),
         DataCell(
           (campaign.canEdit ||
                   campaign.canTestSend ||
@@ -367,64 +510,64 @@ class PushCampaignsTabState extends State<PushCampaignsTab>
                   campaign.canSchedule ||
                   campaign.canCancel)
               ? PopupMenuButton<String>(
-            key: const Key('campaign-push-actions'),
-            enabled: !_actionInFlight,
-            tooltip: context.l10n.pushCampaignActions,
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  _openForm(existing: campaign);
-                case 'specific':
-                  _sendToSpecificUser(campaign);
-                case 'all':
-                  _sendToAllUsers(campaign);
-                case 'schedule':
-                  _schedule(campaign);
-                case 'cancel':
-                  _cancel(campaign);
-              }
-            },
-            itemBuilder: (ctx) => [
-              if (campaign.canEdit)
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Text(ctx.l10n.edit),
-                ),
-              if (campaign.canTestSend)
-                PopupMenuItem(
-                  key: const Key('campaign-push-test-send'),
-                  value: 'specific',
-                  child: Text(ctx.l10n.sendToSpecificUser),
-                ),
-              if (campaign.canSend)
-                PopupMenuItem(
-                  key: const Key('campaign-push-send-now'),
-                  value: 'all',
-                  child: Text(ctx.l10n.sendToAllUsers),
-                ),
-              if (campaign.canSchedule)
-                PopupMenuItem(
-                  key: const Key('campaign-push-schedule'),
-                  value: 'schedule',
-                  child: Text(ctx.l10n.schedulePushSend),
-                ),
-              if (campaign.canCancel)
-                PopupMenuItem(
-                  value: 'cancel',
-                  child: Text(ctx.l10n.cancelAction),
-                ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                context.l10n.pushCampaignActions,
-                style: const TextStyle(
-                  color: Color(0xFFE50914),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          )
+                  key: const Key('campaign-push-actions'),
+                  enabled: !_actionInFlight,
+                  tooltip: context.l10n.pushCampaignActions,
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        _openForm(existing: campaign);
+                      case 'specific':
+                        _sendToSpecificUser(campaign);
+                      case 'all':
+                        _sendToAllUsers(campaign);
+                      case 'schedule':
+                        _schedule(campaign);
+                      case 'cancel':
+                        _cancel(campaign);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    if (campaign.canEdit)
+                      PopupMenuItem(value: 'edit', child: Text(ctx.l10n.edit)),
+                    if (campaign.canTestSend)
+                      PopupMenuItem(
+                        key: const Key('campaign-push-test-send'),
+                        value: 'specific',
+                        child: Text(ctx.l10n.sendToSpecificUser),
+                      ),
+                    if (campaign.canSend)
+                      PopupMenuItem(
+                        key: const Key('campaign-push-send-now'),
+                        value: 'all',
+                        child: Text(ctx.l10n.sendToAllUsers),
+                      ),
+                    if (campaign.canSchedule)
+                      PopupMenuItem(
+                        key: const Key('campaign-push-schedule'),
+                        value: 'schedule',
+                        child: Text(ctx.l10n.schedulePushSend),
+                      ),
+                    if (campaign.canCancel)
+                      PopupMenuItem(
+                        value: 'cancel',
+                        child: Text(ctx.l10n.cancelAction),
+                      ),
+                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      context.l10n.pushCampaignActions,
+                      style: const TextStyle(
+                        color: Color(0xFFE50914),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                )
               : const SizedBox.shrink(),
         ),
       ],
