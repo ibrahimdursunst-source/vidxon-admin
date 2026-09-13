@@ -107,6 +107,7 @@ void main() {
       CampaignDestinationType.episode,
       CampaignDestinationType.coinPurchase,
       CampaignDestinationType.membership,
+      CampaignDestinationType.notifications,
     ]);
     expect(CampaignDestinationType.all, isNot(contains('home')));
     expect(CampaignDestinationType.all, isNot(contains('url')));
@@ -116,6 +117,7 @@ void main() {
       'episode',
       'coin_purchase',
       'membership',
+      'notifications',
     ]);
   });
 
@@ -181,6 +183,8 @@ void main() {
     expect(adminCoinCreditReasonLabel(en, 'event_reward'), 'Event Reward');
     expect(adminDestinationTypeLabel(en, 'coin_purchase'), 'Buy Coins');
     expect(adminDestinationTypeLabel(tr, 'coin_purchase'), 'Jeton Satın Al');
+    expect(adminDestinationTypeLabel(en, 'notifications'), 'Notifications');
+    expect(adminDestinationTypeLabel(tr, 'notifications'), 'Bildirimler');
   });
 
   testWidgets(

@@ -332,6 +332,7 @@ void main() {
       CampaignDestinationType.none,
       CampaignDestinationType.coinPurchase,
       CampaignDestinationType.membership,
+      CampaignDestinationType.notifications,
     ]) {
       final controller = CampaignDestinationController(
         seriesRepository: _SeriesCatalog(series),

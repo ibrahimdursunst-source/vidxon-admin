@@ -1,6 +1,6 @@
 /// Campaign destination types stored by promotional/push campaign RPCs.
 ///
-/// Backend CHECK allows exactly these five values. There is no Home or URL
+/// Backend CHECK allows exactly these six values. There is no Home or URL
 /// destination in the campaign schema.
 abstract final class CampaignDestinationType {
   static const none = 'none';
@@ -8,6 +8,7 @@ abstract final class CampaignDestinationType {
   static const episode = 'episode';
   static const coinPurchase = 'coin_purchase';
   static const membership = 'membership';
+  static const notifications = 'notifications';
 
   static const all = <String>[
     none,
@@ -15,6 +16,7 @@ abstract final class CampaignDestinationType {
     episode,
     coinPurchase,
     membership,
+    notifications,
   ];
 
   static bool needsSeriesPicker(String type) =>
@@ -42,6 +44,10 @@ const List<CampaignDestinationOption> kCampaignDestinationOptions = [
     'Jeton Satın Al',
   ),
   CampaignDestinationOption(CampaignDestinationType.membership, 'Üyelik'),
+  CampaignDestinationOption(
+    CampaignDestinationType.notifications,
+    'Bildirimler',
+  ),
 ];
 
 /// Popup-only priority semantics from `get_eligible_campaign_v1`:

@@ -213,6 +213,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get destinationMembership => 'Üyelik';
 
   @override
+  String get destinationNotifications => 'Bildirimler';
+
+  @override
   String get priority => 'Öncelik';
 
   @override

@@ -150,6 +150,8 @@ class AdminPushCampaign {
         return 'Jeton Satın Al';
       case 'membership':
         return 'Üyelik';
+      case 'notifications':
+        return 'Bildirimler';
       case 'none':
         return 'Bilgilendirme';
       default:

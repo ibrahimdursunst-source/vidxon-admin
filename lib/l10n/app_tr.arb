@@ -67,6 +67,7 @@
   "destinationEpisode": "Bölüm",
   "destinationCoinPurchase": "Jeton Satın Al",
   "destinationMembership": "Üyelik",
+  "destinationNotifications": "Bildirimler",
   "priority": "Öncelik",
   "priorityHelper": "Aynı anda birden fazla uygun kampanya varsa, daha yüksek öncelikli kampanya önce gösterilir. Eşit öncelikte daha yeni başlangıç tarihi kazanır. Varsayılan: 0.",
   "changeSeries": "Dizi Değiştir",

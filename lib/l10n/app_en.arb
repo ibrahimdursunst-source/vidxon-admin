@@ -67,6 +67,7 @@
   "destinationEpisode": "Episode",
   "destinationCoinPurchase": "Buy Coins",
   "destinationMembership": "Membership",
+  "destinationNotifications": "Notifications",
   "priority": "Priority",
   "priorityHelper": "If more than one eligible campaign is active at the same time, the higher-priority campaign is shown first. When priority is equal, the newer start date wins. Default: 0.",
   "changeSeries": "Change Series",

@@ -126,6 +126,7 @@ class _FakeCampaignRepository extends CampaignRepository {
 class _FakePushRepository extends PushCampaignRepository {
   _FakePushRepository() : super(client: null);
 
+  String? lastDestinationType;
   String? lastSeriesId;
   String? lastEpisodeId;
 
@@ -140,6 +141,7 @@ class _FakePushRepository extends PushCampaignRepository {
     DateTime? scheduledAt,
     required List<AdminPushTranslation> translations,
   }) async {
+    lastDestinationType = destinationType;
     lastSeriesId = destinationSeriesId;
     lastEpisodeId = destinationEpisodeId;
     return AdminPushCampaign(
@@ -524,6 +526,10 @@ void main() {
 
     await selectDestination(tester, 'Üyelik');
     expect(find.byKey(const Key('campaign-series-picker')), findsNothing);
+
+    await selectDestination(tester, 'Bildirimler');
+    expect(find.byKey(const Key('campaign-series-picker')), findsNothing);
+    expect(find.byKey(const Key('campaign-episode-picker')), findsNothing);
   });
 
   testWidgets('campaign destinations do not include Home or URL', (tester) async {
@@ -535,9 +541,56 @@ void main() {
     expect(find.text('Bölüm'), findsWidgets);
     expect(find.text('Jeton Satın Al'), findsOneWidget);
     expect(find.text('Üyelik'), findsOneWidget);
+    expect(find.text('Bildirimler'), findsOneWidget);
     expect(find.text('Home'), findsNothing);
     expect(find.text('URL'), findsNothing);
     expect(find.text('Ana Sayfa'), findsNothing);
+  });
+
+  testWidgets('popup notifications create round trip sends no entity ids', (
+    tester,
+  ) async {
+    final repo = _FakeCampaignRepository();
+    await pumpPopup(tester, repo: repo);
+    await selectDestination(tester, 'Bildirimler');
+    await tester.ensureVisible(find.text('Oluştur'));
+    await tester.tap(find.text('Oluştur'));
+    await tester.pumpAndSettle();
+    expect(repo.lastDestinationType, 'notifications');
+    expect(repo.lastSeriesId, isNull);
+    expect(repo.lastEpisodeId, isNull);
+  });
+
+  testWidgets('popup notifications edit round trip keeps notifications', (
+    tester,
+  ) async {
+    final repo = _FakeCampaignRepository();
+    await pumpPopup(
+      tester,
+      repo: repo,
+      existing: AdminCampaign(
+        id: 'camp-edit',
+        imagePath: '',
+        destinationType: 'notifications',
+        targetLocales: const ['tr'],
+        isActive: false,
+        priority: 0,
+        startsAt: DateTime.utc(2026, 1, 1),
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        translations: const [
+          AdminCampaignTranslation(locale: 'tr', title: 'T', description: 'D'),
+        ],
+      ),
+    );
+    expect(find.text('Bildirimler'), findsWidgets);
+    expect(find.byKey(const Key('campaign-series-picker')), findsNothing);
+    await tester.ensureVisible(find.text('Güncelle'));
+    await tester.tap(find.text('Güncelle'));
+    await tester.pumpAndSettle();
+    expect(repo.lastDestinationType, 'notifications');
+    expect(repo.lastSeriesId, isNull);
+    expect(repo.lastEpisodeId, isNull);
   });
 
   testWidgets('priority helper and default match backend semantics', (
@@ -619,5 +672,77 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Bölüm 1 · Başlangıç'), findsWidgets);
     expect(find.text(episodeA1), findsNothing);
+  });
+
+  testWidgets('push notifications create round trip sends no entity ids', (
+    tester,
+  ) async {
+    final repo = _FakePushRepository();
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: PushCampaignFormDialog(
+            repository: repo,
+            seriesRepository: _SeriesCatalog(series),
+            episodeRepository: _EpisodeCatalog(episodes),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await selectDestination(tester, 'Bildirimler');
+    expect(find.byKey(const Key('campaign-series-picker')), findsNothing);
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'Promo');
+    await tester.enterText(fields.at(1), 'Body');
+    await tester.ensureVisible(find.byKey(const Key('campaign-push-create')));
+    await tester.tap(find.byKey(const Key('campaign-push-create')));
+    await tester.pumpAndSettle();
+    expect(repo.lastDestinationType, 'notifications');
+    expect(repo.lastSeriesId, isNull);
+    expect(repo.lastEpisodeId, isNull);
+  });
+
+  testWidgets('push notifications edit round trip keeps notifications', (
+    tester,
+  ) async {
+    final repo = _FakePushRepository();
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(
+          body: PushCampaignFormDialog(
+            repository: repo,
+            existing: AdminPushCampaign(
+              id: 'push-1',
+              status: 'draft',
+              destinationType: 'notifications',
+              targetLocales: const ['tr'],
+              createdAt: DateTime.utc(2026, 1, 1),
+              updatedAt: DateTime.utc(2026, 1, 1),
+              translations: const [
+                AdminPushTranslation(locale: 'tr', title: 'Promo', body: 'Body'),
+              ],
+            ),
+            seriesRepository: _SeriesCatalog(series),
+            episodeRepository: _EpisodeCatalog(episodes),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bildirimler'), findsWidgets);
+    expect(find.byKey(const Key('campaign-series-picker')), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('campaign-push-save-changes')));
+    await tester.tap(find.byKey(const Key('campaign-push-save-changes')));
+    await tester.pumpAndSettle();
+    expect(repo.lastDestinationType, 'notifications');
+    expect(repo.lastSeriesId, isNull);
+    expect(repo.lastEpisodeId, isNull);
   });
 }

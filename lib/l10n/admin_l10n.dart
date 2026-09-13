@@ -28,6 +28,7 @@ String adminDestinationTypeLabel(AppLocalizations l10n, String value) {
     CampaignDestinationType.episode => l10n.destinationEpisode,
     CampaignDestinationType.coinPurchase => l10n.destinationCoinPurchase,
     CampaignDestinationType.membership => l10n.destinationMembership,
+    CampaignDestinationType.notifications => l10n.destinationNotifications,
     _ => value,
   };
 }

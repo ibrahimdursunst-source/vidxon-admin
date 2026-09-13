@@ -214,6 +214,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get destinationMembership => 'Membership';
 
   @override
+  String get destinationNotifications => 'Notifications';
+
+  @override
   String get priority => 'Priority';
 
   @override

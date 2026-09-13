@@ -500,6 +500,12 @@ abstract class AppLocalizations {
   /// **'Üyelik'**
   String get destinationMembership;
 
+  /// No description provided for @destinationNotifications.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimler'**
+  String get destinationNotifications;
+
   /// No description provided for @priority.
   ///
   /// In tr, this message translates to:
