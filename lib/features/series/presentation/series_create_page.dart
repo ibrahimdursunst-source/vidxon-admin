@@ -1,9 +1,11 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../../core/utils/slug_helper.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content/presentation/editorial_locale_fields.dart';
 import '../../content_rating/domain/content_rating_catalog.dart';
 import '../../content_rating/presentation/content_rating_editor.dart';
 import '../../categories/data/category_repository.dart';
@@ -67,9 +69,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   static const _primaryColor = Color(0xFFE50914);
 
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
+  final _editorial = EditorialLocaleControllers();
   final _slugController = TextEditingController();
-  final _synopsisController = TextEditingController();
 
   late final CategoryRepository _categoryRepository =
       widget.categoryRepository ?? CategoryRepository();
@@ -107,19 +108,17 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
     super.initState();
     _posterFile = widget.initialPosterForTesting;
     _categoriesFuture = _categoryRepository.fetchAll();
-    _titleController.addListener(_onTitleChanged);
+    _editorial.title[_editorial.originalLocale]!.addListener(_onTitleChanged);
     _slugController.addListener(_onSlugChanged);
   }
 
   @override
   void dispose() {
-    _titleController
-      ..removeListener(_onTitleChanged)
-      ..dispose();
+    _editorial.title[_editorial.originalLocale]!.removeListener(_onTitleChanged);
+    _editorial.dispose();
     _slugController
       ..removeListener(_onSlugChanged)
       ..dispose();
-    _synopsisController.dispose();
     super.dispose();
   }
 
@@ -128,7 +127,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       return;
     }
 
-    final generated = SlugHelper.generateFromTitle(_titleController.text);
+    final generated = SlugHelper.generateFromTitle(_editorial.originalTitle);
     _slugController
       ..removeListener(_onSlugChanged)
       ..text = generated
@@ -293,24 +292,29 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
           : _formatReleaseDate(_releaseDate!);
 
       final partnerId = _selectedPartnerId;
-      final created = await _seriesMutationRepository.createSeriesWithPartner(
-        input: CreateSeriesInput(
-          title: _titleController.text.trim(),
-          slug: _slugController.text.trim(),
-          posterPath: posterPath,
-          synopsis: _synopsisController.text.trim(),
-          status: _status.value,
-          isFeatured: _isFeatured,
-          isPremium: _isPremium,
-          releaseDate: releaseDate,
-          categoryIds: _selectedCategoryIds.toList(),
-          contentAgeRating: _contentAgeRating,
-          contentDescriptors: ContentRatingCatalog.normalizeDescriptors(
-            _contentDescriptors,
-          ),
-        ),
-        partnerId: partnerId != null && partnerId.isNotEmpty ? partnerId : null,
-      );
+      final created = await _seriesMutationRepository
+          .createSeriesWithTranslations(
+            input: CreateSeriesInput(
+              title: _editorial.originalTitle,
+              slug: _slugController.text.trim(),
+              posterPath: posterPath,
+              synopsis: _editorial.originalDescription,
+              status: _status.value,
+              isFeatured: _isFeatured,
+              isPremium: _isPremium,
+              releaseDate: releaseDate,
+              categoryIds: _selectedCategoryIds.toList(),
+              contentAgeRating: _contentAgeRating,
+              contentDescriptors: ContentRatingCatalog.normalizeDescriptors(
+                _contentDescriptors,
+              ),
+            ),
+            partnerId: partnerId != null && partnerId.isNotEmpty
+                ? partnerId
+                : null,
+            originalLocale: _editorial.originalLocale,
+            translations: _editorial.toPayload(),
+          );
 
       if (!mounted) {
         return;
@@ -516,17 +520,24 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
       title: context.l10n.basicInfo,
       child: Column(
         children: [
-          TextFormField(
-            controller: _titleController,
+          EditorialLocaleFields(
+            controllers: _editorial,
             enabled: !_isSubmitting,
-            decoration: InputDecoration(
-              labelText: context.l10n.titleRequiredStar,
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return context.l10n.titleRequired;
-              }
-              return null;
+            titleLabelBuilder: (context, locale) => locale ==
+                    _editorial.originalLocale
+                ? context.l10n.titleRequiredStar
+                : context.l10n.seriesTitleForLocale(
+                    VidxonProductLocales.chipLabel(locale),
+                  ),
+            descriptionLabelBuilder: (context, locale) =>
+                locale == _editorial.originalLocale
+                ? context.l10n.description
+                : context.l10n.seriesDescriptionForLocale(
+                    VidxonProductLocales.chipLabel(locale),
+                  ),
+            onChanged: () {
+              setState(() {});
+              _onTitleChanged();
             },
           ),
           const SizedBox(height: 16),
@@ -544,17 +555,6 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
               }
               return null;
             },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _synopsisController,
-            enabled: !_isSubmitting,
-            minLines: 3,
-            maxLines: 6,
-            decoration: InputDecoration(
-              labelText: context.l10n.description,
-              alignLabelWithHint: true,
-            ),
           ),
           const SizedBox(height: 16),
           Row(

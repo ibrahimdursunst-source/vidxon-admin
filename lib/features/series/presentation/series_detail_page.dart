@@ -8,6 +8,8 @@ import '../../categories/domain/admin_category.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
 import '../../content/presentation/content_mutation_guard.dart';
+import '../../content/presentation/editorial_locale_fields.dart';
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../content_rating/domain/content_rating_catalog.dart';
 import '../../content_rating/presentation/content_rating_editor.dart';
 import '../../episodes/presentation/series_episodes_page.dart';
@@ -54,8 +56,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   static const _primaryColor = Color(0xFFE50914);
 
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _synopsisController = TextEditingController();
+  final _editorial = EditorialLocaleControllers();
 
   late final SeriesRepository _seriesRepository =
       widget.seriesRepository ?? SeriesRepository();
@@ -105,8 +106,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _synopsisController.dispose();
+    _editorial.dispose();
     super.dispose();
   }
 
@@ -142,8 +142,12 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   }
 
   void _applySeriesToForm(AdminSeries series) {
-    _titleController.text = series.title;
-    _synopsisController.text = series.synopsis;
+    _editorial.apply(
+      originalLocale: series.originalLocale,
+      baseTitle: series.title,
+      baseDescription: series.synopsis,
+      translations: series.translations,
+    );
     _status = SeriesStatusValue.values.firstWhere(
       (value) => value.value == series.status,
       orElse: () => SeriesStatusValue.ongoing,
@@ -265,11 +269,11 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final partnerChanged = _selectedPartnerId != _loadedPartnerId;
 
     try {
-      final result = await _mutationRepository.updateSeriesWithPartner(
+      final result = await _mutationRepository.updateSeriesWithTranslations(
         input: UpdateSeriesInput(
           seriesId: series.id,
-          title: _titleController.text.trim(),
-          synopsis: _synopsisController.text.trim(),
+          title: _editorial.originalTitle,
+          synopsis: _editorial.originalDescription,
           status: _status.value,
           isFeatured: _isFeatured,
           isPremium: _isPremium,
@@ -282,6 +286,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         ),
         partnerId: _selectedPartnerId,
         applyPartner: partnerChanged,
+        originalLocale: _editorial.originalLocale,
+        translations: _editorial.toPayload(),
       );
 
       if (!mounted) {
@@ -742,8 +748,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                       Form(
                         key: _formKey,
                         child: _EditSection(
-                          titleController: _titleController,
-                          synopsisController: _synopsisController,
+                          editorial: _editorial,
+                          lockOriginalLocale: series.isPublished,
                           status: _status,
                           isFeatured: _isFeatured,
                           isPremium: _isPremium,
@@ -773,10 +779,10 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                           },
                           onReloadCategories: () {
                             setState(() {
-                              _categoriesFuture = _categoryRepository
-                                  .fetchAll();
+                              _categoriesFuture = _categoryRepository.fetchAll();
                             });
                           },
+                          onEditorialChanged: () => setState(() {}),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -1032,8 +1038,8 @@ class _PosterSection extends StatelessWidget {
 
 class _EditSection extends StatelessWidget {
   const _EditSection({
-    required this.titleController,
-    required this.synopsisController,
+    required this.editorial,
+    required this.lockOriginalLocale,
     required this.status,
     required this.isFeatured,
     required this.isPremium,
@@ -1049,10 +1055,11 @@ class _EditSection extends StatelessWidget {
     required this.onContentDescriptorsChanged,
     required this.onCategoryToggle,
     required this.onReloadCategories,
+    required this.onEditorialChanged,
   });
 
-  final TextEditingController titleController;
-  final TextEditingController synopsisController;
+  final EditorialLocaleControllers editorial;
+  final bool lockOriginalLocale;
   final SeriesStatusValue status;
   final bool isFeatured;
   final bool isPremium;
@@ -1068,6 +1075,7 @@ class _EditSection extends StatelessWidget {
   final ValueChanged<List<String>> onContentDescriptorsChanged;
   final void Function(String id, bool selected) onCategoryToggle;
   final VoidCallback onReloadCategories;
+  final VoidCallback onEditorialChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1088,29 +1096,23 @@ class _EditSection extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: titleController,
+            EditorialLocaleFields(
+              controllers: editorial,
               enabled: !disabled,
-              decoration: InputDecoration(
-                labelText: context.l10n.titleRequiredStar,
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return context.l10n.titleRequired;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: synopsisController,
-              enabled: !disabled,
-              minLines: 3,
-              maxLines: 6,
-              decoration: InputDecoration(
-                labelText: context.l10n.description,
-                alignLabelWithHint: true,
-              ),
+              lockOriginalLocale: lockOriginalLocale,
+              onChanged: onEditorialChanged,
+              titleLabelBuilder: (context, locale) => locale ==
+                      editorial.originalLocale
+                  ? context.l10n.titleRequiredStar
+                  : context.l10n.seriesTitleForLocale(
+                      VidxonProductLocales.chipLabel(locale),
+                    ),
+              descriptionLabelBuilder: (context, locale) =>
+                  locale == editorial.originalLocale
+                  ? context.l10n.description
+                  : context.l10n.seriesDescriptionForLocale(
+                      VidxonProductLocales.chipLabel(locale),
+                    ),
             ),
             const SizedBox(height: 24),
             ContentRatingEditor(

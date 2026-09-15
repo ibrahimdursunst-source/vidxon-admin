@@ -379,6 +379,35 @@
   "seriesName": "Series Name",
   "category": "Category",
   "lastUpdate": "Last Update",
+  "firstPublishedAt": "First published",
+  "notYetPublished": "Not published yet",
+  "originalContentLanguage": "Original content language",
+  "originalContentLanguageLocked": "Original language is locked after the series is published.",
+  "translationLocales": "Translations",
+  "seriesTitleForLocale": "Series title ({locale})",
+  "@seriesTitleForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "seriesDescriptionForLocale": "Series description ({locale})",
+  "@seriesDescriptionForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "episodeTitleForLocale": "Episode title ({locale})",
+  "@episodeTitleForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "episodeDescriptionForLocale": "Episode description ({locale})",
+  "@episodeDescriptionForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
   "editOrDetail": "Edit / Detail",
   "updatedAtLabel": "Updated: {value}",
   "seriesLoadFailedTitle": "Series could not be loaded",

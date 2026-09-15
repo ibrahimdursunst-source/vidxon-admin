@@ -192,6 +192,22 @@ abstract final class ContentErrorMapper {
       );
     }
 
+    if (lowered.contains('original locale cannot change after publication')) {
+      return const ContentException(
+        message: 'Yayınlanmış dizinin orijinal dili değiştirilemez.',
+        kind: ContentFailureKind.validation,
+      );
+    }
+
+    if (lowered.contains('invalid content locale') ||
+        lowered.contains('translation locale is required') ||
+        lowered.contains('translations payload must be an array')) {
+      return const ContentException(
+        message: 'Çeviri dili geçersiz.',
+        kind: ContentFailureKind.validation,
+      );
+    }
+
     return const ContentException(
       message: 'İşlem tamamlanamadı. Lütfen tekrar deneyin.',
       kind: ContentFailureKind.unknown,

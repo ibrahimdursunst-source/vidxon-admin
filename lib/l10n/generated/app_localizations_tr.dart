@@ -1141,6 +1141,42 @@ class AppLocalizationsTr extends AppLocalizations {
   String get lastUpdate => 'Son Güncelleme';
 
   @override
+  String get firstPublishedAt => 'İlk Yayın';
+
+  @override
+  String get notYetPublished => 'Henüz yayınlanmadı';
+
+  @override
+  String get originalContentLanguage => 'Orijinal İçerik Dili';
+
+  @override
+  String get originalContentLanguageLocked =>
+      'Dizi yayınlandıktan sonra orijinal dil değiştirilemez.';
+
+  @override
+  String get translationLocales => 'Çeviriler';
+
+  @override
+  String seriesTitleForLocale(String locale) {
+    return 'Dizi başlığı ($locale)';
+  }
+
+  @override
+  String seriesDescriptionForLocale(String locale) {
+    return 'Dizi açıklaması ($locale)';
+  }
+
+  @override
+  String episodeTitleForLocale(String locale) {
+    return 'Bölüm başlığı ($locale)';
+  }
+
+  @override
+  String episodeDescriptionForLocale(String locale) {
+    return 'Bölüm açıklaması ($locale)';
+  }
+
+  @override
   String get editOrDetail => 'Düzenle / Detay';
 
   @override

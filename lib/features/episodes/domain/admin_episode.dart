@@ -1,4 +1,5 @@
 import 'cloudflare_stream_status.dart';
+import '../../content/domain/editorial_copy.dart';
 import '../../content_rating/domain/content_rating_catalog.dart';
 
 class AdminEpisode {
@@ -28,6 +29,7 @@ class AdminEpisode {
     this.updatedAt,
     this.contentAgeRating,
     this.contentDescriptors,
+    this.translations = const {},
   });
 
   final String id;
@@ -59,6 +61,7 @@ class AdminEpisode {
 
   /// Null means inherit series descriptors; non-null (including empty) is override.
   final List<String>? contentDescriptors;
+  final Map<String, EditorialCopy> translations;
 
   bool get hasContentRatingOverride =>
       contentAgeRating != null || contentDescriptors != null;
@@ -177,6 +180,7 @@ class AdminEpisode {
     DateTime? archivedAt,
     int? contentAgeRating,
     List<String>? contentDescriptors,
+    Map<String, EditorialCopy>? translations,
     bool clearContentAgeRating = false,
     bool clearContentDescriptors = false,
   }) {
@@ -214,6 +218,7 @@ class AdminEpisode {
       contentDescriptors: clearContentDescriptors
           ? null
           : (contentDescriptors ?? this.contentDescriptors),
+      translations: translations ?? this.translations,
     );
   }
 
@@ -279,7 +284,30 @@ class AdminEpisode {
       contentDescriptors: ContentRatingCatalog.parseNullableDescriptors(
         map['content_descriptors'],
       ),
+      translations: _parseTranslations(map['episode_translations']),
     );
+  }
+
+  static Map<String, EditorialCopy> _parseTranslations(dynamic value) {
+    if (value is! List) {
+      return const {};
+    }
+    final translations = <String, EditorialCopy>{};
+    for (final item in value) {
+      if (item is! Map) {
+        continue;
+      }
+      final row = Map<String, dynamic>.from(item);
+      final locale = row['locale']?.toString() ?? '';
+      if (locale.isEmpty) {
+        continue;
+      }
+      translations[locale] = EditorialCopy(
+        title: row['title']?.toString() ?? '',
+        description: row['description']?.toString() ?? '',
+      );
+    }
+    return translations;
   }
 
   static String? _nullableString(dynamic value) {

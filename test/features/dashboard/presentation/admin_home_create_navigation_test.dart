@@ -36,7 +36,7 @@ Future<void> _openCreateFromList(WidgetTester tester) async {
 
 Future<void> _fillAndSubmitCreate(WidgetTester tester) async {
   await tester.enterText(find.byType(TextFormField).at(0), 'Yeni Dizi');
-  await tester.enterText(find.byType(TextFormField).at(1), 'yeni-dizi');
+  await tester.enterText(find.byType(TextFormField).at(2), 'yeni-dizi');
   tester.takeException();
 
   final createButtons = find.widgetWithText(FilledButton, 'Diziyi Oluştur');

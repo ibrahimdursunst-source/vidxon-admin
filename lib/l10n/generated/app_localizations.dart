@@ -2180,6 +2180,60 @@ abstract class AppLocalizations {
   /// **'Son Güncelleme'**
   String get lastUpdate;
 
+  /// No description provided for @firstPublishedAt.
+  ///
+  /// In tr, this message translates to:
+  /// **'İlk Yayın'**
+  String get firstPublishedAt;
+
+  /// No description provided for @notYetPublished.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz yayınlanmadı'**
+  String get notYetPublished;
+
+  /// No description provided for @originalContentLanguage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Orijinal İçerik Dili'**
+  String get originalContentLanguage;
+
+  /// No description provided for @originalContentLanguageLocked.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dizi yayınlandıktan sonra orijinal dil değiştirilemez.'**
+  String get originalContentLanguageLocked;
+
+  /// No description provided for @translationLocales.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çeviriler'**
+  String get translationLocales;
+
+  /// No description provided for @seriesTitleForLocale.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dizi başlığı ({locale})'**
+  String seriesTitleForLocale(String locale);
+
+  /// No description provided for @seriesDescriptionForLocale.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dizi açıklaması ({locale})'**
+  String seriesDescriptionForLocale(String locale);
+
+  /// No description provided for @episodeTitleForLocale.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bölüm başlığı ({locale})'**
+  String episodeTitleForLocale(String locale);
+
+  /// No description provided for @episodeDescriptionForLocale.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bölüm açıklaması ({locale})'**
+  String episodeDescriptionForLocale(String locale);
+
   /// No description provided for @editOrDetail.
   ///
   /// In tr, this message translates to:

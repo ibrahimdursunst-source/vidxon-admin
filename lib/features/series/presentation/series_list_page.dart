@@ -383,6 +383,7 @@ class _SeriesDataTable extends StatelessWidget {
               DataColumn(label: Text(context.l10n.destinationEpisode)),
               DataColumn(label: Text(context.l10n.publish)),
               DataColumn(label: Text(context.l10n.lastUpdate)),
+              DataColumn(label: Text(context.l10n.firstPublishedAt)),
               DataColumn(label: Text(context.l10n.actions)),
             ],
             rows: [for (final item in series) _buildRow(context, item)],
@@ -433,6 +434,13 @@ class _SeriesDataTable extends StatelessWidget {
           ),
         ),
         DataCell(Text(_formatDateTime(item.updatedAt))),
+        DataCell(
+          Text(
+            item.publishedAt == null
+                ? context.l10n.notYetPublished
+                : _formatDateTime(item.publishedAt),
+          ),
+        ),
         DataCell(
           PopupMenuButton<_SeriesRowAction>(
             tooltip: context.l10n.actions,
@@ -571,6 +579,15 @@ class _SeriesCard extends StatelessWidget {
                         context.l10n.updatedAtLabel(
                           _formatDateTime(item.updatedAt),
                         ),
+                        style: const TextStyle(
+                          color: Color(0xFF777777),
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        item.publishedAt == null
+                            ? context.l10n.notYetPublished
+                            : '${context.l10n.firstPublishedAt}: ${_formatDateTime(item.publishedAt)}',
                         style: const TextStyle(
                           color: Color(0xFF777777),
                           fontSize: 12,

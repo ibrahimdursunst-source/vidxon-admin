@@ -15,6 +15,7 @@ class SeriesUpdateResult {
     required this.isArchived,
     this.contentAgeRating,
     this.contentDescriptors = const [],
+    this.originalLocale,
   });
 
   final String seriesId;
@@ -29,17 +30,22 @@ class SeriesUpdateResult {
   final bool isArchived;
   final int? contentAgeRating;
   final List<String> contentDescriptors;
+  final String? originalLocale;
 
   factory SeriesUpdateResult.fromMap(Map<String, dynamic> map) {
+    final seriesId = map['series_id']?.toString().trim() ?? '';
+    if (seriesId.isEmpty) {
+      throw const FormatException('series_id is required');
+    }
     return SeriesUpdateResult(
-      seriesId: map['series_id']?.toString() ?? '',
+      seriesId: seriesId,
       title: map['title']?.toString() ?? '',
       synopsis: map['synopsis']?.toString() ?? '',
       slug: map['slug']?.toString() ?? '',
       status: map['status']?.toString() ?? 'ongoing',
       isPublished: map['is_published'] == true,
       posterPath: map['poster_path']?.toString() ?? '',
-      contentVersion: parseContentVersion(map['content_version']),
+      contentVersion: requireContentVersion(map['content_version']),
       updatedAt: DateTime.parse(map['updated_at'].toString()).toUtc(),
       isArchived: map['is_archived'] == true,
       contentAgeRating: ContentRatingCatalog.parseAgeRating(
@@ -48,6 +54,7 @@ class SeriesUpdateResult {
       contentDescriptors: ContentRatingCatalog.parseDescriptors(
         map['content_descriptors'],
       ),
+      originalLocale: map['original_locale']?.toString(),
     );
   }
 
@@ -65,6 +72,7 @@ class SeriesUpdateResult {
       contentAgeRating: contentAgeRating,
       clearContentAgeRating: contentAgeRating == null,
       contentDescriptors: contentDescriptors,
+      originalLocale: originalLocale ?? current.originalLocale,
     );
   }
 }
@@ -136,6 +144,19 @@ class SeriesReorderResult {
       updatedAt: DateTime.parse(map['updated_at'].toString()).toUtc(),
     );
   }
+}
+
+int requireContentVersion(dynamic value) {
+  if (value == null) {
+    throw const FormatException('content_version is required');
+  }
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  final parsed = int.tryParse(value.toString());
+  if (parsed == null) {
+    throw const FormatException('content_version is required');
+  }
+  return parsed;
 }
 
 Map<String, dynamic>? parseRpcRow(dynamic result) {

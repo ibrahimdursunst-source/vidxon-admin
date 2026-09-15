@@ -1,4 +1,5 @@
 import '../../content_rating/domain/content_rating_catalog.dart';
+import '../../content/domain/editorial_copy.dart';
 
 class AdminSeries {
   const AdminSeries({
@@ -23,6 +24,9 @@ class AdminSeries {
     this.isPremium = false,
     this.contentAgeRating,
     this.contentDescriptors = const [],
+    this.publishedAt,
+    this.originalLocale = 'tr',
+    this.translations = const {},
   });
 
   final String id;
@@ -46,6 +50,9 @@ class AdminSeries {
   final bool isPremium;
   final int? contentAgeRating;
   final List<String> contentDescriptors;
+  final DateTime? publishedAt;
+  final String originalLocale;
+  final Map<String, EditorialCopy> translations;
 
   String get statusLabel => switch (status) {
     'ongoing' => 'Devam Ediyor',
@@ -79,7 +86,11 @@ class AdminSeries {
     bool? isPremium,
     int? contentAgeRating,
     List<String>? contentDescriptors,
+    DateTime? publishedAt,
+    String? originalLocale,
+    Map<String, EditorialCopy>? translations,
     bool clearContentAgeRating = false,
+    bool clearPublishedAt = false,
   }) {
     return AdminSeries(
       id: id,
@@ -105,6 +116,9 @@ class AdminSeries {
           ? null
           : (contentAgeRating ?? this.contentAgeRating),
       contentDescriptors: contentDescriptors ?? this.contentDescriptors,
+      publishedAt: clearPublishedAt ? null : (publishedAt ?? this.publishedAt),
+      originalLocale: originalLocale ?? this.originalLocale,
+      translations: translations ?? this.translations,
     );
   }
 
@@ -140,6 +154,9 @@ class AdminSeries {
       contentDescriptors: ContentRatingCatalog.parseDescriptors(
         map['content_descriptors'],
       ),
+      publishedAt: _parseDateTime(map['published_at']),
+      originalLocale: map['original_locale']?.toString() ?? 'tr',
+      translations: _parseTranslations(map['series_translations']),
     );
   }
 
@@ -198,6 +215,28 @@ class AdminSeries {
     }
 
     return _CategoryData(names, ids);
+  }
+
+  static Map<String, EditorialCopy> _parseTranslations(dynamic value) {
+    if (value is! List) {
+      return const {};
+    }
+    final translations = <String, EditorialCopy>{};
+    for (final item in value) {
+      if (item is! Map) {
+        continue;
+      }
+      final row = Map<String, dynamic>.from(item);
+      final locale = row['locale']?.toString() ?? '';
+      if (locale.isEmpty) {
+        continue;
+      }
+      translations[locale] = EditorialCopy(
+        title: row['title']?.toString() ?? '',
+        description: row['description']?.toString() ?? '',
+      );
+    }
+    return translations;
   }
 }
 

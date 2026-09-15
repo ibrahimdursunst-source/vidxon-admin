@@ -460,6 +460,35 @@
   "seriesName": "Dizi Adı",
   "category": "Kategori",
   "lastUpdate": "Son Güncelleme",
+  "firstPublishedAt": "İlk Yayın",
+  "notYetPublished": "Henüz yayınlanmadı",
+  "originalContentLanguage": "Orijinal İçerik Dili",
+  "originalContentLanguageLocked": "Dizi yayınlandıktan sonra orijinal dil değiştirilemez.",
+  "translationLocales": "Çeviriler",
+  "seriesTitleForLocale": "Dizi başlığı ({locale})",
+  "@seriesTitleForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "seriesDescriptionForLocale": "Dizi açıklaması ({locale})",
+  "@seriesDescriptionForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "episodeTitleForLocale": "Bölüm başlığı ({locale})",
+  "@episodeTitleForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
+  "episodeDescriptionForLocale": "Bölüm açıklaması ({locale})",
+  "@episodeDescriptionForLocale": {
+    "placeholders": {
+      "locale": {"type": "String"}
+    }
+  },
   "editOrDetail": "Düzenle / Detay",
   "updatedAtLabel": "Güncelleme: {value}",
   "@updatedAtLabel": {

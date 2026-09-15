@@ -29,12 +29,19 @@ class SeriesRepository {
     content_descriptors,
     created_at,
     updated_at,
+    published_at,
+    original_locale,
     series_categories (
       category_id,
       categories (
         id,
         name
       )
+    ),
+    series_translations (
+      locale,
+      title,
+      description
     )
   ''';
 

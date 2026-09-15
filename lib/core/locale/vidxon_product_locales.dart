@@ -36,6 +36,12 @@ abstract final class VidxonProductLocales {
     'th': 'ไทย',
   };
 
+  static String chipLabel(String locale) => switch (locale) {
+    'pt_BR' => 'PT-BR',
+    'zh_Hans' => 'ZH-HANS',
+    _ => locale.toUpperCase(),
+  };
+
   static String displayName(String locale) => displayNames[locale] ?? locale;
 
   static bool contains(String locale) => all.contains(locale);

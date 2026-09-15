@@ -35,7 +35,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(0), 'Yeni Dizi');
-      await tester.enterText(find.byType(TextFormField).at(1), 'yeni-dizi');
+      await tester.enterText(find.byType(TextFormField).at(2), 'yeni-dizi');
       tester.takeException();
     }
 

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/locale/vidxon_product_locales.dart';
 import '../../../l10n/admin_l10n.dart';
 import '../../content/data/content_errors.dart';
 import '../../content/presentation/content_conflict_helper.dart';
+import '../../content/presentation/editorial_locale_fields.dart';
 import '../../content_rating/presentation/content_rating_editor.dart';
+import '../../series/data/series_repository.dart';
 import '../data/episode_repository.dart';
 import '../domain/admin_episode.dart';
 import '../domain/create_episode_input.dart';
@@ -12,10 +15,16 @@ import '../domain/episode_release_at.dart';
 import '../domain/update_episode_input.dart';
 
 class EpisodeFormPage extends StatefulWidget {
-  const EpisodeFormPage({required this.seriesId, this.episode, super.key});
+  const EpisodeFormPage({
+    required this.seriesId,
+    this.episode,
+    this.repository,
+    super.key,
+  });
 
   final String seriesId;
   final AdminEpisode? episode;
+  final EpisodeRepository? repository;
 
   bool get isEditing => episode != null;
 
@@ -28,11 +37,11 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
 
   final _formKey = GlobalKey<FormState>();
   final _episodeNumberController = TextEditingController();
-  final _titleController = TextEditingController();
-  final _synopsisController = TextEditingController();
+  final _editorial = EditorialLocaleControllers();
   final _coinPriceController = TextEditingController(text: '0');
 
-  final EpisodeRepository _repository = EpisodeRepository();
+  late final EpisodeRepository _repository =
+      widget.repository ?? EpisodeRepository();
 
   AdminEpisode? _episode;
   bool _isFree = false;
@@ -50,6 +59,22 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
     super.initState();
     _episode = widget.episode;
     _initializeFromEpisode();
+    _loadOriginalLocale();
+  }
+
+  Future<void> _loadOriginalLocale() async {
+    try {
+      final series = await SeriesRepository().fetchById(widget.seriesId);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _editorial.originalLocale = series.originalLocale;
+        if (widget.episode == null) {
+          _editorial.selectedLocale = series.originalLocale;
+        }
+      });
+    } catch (_) {}
   }
 
   void _initializeFromEpisode() {
@@ -59,8 +84,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
     }
 
     _episodeNumberController.text = episode.episodeNumber.toString();
-    _titleController.text = episode.title;
-    _synopsisController.text = episode.synopsis;
+    _editorial.apply(
+      originalLocale: _editorial.originalLocale,
+      baseTitle: episode.title,
+      baseDescription: episode.synopsis,
+      translations: episode.translations,
+    );
     _coinPriceController.text = episode.coinPrice.toString();
     _isFree = episode.isFree;
     _releaseAtLocal = releaseAtUtcToLocal(episode.releaseAt);
@@ -75,8 +104,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
   @override
   void dispose() {
     _episodeNumberController.dispose();
-    _titleController.dispose();
-    _synopsisController.dispose();
+    _editorial.dispose();
     _coinPriceController.dispose();
     super.dispose();
   }
@@ -170,11 +198,11 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
 
       if (widget.isEditing) {
         final episode = _episode!;
-        result = await _repository.updateEpisode(
-          UpdateEpisodeInput(
+        result = await _repository.updateEpisodeWithTranslations(
+          input: UpdateEpisodeInput(
             episodeId: episode.id,
-            title: _titleController.text.trim(),
-            synopsis: _synopsisController.text.trim(),
+            title: _editorial.originalTitle,
+            synopsis: _editorial.originalDescription,
             isFree: _isFree,
             coinPrice: coinPrice,
             expectedContentVersion: episode.contentVersion,
@@ -183,6 +211,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
             contentAgeRating: _contentAgeRating,
             contentDescriptors: _contentDescriptors,
           ),
+          translations: _editorial.toPayload(),
         );
       } else {
         final episodeNumber = _parseEpisodeNumber();
@@ -194,12 +223,12 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
           return;
         }
 
-        result = await _repository.createEpisode(
-          CreateEpisodeInput(
+        result = await _repository.createEpisodeWithTranslations(
+          input: CreateEpisodeInput(
             seriesId: widget.seriesId,
             episodeNumber: episodeNumber,
-            title: _titleController.text.trim(),
-            synopsis: _synopsisController.text.trim(),
+            title: _editorial.originalTitle,
+            synopsis: _editorial.originalDescription,
             isFree: _isFree,
             coinPrice: coinPrice,
             releaseAtLocal: _releaseAtLocal,
@@ -207,6 +236,7 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
             contentAgeRating: _contentAgeRating,
             contentDescriptors: _contentDescriptors,
           ),
+          translations: _editorial.toPayload(),
         );
       }
 
@@ -313,30 +343,23 @@ class _EpisodeFormPageState extends State<EpisodeFormPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _titleController,
+                  EditorialLocaleFields(
+                    controllers: _editorial,
                     enabled: !_isSubmitting,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: l10n.titleRequiredStar,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.titleRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _synopsisController,
-                    enabled: !_isSubmitting,
-                    minLines: 3,
-                    maxLines: 6,
-                    decoration: InputDecoration(
-                      labelText: l10n.description,
-                      alignLabelWithHint: true,
-                    ),
+                    showOriginalLocalePicker: false,
+                    onChanged: () => setState(() {}),
+                    titleLabelBuilder: (context, locale) => locale ==
+                            _editorial.originalLocale
+                        ? l10n.titleRequiredStar
+                        : l10n.episodeTitleForLocale(
+                            VidxonProductLocales.chipLabel(locale),
+                          ),
+                    descriptionLabelBuilder: (context, locale) =>
+                        locale == _editorial.originalLocale
+                        ? l10n.description
+                        : l10n.episodeDescriptionForLocale(
+                            VidxonProductLocales.chipLabel(locale),
+                          ),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(

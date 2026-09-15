@@ -1145,6 +1145,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastUpdate => 'Last Update';
 
   @override
+  String get firstPublishedAt => 'First published';
+
+  @override
+  String get notYetPublished => 'Not published yet';
+
+  @override
+  String get originalContentLanguage => 'Original content language';
+
+  @override
+  String get originalContentLanguageLocked =>
+      'Original language is locked after the series is published.';
+
+  @override
+  String get translationLocales => 'Translations';
+
+  @override
+  String seriesTitleForLocale(String locale) {
+    return 'Series title ($locale)';
+  }
+
+  @override
+  String seriesDescriptionForLocale(String locale) {
+    return 'Series description ($locale)';
+  }
+
+  @override
+  String episodeTitleForLocale(String locale) {
+    return 'Episode title ($locale)';
+  }
+
+  @override
+  String episodeDescriptionForLocale(String locale) {
+    return 'Episode description ($locale)';
+  }
+
+  @override
   String get editOrDetail => 'Edit / Detail';
 
   @override

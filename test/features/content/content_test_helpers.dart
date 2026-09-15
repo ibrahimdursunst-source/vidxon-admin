@@ -8,6 +8,8 @@ import 'package:vidxon_admin/features/content/data/content_errors.dart';
 import 'package:vidxon_admin/features/episodes/data/episode_preview_repository.dart';
 import 'package:vidxon_admin/features/episodes/data/episode_repository.dart';
 import 'package:vidxon_admin/features/episodes/domain/admin_episode.dart';
+import 'package:vidxon_admin/features/episodes/domain/create_episode_input.dart';
+import 'package:vidxon_admin/features/episodes/domain/update_episode_input.dart';
 import 'package:vidxon_admin/features/episodes/domain/cloudflare_stream_status.dart';
 import 'package:vidxon_admin/features/episodes/domain/reorder_snapshot.dart';
 import 'package:vidxon_admin/features/episodes/domain/stream_preview_response.dart';
@@ -18,6 +20,7 @@ import 'package:vidxon_admin/features/series/data/series_mutation_repository.dar
 import 'package:vidxon_admin/features/series/data/series_repository.dart';
 import 'package:vidxon_admin/features/series/domain/admin_series.dart';
 import 'package:vidxon_admin/features/series/domain/create_series_input.dart';
+import 'package:vidxon_admin/features/series/domain/update_series_input.dart';
 import 'package:vidxon_admin/features/dashboard/data/dashboard_repository.dart';
 import 'package:vidxon_admin/features/dashboard/domain/dashboard_counts.dart';
 import 'package:vidxon_admin/features/series/domain/series_mutation_results.dart';
@@ -242,6 +245,81 @@ class FakeSeriesMutationRepository extends SeriesMutationRepository {
   }
 
   @override
+  Future<AdminSeries> createSeriesWithTranslations({
+    required CreateSeriesInput input,
+    String? partnerId,
+    required String originalLocale,
+    required List<Map<String, String?>> translations,
+  }) {
+    lastOriginalLocale = originalLocale;
+    lastTranslations = translations;
+    return createSeries(input);
+  }
+
+  @override
+  Future<void> upsertSeriesTranslations({
+    required String seriesId,
+    required String originalLocale,
+    required List<Map<String, String?>> translations,
+  }) async {
+    lastOriginalLocale = originalLocale;
+    lastTranslations = translations;
+  }
+
+  UpdateSeriesInput? lastUpdateInput;
+  int updateCalls = 0;
+  String? lastOriginalLocale;
+  List<Map<String, String?>>? lastTranslations;
+  Object? updateError;
+  SeriesUpdateResult? updateResult;
+
+  @override
+  Future<SeriesUpdateResult> updateSeriesWithPartner({
+    required UpdateSeriesInput input,
+    required String? partnerId,
+    required bool applyPartner,
+  }) {
+    return updateSeriesWithTranslations(
+      input: input,
+      partnerId: partnerId,
+      applyPartner: applyPartner,
+      originalLocale: 'tr',
+      translations: const [],
+    );
+  }
+
+  @override
+  Future<SeriesUpdateResult> updateSeriesWithTranslations({
+    required UpdateSeriesInput input,
+    required String? partnerId,
+    required bool applyPartner,
+    required String originalLocale,
+    required List<Map<String, String?>> translations,
+  }) async {
+    updateCalls += 1;
+    lastUpdateInput = input;
+    lastOriginalLocale = originalLocale;
+    lastTranslations = translations;
+    if (updateError != null) {
+      throw updateError!;
+    }
+    return updateResult ??
+        SeriesUpdateResult(
+          seriesId: input.seriesId,
+          title: input.title,
+          synopsis: input.synopsis,
+          slug: 'test-dizi',
+          status: input.status,
+          isPublished: false,
+          posterPath: '',
+          contentVersion: input.expectedContentVersion + 1,
+          updatedAt: DateTime.utc(2026, 8, 1, 12),
+          isArchived: false,
+          originalLocale: originalLocale,
+        );
+  }
+
+  @override
   Future<SeriesLifecycleResult> publishSeries({
     required String seriesId,
     required int expectedContentVersion,
@@ -382,6 +460,54 @@ class FakeEpisodeRepository extends EpisodeRepository {
   int? lastPublishExpectedVersion;
   Object? publishError;
   Completer<void>? publishDelay;
+  int createCalls = 0;
+  int updateCalls = 0;
+  CreateEpisodeInput? lastCreateInput;
+  UpdateEpisodeInput? lastUpdateInput;
+  List<Map<String, String?>>? lastTranslations;
+  Object? saveError;
+  AdminEpisode? saveResult;
+
+  @override
+  Future<void> upsertEpisodeTranslations({
+    required String episodeId,
+    required List<Map<String, String?>> translations,
+  }) async {
+    lastTranslations = translations;
+  }
+
+  @override
+  Future<AdminEpisode> createEpisodeWithTranslations({
+    required CreateEpisodeInput input,
+    required List<Map<String, String?>> translations,
+  }) async {
+    createCalls += 1;
+    lastCreateInput = input;
+    lastTranslations = translations;
+    if (saveError != null) {
+      throw saveError!;
+    }
+    return saveResult ?? testEpisode(title: input.title);
+  }
+
+  @override
+  Future<AdminEpisode> updateEpisodeWithTranslations({
+    required UpdateEpisodeInput input,
+    required List<Map<String, String?>> translations,
+  }) async {
+    updateCalls += 1;
+    lastUpdateInput = input;
+    lastTranslations = translations;
+    if (saveError != null) {
+      throw saveError!;
+    }
+    return saveResult ??
+        testEpisode(
+          id: input.episodeId,
+          title: input.title,
+          contentVersion: input.expectedContentVersion + 1,
+        );
+  }
 
   @override
   Future<List<AdminEpisode>> fetchEpisodesForSeries(String seriesId) async {

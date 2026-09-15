@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../content/data/content_errors.dart';
+import '../../series/domain/series_mutation_results.dart';
 import '../domain/admin_episode.dart';
 import '../domain/create_episode_input.dart';
 import '../domain/reorder_snapshot.dart';
@@ -44,7 +45,12 @@ class EpisodeRepository {
     content_descriptors,
     release_at,
     created_at,
-    updated_at
+    updated_at,
+    episode_translations (
+      locale,
+      title,
+      description
+    )
   ''';
 
   /// Permitted column for count/head queries against [public.episodes].
@@ -200,6 +206,31 @@ class EpisodeRepository {
     }
   }
 
+  Future<AdminEpisode> createEpisodeWithTranslations({
+    required CreateEpisodeInput input,
+    required List<Map<String, String?>> translations,
+  }) async {
+    try {
+      final result = await _resolvedClient.rpc(
+        'admin_create_episode_with_translations_v1',
+        params: {
+          ...buildCreateEpisodeRpcParams(input),
+          'p_translations': translations,
+        },
+      );
+      return await _parseAtomicEpisodeResult(result);
+    } on PostgrestException catch (error) {
+      throw ContentErrorMapper.fromPostgrest(error);
+    } on ContentException {
+      rethrow;
+    } catch (_) {
+      throw const ContentException(
+        message: 'Bölüm kaydedilemedi. Lütfen tekrar deneyin.',
+        kind: ContentFailureKind.unknown,
+      );
+    }
+  }
+
   Future<AdminEpisode> updateEpisode(UpdateEpisodeInput input) async {
     try {
       final result = await _resolvedClient.rpc(
@@ -226,6 +257,51 @@ class EpisodeRepository {
         message: 'Bölüm güncellenemedi. Lütfen tekrar deneyin.',
         kind: ContentFailureKind.unknown,
       );
+    }
+  }
+
+  Future<AdminEpisode> updateEpisodeWithTranslations({
+    required UpdateEpisodeInput input,
+    required List<Map<String, String?>> translations,
+  }) async {
+    try {
+      final result = await _resolvedClient.rpc(
+        'admin_update_episode_with_translations_v1',
+        params: {
+          ...buildUpdateEpisodeRpcParams(input),
+          'p_translations': translations,
+        },
+      );
+      return await _parseAtomicEpisodeResult(
+        result,
+        fallbackEpisodeId: input.episodeId,
+      );
+    } on PostgrestException catch (error) {
+      throw ContentErrorMapper.fromPostgrest(error);
+    } on ContentException {
+      rethrow;
+    } catch (_) {
+      throw const ContentException(
+        message: 'Bölüm güncellenemedi. Lütfen tekrar deneyin.',
+        kind: ContentFailureKind.unknown,
+      );
+    }
+  }
+
+  Future<void> upsertEpisodeTranslations({
+    required String episodeId,
+    required List<Map<String, String?>> translations,
+  }) async {
+    try {
+      await _resolvedClient.rpc(
+        'admin_upsert_episode_translations_v1',
+        params: {
+          'p_episode_id': episodeId,
+          'p_translations': translations,
+        },
+      );
+    } on PostgrestException catch (error) {
+      throw ContentErrorMapper.fromPostgrest(error);
     }
   }
 
@@ -325,6 +401,36 @@ class EpisodeRepository {
         kind: ContentFailureKind.serverError,
       );
     }
+  }
+
+  Future<AdminEpisode> _parseAtomicEpisodeResult(
+    dynamic result, {
+    String? fallbackEpisodeId,
+  }) async {
+    final row = _parseLifecycleRow(result);
+    if (row == null || (row.containsKey('ok') && row['ok'] != true)) {
+      throw const ContentException(
+        message: 'Bölüm yanıtı geçersiz.',
+        kind: ContentFailureKind.serverError,
+      );
+    }
+    final episodeId =
+        row['episode_id']?.toString() ?? fallbackEpisodeId ?? '';
+    if (episodeId.isEmpty) {
+      throw const ContentException(
+        message: 'Bölüm yanıtı geçersiz.',
+        kind: ContentFailureKind.serverError,
+      );
+    }
+    try {
+      requireContentVersion(row['content_version']);
+    } on FormatException {
+      throw const ContentException(
+        message: 'Bölüm yanıtı geçersiz.',
+        kind: ContentFailureKind.serverError,
+      );
+    }
+    return fetchById(episodeId);
   }
 
   Map<String, dynamic>? _parseLifecycleRow(dynamic result) {
