@@ -1,4 +1,5 @@
 import '../../admin_context/domain/admin_role.dart';
+import 'admin_membership_tier.dart';
 import 'user_parse_helpers.dart';
 
 class AdminUserDetails {
@@ -15,6 +16,7 @@ class AdminUserDetails {
     this.lastSignInAt,
     this.walletUpdatedAt,
     this.adminRole,
+    this.membershipTier = AdminMembershipTier.none,
   });
 
   final String userId;
@@ -29,6 +31,7 @@ class AdminUserDetails {
   final DateTime? walletUpdatedAt;
   final AdminRole? adminRole;
   final bool walletActionsAllowed;
+  final AdminMembershipTier membershipTier;
 
   String get resolvedDisplayName =>
       formatUserDisplayName(displayName: displayName, email: email);
@@ -76,6 +79,7 @@ class AdminUserDetails {
         map['wallet_actions_allowed'],
         fieldName: 'wallet_actions_allowed',
       ),
+      membershipTier: AdminMembershipTier.parse(map['membership_tier']),
     );
   }
 }

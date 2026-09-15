@@ -833,6 +833,20 @@
   "txnAdminCoinCredit": "Admin Jeton Yükleme",
   "txnAdminCoinDebit": "Admin Jeton Eksiltme",
   "txnAdminTestCredit": "Eski Test Kredisi",
+  "txnCoinPurchase": "Jeton Satın Alımı",
+  "txnMembershipChange": "Üyelik Değişikliği",
+  "membershipLabel": "Üyelik",
+  "membershipNone": "Yok",
+  "membershipPlus": "Plus",
+  "membershipMax": "Max",
+  "verifiedSuccess": "Başarılı",
+  "membershipTransition": "{from} → {to}",
+  "@membershipTransition": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
   "systemActor": "Sistem",
   "anonymousUser": "Anonim Kullanıcı",
   "unconfirmed": "Onaylanmamış",

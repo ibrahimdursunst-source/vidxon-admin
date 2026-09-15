@@ -2008,6 +2008,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get txnAdminTestCredit => 'Legacy Test Credit';
 
   @override
+  String get txnCoinPurchase => 'Coin Purchase';
+
+  @override
+  String get txnMembershipChange => 'Membership Change';
+
+  @override
+  String get membershipLabel => 'Membership';
+
+  @override
+  String get membershipNone => 'None';
+
+  @override
+  String get membershipPlus => 'Plus';
+
+  @override
+  String get membershipMax => 'Max';
+
+  @override
+  String get verifiedSuccess => 'Successful';
+
+  @override
+  String membershipTransition(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
   String get systemActor => 'System';
 
   @override

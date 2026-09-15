@@ -3728,6 +3728,54 @@ abstract class AppLocalizations {
   /// **'Eski Test Kredisi'**
   String get txnAdminTestCredit;
 
+  /// No description provided for @txnCoinPurchase.
+  ///
+  /// In tr, this message translates to:
+  /// **'Jeton Satın Alımı'**
+  String get txnCoinPurchase;
+
+  /// No description provided for @txnMembershipChange.
+  ///
+  /// In tr, this message translates to:
+  /// **'Üyelik Değişikliği'**
+  String get txnMembershipChange;
+
+  /// No description provided for @membershipLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Üyelik'**
+  String get membershipLabel;
+
+  /// No description provided for @membershipNone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yok'**
+  String get membershipNone;
+
+  /// No description provided for @membershipPlus.
+  ///
+  /// In tr, this message translates to:
+  /// **'Plus'**
+  String get membershipPlus;
+
+  /// No description provided for @membershipMax.
+  ///
+  /// In tr, this message translates to:
+  /// **'Max'**
+  String get membershipMax;
+
+  /// No description provided for @verifiedSuccess.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başarılı'**
+  String get verifiedSuccess;
+
+  /// No description provided for @membershipTransition.
+  ///
+  /// In tr, this message translates to:
+  /// **'{from} → {to}'**
+  String membershipTransition(String from, String to);
+
   /// No description provided for @systemActor.
   ///
   /// In tr, this message translates to:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/admin_locale/domain/admin_ui_locales.dart';
 import '../features/audit/domain/admin_audit_entry.dart';
 import '../features/campaigns/domain/campaign_destination.dart';
+import '../features/users/domain/admin_membership_tier.dart';
 import 'generated/app_localizations.dart';
 
 export 'generated/app_localizations.dart';
@@ -174,13 +175,34 @@ String adminWalletTxnLabel(AppLocalizations l10n, String transactionType) {
     'admin_coin_credit' || 'Admin Jeton Yükleme' => l10n.txnAdminCoinCredit,
     'admin_coin_debit' || 'Admin Jeton Eksiltme' => l10n.txnAdminCoinDebit,
     'admin_test_credit' || 'Eski Test Kredisi' => l10n.txnAdminTestCredit,
+    'coin_purchase' || 'Jeton Satın Alımı' => l10n.txnCoinPurchase,
+    'membership_change' || 'Üyelik Değişikliği' => l10n.txnMembershipChange,
     _ => transactionType.trim(),
   };
+}
+
+String adminMembershipTierLabel(
+  AppLocalizations l10n,
+  AdminMembershipTier tier,
+) {
+  return switch (tier) {
+    AdminMembershipTier.none => l10n.membershipNone,
+    AdminMembershipTier.plus => l10n.membershipPlus,
+    AdminMembershipTier.max => l10n.membershipMax,
+  };
+}
+
+String adminMembershipStorageLabel(AppLocalizations l10n, String? tier) {
+  return adminMembershipTierLabel(l10n, AdminMembershipTier.parse(tier));
 }
 
 String adminWalletReasonLabel(AppLocalizations l10n, String? reasonCode) {
   if (reasonCode == null || reasonCode.trim().isEmpty) {
     return '—';
+  }
+
+  if (reasonCode.trim() == 'verified' || reasonCode.trim() == 'Başarılı') {
+    return l10n.verifiedSuccess;
   }
 
   final debit = adminCoinDebitReasonLabel(l10n, reasonCode.trim());

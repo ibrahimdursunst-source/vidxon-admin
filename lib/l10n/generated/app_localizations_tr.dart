@@ -2004,6 +2004,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String get txnAdminTestCredit => 'Eski Test Kredisi';
 
   @override
+  String get txnCoinPurchase => 'Jeton Satın Alımı';
+
+  @override
+  String get txnMembershipChange => 'Üyelik Değişikliği';
+
+  @override
+  String get membershipLabel => 'Üyelik';
+
+  @override
+  String get membershipNone => 'Yok';
+
+  @override
+  String get membershipPlus => 'Plus';
+
+  @override
+  String get membershipMax => 'Max';
+
+  @override
+  String get verifiedSuccess => 'Başarılı';
+
+  @override
+  String membershipTransition(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
   String get systemActor => 'Sistem';
 
   @override

@@ -9,6 +9,8 @@ abstract final class WalletLedgerDisplay {
       'admin_coin_credit' => 'Admin Jeton Yükleme',
       'admin_coin_debit' => 'Admin Jeton Eksiltme',
       'admin_test_credit' => 'Eski Test Kredisi',
+      'coin_purchase' => 'Jeton Satın Alımı',
+      'membership_change' => 'Üyelik Değişikliği',
       _ => transactionType.trim(),
     };
   }

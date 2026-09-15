@@ -3,7 +3,7 @@ import 'wallet_ledger_display.dart';
 
 class AdminWalletLedgerEntry {
   const AdminWalletLedgerEntry({
-    required this.ledgerId,
+    this.ledgerId,
     required this.amount,
     required this.transactionType,
     required this.balanceAfter,
@@ -14,9 +14,13 @@ class AdminWalletLedgerEntry {
     this.balanceBefore,
     this.actorAdminUserId,
     this.actorAdminEmail,
+    this.activityKind = 'wallet',
+    this.membershipFromTier,
+    this.membershipToTier,
+    this.activityId,
   });
 
-  final int ledgerId;
+  final int? ledgerId;
   final int amount;
   final String transactionType;
   final String? reasonCode;
@@ -27,8 +31,16 @@ class AdminWalletLedgerEntry {
   final String? actorAdminUserId;
   final String? actorAdminEmail;
   final DateTime createdAt;
+  final String activityKind;
+  final String? membershipFromTier;
+  final String? membershipToTier;
+  final String? activityId;
 
   bool get isCredit => amount > 0;
+
+  bool get isMembershipChange => activityKind == 'membership_change';
+
+  bool get isCoinPurchase => transactionType.trim() == 'coin_purchase';
 
   String get transactionTypeLabel =>
       WalletLedgerDisplay.transactionTypeLabel(transactionType);
@@ -58,11 +70,20 @@ class AdminWalletLedgerEntry {
   }
 
   factory AdminWalletLedgerEntry.fromMap(Map<String, dynamic> map) {
+    final activityKind =
+        UserParseHelpers.nullableString(map['activity_kind']) ?? 'wallet';
+    final isMembershipChange = activityKind == 'membership_change';
+
     return AdminWalletLedgerEntry(
-      ledgerId: UserParseHelpers.parseBigIntField(
-        map['ledger_id'],
-        fieldName: 'ledger_id',
-      ),
+      ledgerId: isMembershipChange
+          ? UserParseHelpers.parseNullableInt(
+              map['ledger_id'],
+              fieldName: 'ledger_id',
+            )
+          : UserParseHelpers.parseBigIntField(
+              map['ledger_id'],
+              fieldName: 'ledger_id',
+            ),
       amount: UserParseHelpers.parseInt(map['amount'], fieldName: 'amount'),
       transactionType: UserParseHelpers.requireString(
         map['transaction_type'],
@@ -75,10 +96,17 @@ class AdminWalletLedgerEntry {
         map['balance_before'],
         fieldName: 'balance_before',
       ),
-      balanceAfter: UserParseHelpers.parseInt(
-        map['balance_after'],
-        fieldName: 'balance_after',
-      ),
+      balanceAfter:
+          UserParseHelpers.parseNullableInt(
+            map['balance_after'],
+            fieldName: 'balance_after',
+          ) ??
+          (isMembershipChange
+              ? 0
+              : UserParseHelpers.parseInt(
+                  map['balance_after'],
+                  fieldName: 'balance_after',
+                )),
       actorAdminUserId: UserParseHelpers.parseOptionalUserId(
         map['actor_admin_user_id'],
         fieldName: 'actor_admin_user_id',
@@ -89,6 +117,17 @@ class AdminWalletLedgerEntry {
       createdAt: UserParseHelpers.requireUtcDateTime(
         map['created_at'],
         fieldName: 'created_at',
+      ),
+      activityKind: activityKind,
+      membershipFromTier: UserParseHelpers.nullableString(
+        map['membership_from_tier'],
+      ),
+      membershipToTier: UserParseHelpers.nullableString(
+        map['membership_to_tier'],
+      ),
+      activityId: UserParseHelpers.parseOptionalUserId(
+        map['activity_id'],
+        fieldName: 'activity_id',
       ),
     );
   }

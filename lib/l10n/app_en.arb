@@ -657,6 +657,20 @@
   "txnAdminCoinCredit": "Admin Coin Credit",
   "txnAdminCoinDebit": "Admin Coin Debit",
   "txnAdminTestCredit": "Legacy Test Credit",
+  "txnCoinPurchase": "Coin Purchase",
+  "txnMembershipChange": "Membership Change",
+  "membershipLabel": "Membership",
+  "membershipNone": "None",
+  "membershipPlus": "Plus",
+  "membershipMax": "Max",
+  "verifiedSuccess": "Successful",
+  "membershipTransition": "{from} → {to}",
+  "@membershipTransition": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
   "systemActor": "System",
   "anonymousUser": "Anonymous User",
   "unconfirmed": "Unconfirmed",

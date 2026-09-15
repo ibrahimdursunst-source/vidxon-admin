@@ -25,6 +25,43 @@ String _localizedRoleLabel(AppLocalizations l10n, String label) {
   };
 }
 
+String adminLedgerAmountLabel(
+  AppLocalizations l10n,
+  AdminWalletLedgerEntry entry,
+) {
+  if (entry.isMembershipChange) {
+    return '—';
+  }
+
+  return entry.signedAmountLabel;
+}
+
+String adminLedgerDescriptionLabel(
+  AppLocalizations l10n,
+  AdminWalletLedgerEntry entry,
+) {
+  if (entry.isMembershipChange) {
+    return l10n.membershipTransition(
+      adminMembershipStorageLabel(l10n, entry.membershipFromTier),
+      adminMembershipStorageLabel(l10n, entry.membershipToTier),
+    );
+  }
+
+  return entry.descriptionLabel;
+}
+
+String adminLedgerBalanceLabel(AdminWalletLedgerEntry entry, int? value) {
+  if (entry.isMembershipChange) {
+    return '—';
+  }
+
+  if (value == null) {
+    return '—';
+  }
+
+  return value.toString();
+}
+
 String adminLedgerActorLabel(
   AppLocalizations l10n,
   AdminWalletLedgerEntry entry,
@@ -413,6 +450,13 @@ class _ProfileCard extends StatelessWidget {
                   ),
                 ),
                 _MetaItem(
+                  label: context.l10n.membershipLabel,
+                  value: adminMembershipTierLabel(
+                    context.l10n,
+                    details.membershipTier,
+                  ),
+                ),
+                _MetaItem(
                   label: context.l10n.registeredDate,
                   value: formatUserDateTime(details.accountCreatedAt),
                 ),
@@ -532,9 +576,11 @@ class _LedgerDataTable extends StatelessWidget {
                     DataCell(Text(formatUserDateTime(entry.createdAt))),
                     DataCell(
                       Text(
-                        entry.signedAmountLabel,
+                        adminLedgerAmountLabel(l10n, entry),
                         style: TextStyle(
-                          color: entry.isCredit
+                          color: entry.isMembershipChange
+                              ? const Color(0xFFB3B3B3)
+                              : entry.isCredit
                               ? const Color(0xFF6BD968)
                               : const Color(0xFFFF8A80),
                         ),
@@ -544,12 +590,22 @@ class _LedgerDataTable extends StatelessWidget {
                       Text(adminWalletTxnLabel(l10n, entry.transactionType)),
                     ),
                     DataCell(
-                      Text(adminWalletReasonLabel(l10n, entry.reasonCode)),
+                      Text(
+                        entry.isMembershipChange
+                            ? '—'
+                            : adminWalletReasonLabel(l10n, entry.reasonCode),
+                      ),
                     ),
-                    DataCell(Text(entry.descriptionLabel)),
+                    DataCell(Text(adminLedgerDescriptionLabel(l10n, entry))),
                     DataCell(Text(entry.caseReferenceLabel)),
-                    DataCell(Text(entry.balanceBeforeLabel)),
-                    DataCell(Text(entry.balanceAfter.toString())),
+                    DataCell(
+                      Text(
+                        adminLedgerBalanceLabel(entry, entry.balanceBefore),
+                      ),
+                    ),
+                    DataCell(
+                      Text(adminLedgerBalanceLabel(entry, entry.balanceAfter)),
+                    ),
                     DataCell(Text(adminLedgerActorLabel(l10n, entry))),
                   ],
                 ),
@@ -585,11 +641,13 @@ class _LedgerCardList extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        entry.signedAmountLabel,
+                        adminLedgerAmountLabel(context.l10n, entry),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: entry.isCredit
+                          color: entry.isMembershipChange
+                              ? const Color(0xFFB3B3B3)
+                              : entry.isCredit
                               ? const Color(0xFF6BD968)
                               : const Color(0xFFFF8A80),
                         ),
@@ -603,9 +661,12 @@ class _LedgerCardList extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${adminWalletTxnLabel(context.l10n, entry.transactionType)} · ${adminWalletReasonLabel(context.l10n, entry.reasonCode)}',
+                    entry.isMembershipChange
+                        ? '${adminWalletTxnLabel(context.l10n, entry.transactionType)} · ${adminLedgerDescriptionLabel(context.l10n, entry)}'
+                        : '${adminWalletTxnLabel(context.l10n, entry.transactionType)} · ${adminWalletReasonLabel(context.l10n, entry.reasonCode)}',
                   ),
-                  if (entry.description != null &&
+                  if (!entry.isMembershipChange &&
+                      entry.description != null &&
                       entry.description!.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(entry.description!),
@@ -620,10 +681,12 @@ class _LedgerCardList extends StatelessWidget {
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    context.l10n.balanceArrow(
-                      entry.balanceBeforeLabel,
-                      entry.balanceAfter.toString(),
-                    ),
+                    entry.isMembershipChange
+                        ? '—'
+                        : context.l10n.balanceArrow(
+                            entry.balanceBeforeLabel,
+                            entry.balanceAfter.toString(),
+                          ),
                     style: const TextStyle(color: Color(0xFFB3B3B3)),
                   ),
                   Text(
