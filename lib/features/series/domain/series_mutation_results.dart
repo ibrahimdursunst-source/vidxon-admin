@@ -77,6 +77,47 @@ class SeriesUpdateResult {
   }
 }
 
+class SeriesShowcaseResult {
+  const SeriesShowcaseResult({
+    required this.seriesId,
+    required this.isShowcase,
+    required this.contentVersion,
+    required this.updatedAt,
+    this.showcaseLandscapePath,
+  });
+
+  final String seriesId;
+  final bool isShowcase;
+  final String? showcaseLandscapePath;
+  final int contentVersion;
+  final DateTime updatedAt;
+
+  factory SeriesShowcaseResult.fromMap(Map<String, dynamic> map) {
+    final seriesId = map['series_id']?.toString().trim() ?? '';
+    if (seriesId.isEmpty) {
+      throw const FormatException('series_id is required');
+    }
+    final landscape = map['showcase_landscape_path']?.toString().trim();
+    return SeriesShowcaseResult(
+      seriesId: seriesId,
+      isShowcase: map['is_showcase'] == true,
+      showcaseLandscapePath:
+          landscape != null && landscape.isNotEmpty ? landscape : null,
+      contentVersion: requireContentVersion(map['content_version']),
+      updatedAt: DateTime.parse(map['updated_at'].toString()).toUtc(),
+    );
+  }
+
+  AdminSeries applyTo(AdminSeries current) {
+    return current.copyWith(
+      isShowcase: isShowcase,
+      showcaseLandscapePath: showcaseLandscapePath,
+      contentVersion: contentVersion,
+      updatedAt: updatedAt,
+    );
+  }
+}
+
 class SeriesPosterReplaceResult {
   const SeriesPosterReplaceResult({
     required this.seriesId,

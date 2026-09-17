@@ -14,6 +14,20 @@ class ImageUploadException implements Exception {
   String toString() => message;
 }
 
+const imageUploadUrlFailedMessage =
+    'Yükleme bağlantısı oluşturulamadı. Lütfen tekrar deneyin.';
+const imageUploadPutFailedMessage =
+    'Poster yüklenemedi. Lütfen tekrar deneyin.';
+const imageUploadSessionExpiredMessage =
+    'Oturum süresi doldu. Lütfen tekrar giriş yapın.';
+
+String imageUploadUrlFailureMessage({int? status}) {
+  if (status == 401) {
+    return imageUploadSessionExpiredMessage;
+  }
+  return imageUploadUrlFailedMessage;
+}
+
 class ImageUploadRepository {
   ImageUploadRepository({this._client, http.Client? httpClient})
     : _httpClient = httpClient ?? http.Client();
@@ -40,26 +54,34 @@ class ImageUploadRepository {
       body['seriesId'] = seriesId.trim();
     }
 
-    final response = await _resolvedClient.functions.invoke(
-      'admin-create-image-upload-url',
-      body: body,
-    );
-
-    if (response.status != 200) {
-      throw ImageUploadException(
-        'Yükleme bağlantısı oluşturulamadı. Lütfen tekrar deneyin.',
-      );
-    }
-
-    final data = response.data;
-    if (data is! Map<String, dynamic>) {
-      throw ImageUploadException('Yükleme bağlantısı yanıtı geçersiz.');
-    }
-
     try {
-      return ImageUploadResponse.fromJson(data);
+      final response = await _resolvedClient.functions.invoke(
+        'admin-create-image-upload-url',
+        body: body,
+      );
+
+      if (response.status != 200) {
+        throw ImageUploadException(
+          imageUploadUrlFailureMessage(status: response.status),
+        );
+      }
+
+      final data = response.data;
+      if (data is! Map) {
+        throw ImageUploadException('Yükleme bağlantısı yanıtı geçersiz.');
+      }
+
+      return ImageUploadResponse.fromJson(Map<String, dynamic>.from(data));
+    } on ImageUploadException {
+      rethrow;
+    } on FunctionException catch (error) {
+      throw ImageUploadException(
+        imageUploadUrlFailureMessage(status: error.status),
+      );
     } on FormatException {
       throw ImageUploadException('Yükleme bağlantısı yanıtı geçersiz.');
+    } catch (_) {
+      throw ImageUploadException(imageUploadUrlFailedMessage);
     }
   }
 
@@ -67,20 +89,26 @@ class ImageUploadRepository {
     required ImageUploadResponse uploadInfo,
     required Uint8List fileBytes,
   }) async {
-    final headers = Map<String, String>.from(uploadInfo.requiredHeaders);
+    try {
+      final headers = Map<String, String>.from(uploadInfo.requiredHeaders);
 
-    final response = await _httpClient.put(
-      Uri.parse(uploadInfo.uploadUrl),
-      headers: headers,
-      body: fileBytes,
-    );
+      final response = await _httpClient.put(
+        Uri.parse(uploadInfo.uploadUrl),
+        headers: headers,
+        body: fileBytes,
+      );
 
-    if (response.statusCode == 200 ||
-        response.statusCode == 201 ||
-        response.statusCode == 204) {
-      return;
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
+        return;
+      }
+
+      throw ImageUploadException(imageUploadPutFailedMessage);
+    } on ImageUploadException {
+      rethrow;
+    } catch (_) {
+      throw ImageUploadException(imageUploadPutFailedMessage);
     }
-
-    throw ImageUploadException('Poster yüklenemedi. Lütfen tekrar deneyin.');
   }
 }

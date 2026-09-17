@@ -70,6 +70,8 @@ AdminSeries testSeries({
   bool isArchived = false,
   int contentVersion = 0,
   String posterPath = '',
+  String? showcaseLandscapePath,
+  bool isShowcase = false,
 }) {
   return AdminSeries(
     id: id,
@@ -86,6 +88,8 @@ AdminSeries testSeries({
     categoryIds: const ['cccccccc-cccc-cccc-cccc-cccccccccccc'],
     episodeCount: 2,
     updatedAt: DateTime.utc(2026, 8, 1),
+    showcaseLandscapePath: showcaseLandscapePath,
+    isShowcase: isShowcase,
   );
 }
 
@@ -133,7 +137,11 @@ class FakeImageUploadRepository extends ImageUploadRepository {
   int requestCount = 0;
   int uploadCount = 0;
   String? lastPurpose;
+  String? lastSeriesId;
+  final List<String> objectPaths = [];
   Object? requestError;
+  Object? replacementRequestError;
+  Object? replacementUploadError;
 
   @override
   Future<ImageUploadResponse> requestPosterUploadUrl({
@@ -143,20 +151,44 @@ class FakeImageUploadRepository extends ImageUploadRepository {
     String? seriesId,
   }) async {
     lastPurpose = purpose;
+    lastSeriesId = seriesId;
     requestCount += 1;
     if (requestError != null) {
       throw requestError!;
     }
+    if (purpose == 'series_poster_replacement' &&
+        replacementRequestError != null) {
+      throw replacementRequestError!;
+    }
     if (purpose == 'campaign_image') {
+      final path = 'campaigns/2026/09/promo.png';
+      objectPaths.add(path);
       return ImageUploadResponse(
         uploadUrl: 'https://upload.example.com/campaign',
-        objectPath: 'campaigns/2026/09/promo.png',
-        publicUrl: 'https://media.example.com/campaigns/2026/09/promo.png',
+        objectPath: path,
+        publicUrl: 'https://media.example.com/$path',
         contentType: contentType,
         requiredHeaders: const {'Content-Type': 'image/png'},
         expiresIn: 3600,
       );
     }
+    if (purpose == 'series_poster_replacement') {
+      final id = (seriesId == null || seriesId.isEmpty)
+          ? testSeriesId
+          : seriesId;
+      final path = 'posters/series/$id/upload-$requestCount.png';
+      objectPaths.add(path);
+      return ImageUploadResponse(
+        uploadUrl: 'https://upload.example.com/series',
+        objectPath: path,
+        publicUrl: 'https://media.example.com/$path',
+        contentType: contentType,
+        requiredHeaders: const {'Content-Type': 'image/png'},
+        expiresIn: 3600,
+      );
+    }
+    const path = 'posters/test/poster.png';
+    objectPaths.add(path);
     return testImageUploadResponse();
   }
 
@@ -166,6 +198,10 @@ class FakeImageUploadRepository extends ImageUploadRepository {
     required Uint8List fileBytes,
   }) async {
     uploadCount += 1;
+    if (lastPurpose == 'series_poster_replacement' &&
+        replacementUploadError != null) {
+      throw replacementUploadError!;
+    }
   }
 }
 
@@ -201,19 +237,25 @@ class FakeSeriesMutationRepository extends SeriesMutationRepository {
   int archiveCalls = 0;
   int restoreCalls = 0;
   int replacePosterCalls = 0;
+  int setShowcaseCalls = 0;
   int reorderCalls = 0;
 
   int? lastPublishExpectedVersion;
   int? lastReplaceExpectedVersion;
+  int? lastShowcaseExpectedVersion;
+  bool? lastShowcaseEnabled;
+  String? lastShowcasePath;
   int? lastReorderExpectedVersion;
   List<String>? lastReorderEpisodeIds;
 
   SeriesPosterReplaceResult? replacePosterResult;
+  SeriesShowcaseResult? setShowcaseResult;
   Object? publishError;
   Object? unpublishError;
   Object? archiveError;
   Object? restoreError;
   Object? replacePosterError;
+  Object? setShowcaseError;
   Completer<void>? unpublishDelay;
 
   AdminSeries? createResult;
@@ -399,6 +441,34 @@ class FakeSeriesMutationRepository extends SeriesMutationRepository {
       contentVersion: expectedContentVersion + 1,
       updatedAt: DateTime.utc(2026, 8, 1, 12),
     );
+  }
+
+  @override
+  Future<SeriesShowcaseResult> setSeriesShowcase({
+    required String seriesId,
+    required bool isShowcase,
+    required int expectedContentVersion,
+    String? showcaseLandscapePath,
+  }) async {
+    setShowcaseCalls += 1;
+    lastShowcaseExpectedVersion = expectedContentVersion;
+    lastShowcaseEnabled = isShowcase;
+    lastShowcasePath = showcaseLandscapePath;
+    if (setShowcaseError != null) {
+      throw setShowcaseError!;
+    }
+    return setShowcaseResult ??
+        SeriesShowcaseResult(
+          seriesId: seriesId,
+          isShowcase: isShowcase,
+          showcaseLandscapePath:
+              (showcaseLandscapePath == null ||
+                  showcaseLandscapePath.trim().isEmpty)
+              ? null
+              : showcaseLandscapePath,
+          contentVersion: expectedContentVersion + 1,
+          updatedAt: DateTime.utc(2026, 8, 1, 12),
+        );
   }
 
   @override

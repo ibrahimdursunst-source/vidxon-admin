@@ -209,6 +209,24 @@ class SeriesMutationRepository {
     );
   }
 
+  Future<SeriesShowcaseResult> setSeriesShowcase({
+    required String seriesId,
+    required bool isShowcase,
+    required int expectedContentVersion,
+    String? showcaseLandscapePath,
+  }) {
+    return _runSeriesRowMutation(
+      rpcName: 'admin_set_series_showcase_v1',
+      params: buildSetSeriesShowcaseRpcParams(
+        seriesId: seriesId,
+        isShowcase: isShowcase,
+        expectedContentVersion: expectedContentVersion,
+        showcaseLandscapePath: showcaseLandscapePath,
+      ),
+      parser: SeriesShowcaseResult.fromMap,
+    );
+  }
+
   Future<SeriesPosterReplaceResult> replacePoster({
     required String seriesId,
     required String posterPath,

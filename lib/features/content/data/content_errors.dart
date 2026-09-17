@@ -144,6 +144,13 @@ abstract final class ContentErrorMapper {
       );
     }
 
+    if (lowered.contains('showcase landscape path is required')) {
+      return const ContentException(
+        message: 'Vitrinde göstermek için yatay vitrin görseli yükleyin.',
+        kind: ContentFailureKind.validation,
+      );
+    }
+
     if (code == 'P0002' ||
         lowered.contains('series not found') ||
         lowered.contains('episode not found')) {

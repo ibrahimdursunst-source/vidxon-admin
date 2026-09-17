@@ -978,6 +978,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The series was created. Retry the partner assignment from series details.';
 
   @override
+  String get seriesCreatedShowcaseFailed =>
+      'Series created. Retry the landscape showcase image from series details.';
+
+  @override
   String get posterAlreadyUploaded =>
       'The poster is already uploaded. You can try again.';
 
@@ -1215,6 +1219,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get posterFormatsHint => 'JPG, PNG, or WEBP · Maximum 10 MiB';
+
+  @override
+  String get showcaseLandscapeImage => 'Landscape Showcase Image';
+
+  @override
+  String get showcaseLandscapeHint =>
+      'Recommended: 1920×1080 px (16:9). Minimum: 1280×720 px. This image is used in the home showcase and the series detail hero.';
+
+  @override
+  String get showcaseToggle => 'Show in Showcase';
+
+  @override
+  String get showcaseRequiresLandscape =>
+      'Upload a landscape showcase image before enabling showcase.';
+
+  @override
+  String get selectShowcaseLandscape => 'Select landscape image';
+
+  @override
+  String get selectNewShowcaseLandscape => 'Select new landscape image';
+
+  @override
+  String get changeShowcaseLandscape => 'Change landscape image';
+
+  @override
+  String get showcaseLandscapeUpdated => 'Landscape showcase image updated.';
+
+  @override
+  String get showcaseLandscapeUpdateFailed =>
+      'Landscape showcase image could not be updated.';
+
+  @override
+  String get uploadingShowcaseLandscape => 'Uploading landscape showcase image';
 
   @override
   String get premium => 'Premium';

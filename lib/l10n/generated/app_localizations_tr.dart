@@ -975,6 +975,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Dizi kaydı oluştu. Partner atamasını dizi detayından yeniden deneyin.';
 
   @override
+  String get seriesCreatedShowcaseFailed =>
+      'Dizi oluşturuldu. Yatay vitrin görselini dizi detayından tekrar yükleyin.';
+
+  @override
   String get posterAlreadyUploaded =>
       'Poster zaten yüklendi. Tekrar deneyebilirsiniz.';
 
@@ -1211,6 +1215,39 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get posterFormatsHint => 'JPG, PNG veya WEBP · En fazla 10 MiB';
+
+  @override
+  String get showcaseLandscapeImage => 'Yatay Vitrin Görseli';
+
+  @override
+  String get showcaseLandscapeHint =>
+      'Önerilen: 1920×1080 px (16:9). Minimum: 1280×720 px. Bu görsel ana sayfa vitrini ve dizi detayının üst bölümünde kullanılır.';
+
+  @override
+  String get showcaseToggle => 'Vitrinde Göster';
+
+  @override
+  String get showcaseRequiresLandscape =>
+      'Vitrinde göstermek için yatay vitrin görseli yükleyin.';
+
+  @override
+  String get selectShowcaseLandscape => 'Yatay görsel seç';
+
+  @override
+  String get selectNewShowcaseLandscape => 'Yeni yatay görsel seç';
+
+  @override
+  String get changeShowcaseLandscape => 'Yatay görseli değiştir';
+
+  @override
+  String get showcaseLandscapeUpdated => 'Yatay vitrin görseli güncellendi.';
+
+  @override
+  String get showcaseLandscapeUpdateFailed =>
+      'Yatay vitrin görseli güncellenemedi.';
+
+  @override
+  String get uploadingShowcaseLandscape => 'Yatay vitrin görseli yükleniyor';
 
   @override
   String get premium => 'Premium';

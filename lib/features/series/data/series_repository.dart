@@ -23,6 +23,8 @@ class SeriesRepository {
     content_version,
     is_featured,
     is_premium,
+    showcase_landscape_path,
+    is_showcase,
     total_views,
     qualified_views_total,
     content_age_rating,

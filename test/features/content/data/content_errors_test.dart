@@ -27,6 +27,22 @@ void main() {
 
       expect(error.kind, ContentFailureKind.validation);
     });
+
+    test('maps showcase landscape required without leaking SQL', () {
+      final error = ContentErrorMapper.fromPostgrest(
+        const PostgrestException(
+          message: 'Showcase landscape path is required',
+          code: '22023',
+        ),
+      );
+
+      expect(error.kind, ContentFailureKind.validation);
+      expect(
+        error.message,
+        'Vitrinde göstermek için yatay vitrin görseli yükleyin.',
+      );
+      expect(error.message.toLowerCase(), isNot(contains('sqlstate')));
+    });
   });
 
   group('buildReorderSeriesEpisodesRpcParams', () {

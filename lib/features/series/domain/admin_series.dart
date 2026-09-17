@@ -27,6 +27,8 @@ class AdminSeries {
     this.publishedAt,
     this.originalLocale = 'tr',
     this.translations = const {},
+    this.showcaseLandscapePath,
+    this.isShowcase = false,
   });
 
   final String id;
@@ -53,6 +55,11 @@ class AdminSeries {
   final DateTime? publishedAt;
   final String originalLocale;
   final Map<String, EditorialCopy> translations;
+  final String? showcaseLandscapePath;
+  final bool isShowcase;
+
+  bool get hasShowcaseLandscape =>
+      (showcaseLandscapePath ?? '').trim().isNotEmpty;
 
   String get statusLabel => switch (status) {
     'ongoing' => 'Devam Ediyor',
@@ -89,6 +96,8 @@ class AdminSeries {
     DateTime? publishedAt,
     String? originalLocale,
     Map<String, EditorialCopy>? translations,
+    String? showcaseLandscapePath,
+    bool? isShowcase,
     bool clearContentAgeRating = false,
     bool clearPublishedAt = false,
   }) {
@@ -119,6 +128,9 @@ class AdminSeries {
       publishedAt: clearPublishedAt ? null : (publishedAt ?? this.publishedAt),
       originalLocale: originalLocale ?? this.originalLocale,
       translations: translations ?? this.translations,
+      showcaseLandscapePath:
+          showcaseLandscapePath ?? this.showcaseLandscapePath,
+      isShowcase: isShowcase ?? this.isShowcase,
     );
   }
 
@@ -127,6 +139,7 @@ class AdminSeries {
     required int episodeCount,
   }) {
     final categoryData = _parseCategoryData(map['series_categories']);
+    final landscape = map['showcase_landscape_path']?.toString().trim();
 
     return AdminSeries(
       id: map['id']?.toString() ?? '',
@@ -157,6 +170,9 @@ class AdminSeries {
       publishedAt: _parseDateTime(map['published_at']),
       originalLocale: map['original_locale']?.toString() ?? 'tr',
       translations: _parseTranslations(map['series_translations']),
+      showcaseLandscapePath:
+          landscape != null && landscape.isNotEmpty ? landscape : null,
+      isShowcase: map['is_showcase'] == true,
     );
   }
 

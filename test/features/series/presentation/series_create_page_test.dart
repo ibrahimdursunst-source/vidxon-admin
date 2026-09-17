@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vidxon_admin/features/media/data/image_upload_repository.dart';
 import 'package:vidxon_admin/features/series/domain/admin_series.dart';
 import 'package:vidxon_admin/features/series/domain/create_series_input.dart';
 import 'package:vidxon_admin/features/series/presentation/series_create_page.dart';
@@ -80,6 +81,53 @@ void main() {
       expect(created, isNotNull);
       expect(created!.title, 'Yeni Dizi');
     });
+
+    testWidgets(
+      'unmapped portrait upload transport error shows generic unexpectedRetry',
+      (tester) async {
+        final mutationRepository = FakeSeriesMutationRepository()
+          ..createResult = testSeries();
+        final imageUploadRepository = FakeImageUploadRepository()
+          ..requestError = Exception('Failed to fetch');
+
+        await pumpCreate(
+          tester,
+          mutationRepository: mutationRepository,
+          imageUploadRepository: imageUploadRepository,
+        );
+        await tapCreate(tester);
+
+        expect(mutationRepository.createCalls, 0);
+        expect(
+          find.text('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'mapped portrait upload failure shows stable upload message',
+      (tester) async {
+        final mutationRepository = FakeSeriesMutationRepository()
+          ..createResult = testSeries();
+        final imageUploadRepository = FakeImageUploadRepository()
+          ..requestError = ImageUploadException(imageUploadUrlFailedMessage);
+
+        await pumpCreate(
+          tester,
+          mutationRepository: mutationRepository,
+          imageUploadRepository: imageUploadRepository,
+        );
+        await tapCreate(tester);
+
+        expect(mutationRepository.createCalls, 0);
+        expect(find.text(imageUploadUrlFailedMessage), findsOneWidget);
+        expect(
+          find.text('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('failure does not invoke success callback', (tester) async {
       var successCalled = false;

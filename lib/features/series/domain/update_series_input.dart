@@ -68,6 +68,21 @@ Map<String, dynamic> buildUpdateSeriesRpcParams(UpdateSeriesInput input) {
   };
 }
 
+Map<String, dynamic> buildSetSeriesShowcaseRpcParams({
+  required String seriesId,
+  required bool isShowcase,
+  required int expectedContentVersion,
+  String? showcaseLandscapePath,
+}) {
+  final path = showcaseLandscapePath?.trim();
+  return {
+    'p_series_id': seriesId.trim(),
+    'p_is_showcase': isShowcase,
+    'p_showcase_landscape_path': path == null || path.isEmpty ? '' : path,
+    'p_expected_content_version': expectedContentVersion,
+  };
+}
+
 Map<String, dynamic> buildReplaceSeriesPosterRpcParams({
   required String seriesId,
   required String posterPath,

@@ -36,6 +36,7 @@ class SeriesDetailPage extends StatefulWidget {
     this.imageUploadRepository,
     this.partnerRepository,
     this.initialPosterForTesting,
+    this.initialShowcaseLandscapeForTesting,
     super.key,
   });
 
@@ -47,6 +48,7 @@ class SeriesDetailPage extends StatefulWidget {
   final ImageUploadRepository? imageUploadRepository;
   final PartnerRepository? partnerRepository;
   final PosterFile? initialPosterForTesting;
+  final PosterFile? initialShowcaseLandscapeForTesting;
 
   @override
   State<SeriesDetailPage> createState() => _SeriesDetailPageState();
@@ -76,6 +78,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   SeriesStatusValue _status = SeriesStatusValue.ongoing;
   bool _isFeatured = false;
   bool _isPremium = false;
+  bool _isShowcase = false;
   final Set<String> _selectedCategoryIds = {};
   int? _contentAgeRating;
   List<String> _contentDescriptors = [];
@@ -89,17 +92,20 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isPosterUploading = false;
+  bool _isLandscapeUploading = false;
   bool _lifecycleBusy = false;
 
   String? _errorMessage;
 
   PosterFile? _newPosterFile;
+  PosterFile? _newLandscapeFile;
 
   @override
   void initState() {
     super.initState();
     _placeholderSeries = widget.initialSeries;
     _newPosterFile = widget.initialPosterForTesting;
+    _newLandscapeFile = widget.initialShowcaseLandscapeForTesting;
     _categoriesFuture = _categoryRepository.fetchAll();
     _loadSeries();
   }
@@ -154,6 +160,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     );
     _isFeatured = series.isFeatured;
     _isPremium = series.isPremium;
+    _isShowcase = series.isShowcase;
     _selectedCategoryIds
       ..clear()
       ..addAll(series.categoryIds);
@@ -261,6 +268,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
       return;
     }
 
+    if (_isShowcase &&
+        !series.hasShowcaseLandscape &&
+        _newLandscapeFile == null) {
+      setState(() {
+        _errorMessage = context.l10n.showcaseRequiresLandscape;
+      });
+      return;
+    }
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
@@ -294,13 +310,57 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         return;
       }
 
+      var updated = result.applyTo(series);
+      Object? showcaseError;
+      final showcaseChanged = _isShowcase != series.isShowcase;
+      final landscapeFile = _newLandscapeFile;
+      if (showcaseChanged || landscapeFile != null) {
+        try {
+          String? landscapePath;
+          if (landscapeFile != null) {
+            final uploadInfo = await _imageUploadRepository
+                .requestPosterUploadUrl(
+                  contentType: landscapeFile.contentType,
+                  fileSize: landscapeFile.sizeInBytes,
+                  purpose: 'series_poster_replacement',
+                  seriesId: series.id,
+                );
+            await _imageUploadRepository.uploadPoster(
+              uploadInfo: uploadInfo,
+              fileBytes: landscapeFile.bytes,
+            );
+            landscapePath = uploadInfo.objectPath;
+          }
+          final showcase = await _mutationRepository.setSeriesShowcase(
+            seriesId: series.id,
+            isShowcase: _isShowcase,
+            expectedContentVersion: updated.contentVersion,
+            showcaseLandscapePath: landscapePath,
+          );
+          updated = showcase.applyTo(updated);
+        } catch (error) {
+          showcaseError = error;
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
-        _series = result.applyTo(series);
+        _series = updated;
+        if (showcaseError == null) {
+          _newLandscapeFile = null;
+        }
         if (partnerChanged) {
           _loadedPartnerId = _selectedPartnerId;
         }
         _isSaving = false;
       });
+
+      if (showcaseError != null) {
+        throw showcaseError;
+      }
       showContentSuccessSnackBar(context, context.l10n.seriesUpdated);
       if (partnerChanged) {
         await _loadAssignments();
@@ -333,6 +393,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
         _selectedPartnerId = _loadedPartnerId;
         _isSaving = false;
       });
+    } on ImageUploadException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = error.message;
+        _selectedPartnerId = _loadedPartnerId;
+        _isSaving = false;
+      });
     } catch (_) {
       if (!mounted) {
         return;
@@ -347,7 +416,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
   }
 
   Future<void> _pickPoster() async {
-    if (_isPosterUploading || _lifecycleBusy) {
+    if (_isPosterUploading || _isLandscapeUploading || _lifecycleBusy) {
       return;
     }
 
@@ -475,12 +544,142 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     }
   }
 
+  Future<void> _pickLandscape() async {
+    if (_isPosterUploading || _isLandscapeUploading || _lifecycleBusy) {
+      return;
+    }
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+      allowMultiple: false,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final picked = result.files.single;
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      setState(() => _errorMessage = context.l10n.posterUnreadable);
+      return;
+    }
+
+    try {
+      final landscape = PosterFileValidator.validate(
+        bytes: bytes,
+        fileName: picked.name,
+      );
+      setState(() {
+        _newLandscapeFile = landscape;
+        _errorMessage = null;
+      });
+    } on PosterFileValidationException catch (error) {
+      setState(() => _errorMessage = error.message);
+    }
+  }
+
+  Future<void> _replaceLandscape() async {
+    final series = _series;
+    final landscape = _newLandscapeFile;
+    if (series == null || landscape == null || _isLandscapeUploading) {
+      return;
+    }
+
+    setState(() {
+      _isLandscapeUploading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final uploadInfo = await _imageUploadRepository.requestPosterUploadUrl(
+        contentType: landscape.contentType,
+        fileSize: landscape.sizeInBytes,
+        purpose: 'series_poster_replacement',
+        seriesId: series.id,
+      );
+
+      await _imageUploadRepository.uploadPoster(
+        uploadInfo: uploadInfo,
+        fileBytes: landscape.bytes,
+      );
+
+      final result = await _mutationRepository.setSeriesShowcase(
+        seriesId: series.id,
+        isShowcase: series.isShowcase,
+        expectedContentVersion: series.contentVersion,
+        showcaseLandscapePath: uploadInfo.objectPath,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _series = result.applyTo(series);
+        _newLandscapeFile = null;
+        _isLandscapeUploading = false;
+      });
+      showContentSuccessSnackBar(
+        context,
+        context.l10n.showcaseLandscapeUpdated,
+      );
+    } on ContentException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      if (error.isConflict) {
+        await handleContentConflict<AdminSeries>(
+          context: context,
+          error: error,
+          reloadFresh: () => _seriesRepository.fetchById(widget.seriesId),
+          onFreshLoaded: (fresh) {
+            setState(() {
+              _series = fresh;
+              _applySeriesToForm(fresh);
+              _newLandscapeFile = null;
+              _isLandscapeUploading = false;
+            });
+          },
+        );
+        return;
+      }
+
+      setState(() {
+        _errorMessage = error.message;
+        _isLandscapeUploading = false;
+      });
+    } on ImageUploadException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = error.message;
+        _isLandscapeUploading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = context.l10n.showcaseLandscapeUpdateFailed;
+        _isLandscapeUploading = false;
+      });
+    }
+  }
+
   Future<void> _runLifecycle(Future<AdminSeries> Function() action) async {
     final series = _series;
     if (series == null ||
         _lifecycleBusy ||
         _isSaving ||
         _isPosterUploading ||
+        _isLandscapeUploading ||
         !contentMutationsEnabled(context)) {
       return;
     }
@@ -686,7 +885,11 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
     final series = _series;
     final mutationsEnabled = contentMutationsEnabled(context);
     final busy =
-        _isSaving || _isPosterUploading || _lifecycleBusy || !mutationsEnabled;
+        _isSaving ||
+        _isPosterUploading ||
+        _isLandscapeUploading ||
+        _lifecycleBusy ||
+        !mutationsEnabled;
 
     return Scaffold(
       backgroundColor: const Color(0xFF090909),
@@ -745,6 +948,15 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                         disabled: busy,
                       ),
                       const SizedBox(height: 24),
+                      _ShowcaseLandscapeSection(
+                        series: series,
+                        newLandscape: _newLandscapeFile,
+                        isUploading: _isLandscapeUploading,
+                        onPick: _pickLandscape,
+                        onReplace: _replaceLandscape,
+                        disabled: busy,
+                      ),
+                      const SizedBox(height: 24),
                       Form(
                         key: _formKey,
                         child: _EditSection(
@@ -752,6 +964,7 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                           lockOriginalLocale: series.isPublished,
                           status: _status,
                           isFeatured: _isFeatured,
+                          isShowcase: _isShowcase,
                           isPremium: _isPremium,
                           selectedCategoryIds: _selectedCategoryIds,
                           categoriesFuture: _categoriesFuture,
@@ -762,6 +975,8 @@ class _SeriesDetailPageState extends State<SeriesDetailPage> {
                               setState(() => _status = value),
                           onFeaturedChanged: (value) =>
                               setState(() => _isFeatured = value),
+                          onShowcaseChanged: (value) =>
+                              setState(() => _isShowcase = value),
                           onPremiumChanged: (value) =>
                               setState(() => _isPremium = value),
                           onContentAgeChanged: (value) =>
@@ -1036,12 +1251,126 @@ class _PosterSection extends StatelessWidget {
   }
 }
 
+class _ShowcaseLandscapeSection extends StatelessWidget {
+  const _ShowcaseLandscapeSection({
+    required this.series,
+    required this.newLandscape,
+    required this.isUploading,
+    required this.onPick,
+    required this.onReplace,
+    required this.disabled,
+  });
+
+  final AdminSeries series;
+  final PosterFile? newLandscape;
+  final bool isUploading;
+  final VoidCallback onPick;
+  final VoidCallback onReplace;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final landscapeUrl = MediaConfig.resolvePosterUrl(
+      series.showcaseLandscapePath ?? '',
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.showcaseLandscapeImage,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.showcaseLandscapeHint,
+              style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 192,
+                    height: 108,
+                    child: newLandscape != null
+                        ? Image.memory(newLandscape!.bytes, fit: BoxFit.cover)
+                        : landscapeUrl == null
+                        ? const ColoredBox(
+                            color: Color(0xFF181818),
+                            child: Center(
+                              child: Icon(
+                                Icons.panorama_outlined,
+                                color: Color(0xFF555555),
+                              ),
+                            ),
+                          )
+                        : Image.network(landscapeUrl, fit: BoxFit.cover),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: disabled ? null : onPick,
+                        icon: const Icon(Icons.panorama_outlined),
+                        label: Text(context.l10n.selectNewShowcaseLandscape),
+                      ),
+                      if (newLandscape != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          newLandscape!.fileName,
+                          style: const TextStyle(color: Color(0xFFB3B3B3)),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: disabled || isUploading ? null : onReplace,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFE50914),
+                          ),
+                          child: isUploading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(context.l10n.changeShowcaseLandscape),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EditSection extends StatelessWidget {
   const _EditSection({
     required this.editorial,
     required this.lockOriginalLocale,
     required this.status,
     required this.isFeatured,
+    required this.isShowcase,
     required this.isPremium,
     required this.selectedCategoryIds,
     required this.categoriesFuture,
@@ -1050,6 +1379,7 @@ class _EditSection extends StatelessWidget {
     required this.disabled,
     required this.onStatusChanged,
     required this.onFeaturedChanged,
+    required this.onShowcaseChanged,
     required this.onPremiumChanged,
     required this.onContentAgeChanged,
     required this.onContentDescriptorsChanged,
@@ -1062,6 +1392,7 @@ class _EditSection extends StatelessWidget {
   final bool lockOriginalLocale;
   final SeriesStatusValue status;
   final bool isFeatured;
+  final bool isShowcase;
   final bool isPremium;
   final Set<String> selectedCategoryIds;
   final Future<List<AdminCategory>> categoriesFuture;
@@ -1070,6 +1401,7 @@ class _EditSection extends StatelessWidget {
   final bool disabled;
   final ValueChanged<SeriesStatusValue> onStatusChanged;
   final ValueChanged<bool> onFeaturedChanged;
+  final ValueChanged<bool> onShowcaseChanged;
   final ValueChanged<bool> onPremiumChanged;
   final ValueChanged<int?> onContentAgeChanged;
   final ValueChanged<List<String>> onContentDescriptorsChanged;
@@ -1153,6 +1485,12 @@ class _EditSection extends StatelessWidget {
               title: Text(context.l10n.featured),
               value: isFeatured,
               onChanged: disabled ? null : onFeaturedChanged,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(context.l10n.showcaseToggle),
+              value: isShowcase,
+              onChanged: disabled ? null : onShowcaseChanged,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

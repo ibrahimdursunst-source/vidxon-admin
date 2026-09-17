@@ -34,7 +34,8 @@ enum _SubmitStage {
   validating('Form doğrulanıyor'),
   preparingUpload('Yükleme bağlantısı hazırlanıyor'),
   uploadingPoster('Poster yükleniyor'),
-  savingSeries('Dizi kaydediliyor');
+  savingSeries('Dizi kaydediliyor'),
+  uploadingShowcaseLandscape('Yatay vitrin görseli yükleniyor');
 
   const _SubmitStage(this.label);
 
@@ -50,6 +51,7 @@ class SeriesCreatePage extends StatefulWidget {
     this.categoryRepository,
     this.partnerRepository,
     this.initialPosterForTesting,
+    this.initialShowcaseLandscapeForTesting,
     super.key,
   });
 
@@ -60,6 +62,7 @@ class SeriesCreatePage extends StatefulWidget {
   final CategoryRepository? categoryRepository;
   final PartnerRepository? partnerRepository;
   final PosterFile? initialPosterForTesting;
+  final PosterFile? initialShowcaseLandscapeForTesting;
 
   @override
   State<SeriesCreatePage> createState() => _SeriesCreatePageState();
@@ -91,12 +94,14 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   SeriesStatusValue _status = SeriesStatusValue.ongoing;
   bool _isFeatured = false;
   bool _isPremium = false;
+  bool _isShowcase = false;
   DateTime? _releaseDate;
   final Set<String> _selectedCategoryIds = {};
   int? _contentAgeRating;
   List<String> _contentDescriptors = [];
 
   PosterFile? _posterFile;
+  PosterFile? _landscapeFile;
   String? _uploadedPosterFingerprint;
   String? _uploadedObjectPath;
 
@@ -107,6 +112,7 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
   void initState() {
     super.initState();
     _posterFile = widget.initialPosterForTesting;
+    _landscapeFile = widget.initialShowcaseLandscapeForTesting;
     _categoriesFuture = _categoryRepository.fetchAll();
     _editorial.title[_editorial.originalLocale]!.addListener(_onTitleChanged);
     _slugController.addListener(_onSlugChanged);
@@ -196,6 +202,56 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
     }
   }
 
+  Future<void> _pickLandscape() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+      allowMultiple: false,
+    );
+
+    if (!mounted || result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final picked = result.files.single;
+    final bytes = picked.bytes;
+
+    if (bytes == null) {
+      setState(() {
+        _errorMessage = context.l10n.posterUnreadable;
+        _retryHint = null;
+      });
+      return;
+    }
+
+    try {
+      final landscape = PosterFileValidator.validate(
+        bytes: bytes,
+        fileName: picked.name,
+      );
+
+      setState(() {
+        _landscapeFile = landscape;
+        _errorMessage = null;
+        _retryHint = null;
+      });
+    } on PosterFileValidationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = error.message;
+        _retryHint = null;
+      });
+    }
+  }
+
   String _posterFingerprint(PosterFile poster) {
     return '${poster.fileName}|${poster.contentType}|${poster.sizeInBytes}';
   }
@@ -232,6 +288,19 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
 
       setState(() {
         _errorMessage = context.l10n.posterRequired;
+        _isSubmitting = false;
+        _submitStage = null;
+      });
+      return;
+    }
+
+    if (_isShowcase && _landscapeFile == null) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = context.l10n.showcaseRequiresLandscape;
         _isSubmitting = false;
         _submitStage = null;
       });
@@ -316,18 +385,58 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
             translations: _editorial.toPayload(),
           );
 
+      var result = created;
+      var showcaseFollowUpFailed = false;
+      final landscape = _landscapeFile;
+      if (landscape != null) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _submitStage = _SubmitStage.uploadingShowcaseLandscape;
+        });
+
+        try {
+          final landscapeUpload = await _imageUploadRepository
+              .requestPosterUploadUrl(
+                contentType: landscape.contentType,
+                fileSize: landscape.sizeInBytes,
+                purpose: 'series_poster_replacement',
+                seriesId: created.id,
+              );
+          await _imageUploadRepository.uploadPoster(
+            uploadInfo: landscapeUpload,
+            fileBytes: landscape.bytes,
+          );
+          final showcase = await _seriesMutationRepository.setSeriesShowcase(
+            seriesId: created.id,
+            isShowcase: _isShowcase,
+            expectedContentVersion: created.contentVersion,
+            showcaseLandscapePath: landscapeUpload.objectPath,
+          );
+          result = showcase.applyTo(created);
+        } catch (_) {
+          showcaseFollowUpFailed = true;
+          result = created;
+        }
+      }
+
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.seriesCreated),
+          content: Text(
+            showcaseFollowUpFailed
+                ? context.l10n.seriesCreatedShowcaseFailed
+                : context.l10n.seriesCreated,
+          ),
           backgroundColor: const Color(0xFF35C46A),
         ),
       );
 
-      widget.onSuccess(created);
+      widget.onSuccess(result);
     } on ImageUploadException catch (error) {
       if (!mounted) {
         return;
@@ -424,6 +533,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                 const SizedBox(height: 24),
                 _buildPosterSection(),
                 const SizedBox(height: 24),
+                _buildShowcaseLandscapeSection(),
+                const SizedBox(height: 24),
                 _buildStatusSection(),
                 const SizedBox(height: 24),
                 _buildPartnerSection(),
@@ -481,6 +592,8 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
               _SubmitStage.preparingUpload => context.l10n.preparingUploadLink,
               _SubmitStage.uploadingPoster => context.l10n.uploadingPoster,
               _SubmitStage.savingSeries => context.l10n.savingSeries,
+              _SubmitStage.uploadingShowcaseLandscape =>
+                context.l10n.uploadingShowcaseLandscape,
             }, style: const TextStyle(color: Color(0xFFB3B3B3))),
           ),
         ],
@@ -673,6 +786,74 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
     );
   }
 
+  Widget _buildShowcaseLandscapeSection() {
+    final landscape = _landscapeFile;
+
+    return _SectionCard(
+      title: context.l10n.showcaseLandscapeImage,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.showcaseLandscapeHint,
+            style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _isSubmitting ? null : _pickLandscape,
+                icon: const Icon(Icons.panorama_outlined),
+                label: Text(context.l10n.selectShowcaseLandscape),
+              ),
+              if (landscape != null)
+                Text(
+                  '${landscape.fileName} · ${landscape.contentType} · ${_formatFileSize(landscape.sizeInBytes)}',
+                  style: const TextStyle(color: Color(0xFFB3B3B3)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (landscape != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(
+                landscape.bytes,
+                width: 240,
+                height: 135,
+                fit: BoxFit.cover,
+              ),
+            )
+          else
+            Container(
+              width: 240,
+              height: 135,
+              decoration: BoxDecoration(
+                color: const Color(0xFF181818),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.panorama_outlined,
+                  size: 40,
+                  color: Color(0xFF555555),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.posterFormatsHint,
+            style: const TextStyle(color: Color(0xFF777777), fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _posterPlaceholder() {
     return Container(
       width: 160,
@@ -731,6 +912,18 @@ class _SeriesCreatePageState extends State<SeriesCreatePage> {
                 : (value) {
                     setState(() {
                       _isFeatured = value;
+                    });
+                  },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.l10n.showcaseToggle),
+            value: _isShowcase,
+            onChanged: _isSubmitting
+                ? null
+                : (value) {
+                    setState(() {
+                      _isShowcase = value;
                     });
                   },
           ),

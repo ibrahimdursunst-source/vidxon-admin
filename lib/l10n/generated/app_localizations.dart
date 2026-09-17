@@ -1862,6 +1862,12 @@ abstract class AppLocalizations {
   /// **'Dizi kaydı oluştu. Partner atamasını dizi detayından yeniden deneyin.'**
   String get seriesCreatedRetryPartner;
 
+  /// No description provided for @seriesCreatedShowcaseFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dizi oluşturuldu. Yatay vitrin görselini dizi detayından tekrar yükleyin.'**
+  String get seriesCreatedShowcaseFailed;
+
   /// No description provided for @posterAlreadyUploaded.
   ///
   /// In tr, this message translates to:
@@ -2299,6 +2305,66 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'JPG, PNG veya WEBP · En fazla 10 MiB'**
   String get posterFormatsHint;
+
+  /// No description provided for @showcaseLandscapeImage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay Vitrin Görseli'**
+  String get showcaseLandscapeImage;
+
+  /// No description provided for @showcaseLandscapeHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Önerilen: 1920×1080 px (16:9). Minimum: 1280×720 px. Bu görsel ana sayfa vitrini ve dizi detayının üst bölümünde kullanılır.'**
+  String get showcaseLandscapeHint;
+
+  /// No description provided for @showcaseToggle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Vitrinde Göster'**
+  String get showcaseToggle;
+
+  /// No description provided for @showcaseRequiresLandscape.
+  ///
+  /// In tr, this message translates to:
+  /// **'Vitrinde göstermek için yatay vitrin görseli yükleyin.'**
+  String get showcaseRequiresLandscape;
+
+  /// No description provided for @selectShowcaseLandscape.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay görsel seç'**
+  String get selectShowcaseLandscape;
+
+  /// No description provided for @selectNewShowcaseLandscape.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni yatay görsel seç'**
+  String get selectNewShowcaseLandscape;
+
+  /// No description provided for @changeShowcaseLandscape.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay görseli değiştir'**
+  String get changeShowcaseLandscape;
+
+  /// No description provided for @showcaseLandscapeUpdated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay vitrin görseli güncellendi.'**
+  String get showcaseLandscapeUpdated;
+
+  /// No description provided for @showcaseLandscapeUpdateFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay vitrin görseli güncellenemedi.'**
+  String get showcaseLandscapeUpdateFailed;
+
+  /// No description provided for @uploadingShowcaseLandscape.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yatay vitrin görseli yükleniyor'**
+  String get uploadingShowcaseLandscape;
 
   /// No description provided for @premium.
   ///
